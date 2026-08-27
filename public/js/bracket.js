@@ -11,9 +11,8 @@
 // และเหลือมุมมองเดียวคือสาย ไม่มีรายการแบบแบนอีก จะได้ไม่ต้องดูแลสองมุมมอง
 // ที่แสดงข้อมูลชุดเดียวกันแล้วค่อยๆ เพี้ยนออกจากกัน
 //
-// ตอนนี้ยังไม่มีสายแพ้ เพราะยังไม่ได้ทำระบบแพ้สองครั้งคัดออก
-// แต่ตัวเรนเดอร์แยกตามค่า bracket อยู่แล้ว วันที่ทำเสร็จสายแพ้จะโผล่มาเอง
-// เป็นอีกหัวข้อหนึ่งใต้สายชนะ โดยไม่ต้องแก้ไฟล์นี้
+// สายแพ้กับรอบชิงแบบต้องชนะสองครั้งเรนเดอร์ได้แล้ว และเคยเห็นด้วยตาจริง
+// หัวข้อเรียงตามเส้นทางของทีมเสมอ: สายชนะ -> กลุ่ม -> สายแพ้ -> รอบชิง
 
 const { socket, fetchJson, withToken, showToast } = window.RovClient;
 const { badge, on } = window.RovTeamUI;
@@ -190,18 +189,37 @@ function render(matches) {
 
   const elimination = tournament?.format === 'single_elim' || tournament?.format === 'double_elim';
 
-  // เลขคู่ไล่ตามลำดับที่แข่งจริง ไว้อ้างอิงเวลาคุยกัน
-  const numbers = new Map();
-  matches.forEach((m, i) => numbers.set(m.id, i + 1));
-
-  // จัดกลุ่มตามสายก่อน (main / A / B / losers ในอนาคต)
+  // จัดกลุ่มตามสาย (main / A / B / losers / grand)
   const brackets = new Map();
   matches.forEach((m) => {
     if (!brackets.has(m.bracket)) brackets.set(m.bracket, []);
     brackets.get(m.bracket).push(m);
   });
 
-  brackets.forEach((list, name) => {
+  // ลำดับหัวข้อต้องเรียงตามเส้นทางของทีม ไม่ใช่ตามตัวอักษร
+  //
+  // เซิร์ฟเวอร์ส่งมาแบบ ORDER BY bracket ซึ่งเรียง grand < losers < main
+  // ปล่อยตามนั้นแล้วหน้าเว็บขึ้นรอบชิงชนะเลิศไว้บนสุด ตามด้วยสายแพ้ แล้วค่อยสายชนะ
+  // คืออ่านจากจุดจบย้อนกลับไปหาจุดเริ่ม ซึ่งกลับหัวกับที่คนไล่สายจริงๆ
+  const SECTION_ORDER = { main: 0, losers: 2, grand: 3 };
+  const rankOf = (name) => (name in SECTION_ORDER ? SECTION_ORDER[name] : 1);
+  const ordered = [...brackets.entries()].sort(
+    (a, b) => rankOf(a[0]) - rankOf(b[0]) || a[0].localeCompare(b[0])
+  );
+
+  // เลขคู่ไว้อ้างอิงเวลาคุยกันว่า "คู่ที่ 21"
+  //
+  // ต้องนับตามลำดับที่แสดงบนจอ ไม่ใช่ลำดับที่เซิร์ฟเวอร์ส่งมา
+  // ไม่งั้นคู่ที่ 1 จะกลายเป็นรอบชิงชนะเลิศ ส่วนรอบแรกของสายชนะได้เลขท้ายๆ
+  const numbers = new Map();
+  let counter = 1;
+  ordered.forEach(([, list]) => {
+    [...list]
+      .sort((a, b) => a.round - b.round || a.slot - b.slot)
+      .forEach((m) => { numbers.set(m.id, counter); counter += 1; });
+  });
+
+  ordered.forEach(([name, list]) => {
     const section = document.createElement('div');
     section.className = 'bracket-section';
 
@@ -231,12 +249,22 @@ function render(matches) {
     }
 
     roundNumbers.forEach((roundNo, index) => {
-      const isLast = index === total - 1;
+      const here = (rounds.get(roundNo) || []).sort((a, b) => a.slot - b.slot);
+      const next = rounds.get(roundNumbers[index + 1]) || [];
+
+      // เส้นบรรจบวาดได้เฉพาะรอบที่สองคู่ไหลไปรวมเป็นคู่เดียวจริงๆ
+      //
+      // สายชนะเป็นแบบนั้นทุกรอบ แต่สายแพ้ไม่ใช่
+      // สายแพ้สลับกันระหว่างรอบที่ผู้ชนะมาเจอกันเอง (คู่ลดครึ่ง)
+      // กับรอบที่ผู้ชนะไปเจอผู้แพ้ที่เพิ่งตกลงมาจากสายชนะ (จำนวนคู่เท่าเดิม)
+      // ลากเส้นบรรจบในรอบแบบหลังคือการบอกเส้นทางผิด
+      const merges = next.length > 0 && next.length === here.length / 2;
+
       wrap.appendChild(roundColumn(
         roundTitle(roundNo, total, name, elimination),
-        (rounds.get(roundNo) || []).sort((a, b) => a.slot - b.slot),
+        here,
         numbers,
-        elimination && !isLast
+        elimination && merges
       ));
     });
 

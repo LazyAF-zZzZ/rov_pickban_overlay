@@ -87,7 +87,8 @@ and the list had already drifted — it labelled rounds `Round N` while the
 bracket called the same rounds Final / Semifinals. Scores are typed directly
 into the boxes in the bracket.
 
-Rounds are columns, connectors are drawn with CSS pseudo-elements, and clicking
+Sections run Winners → groups → Losers → Grand final, and match numbers follow
+that same reading order. Connectors are drawn with CSS pseudo-elements, and clicking
 a playable match puts it on air and opens the control panel. Late rounds are
 named Final / Semifinals / Quarterfinals rather than by number — **but only for
 elimination formats.** Round robin keeps `Round N`; its last round is not a
@@ -432,25 +433,32 @@ pattern already in `public/js/overlay.js`.
   caster drive the draft while OBS has focus. The app's own hotkeys page
   currently implies this is impossible — true for a browser page, not for the
   Electron main process.
-- **The losers bracket has never been seen rendered.** `bracket.js` groups by
-  the `bracket` column so it should section into Winners / Losers / Grand final
-  on its own, but that is inference, not observation. Draw a double-elimination
-  bracket and look at it before trusting the layout. This matters more now that
-  the bracket is the only way to see or score a match.
+- **The losers bracket has now been seen rendered**, and looking at it was
+  worth it. Two things were wrong that no test caught. The sections came out
+  ordered Grand final → Losers → Winners, because the API sends
+  `ORDER BY bracket` and alphabetically `grand < losers < main` — the page read
+  from the end of the tournament backwards. And the converging connector lines
+  were drawn on every round of the losers bracket, claiming pairs of matches
+  merge when losers-bracket rounds alternate between merging and taking on the
+  teams dropping down from the winners side. Both fixed; sections now sort by
+  path through the tournament, and connectors are drawn only where the next
+  round really has half as many matches.
+- **A 128-team bracket has been drawn and scored through the boxes.** 127
+  matches over 7 rounds, 128 score fields on the playable round, 5032px tall
+  and scrolling vertically only. Recording 2-0 marked the match complete and
+  advanced the winner into round 2 with the count moving to `1 / 127 played`.
+  The fields are 24x21px, which is small but workable; that is the honest
+  ceiling of typing scores into a bracket this size.
 - **The match session page is still at `/tournament/:id/bracket`.** The name
   describes the view, not the job it now does. Renaming it to `/matches` would
   read better but breaks bookmarks and a test; not worth doing on its own,
   worth folding into any later change that touches those routes.
-- **A 128-team bracket has never been scored through the boxes.** Score entry
-  moved into the match boxes, which are ~24px wide. That is comfortable at four
-  teams; it is untested at the sizes where the bracket scrolls in both
-  directions.
 - **All four test goals are met.** 1: the 128-team cap is enforced in the store
   and refuses the 129th. 2: Bo1/3/5/7 all decide on a strict majority through
   one `seriesWinner`. 3: round robin uses the circle method so no team can
   appear twice in a round, by construction rather than by retrying. 4: the room
   for future work is the migration runner, the pure `domain/` layer and the
-  127-test suite.
+  139-test suite.
 
 ---
 
@@ -507,6 +515,17 @@ Each of these cost real debugging time. They are also in `CLAUDE.md`.
   top of the file — nothing renders, no handler binds, and the console error
   points at a line that looks fine. `team-api.test.ts` asserts the tag is
   present *and* ordered first on all three pages that need it.
+- **Grouping by a database column gives you alphabetical order, not meaningful
+  order.** `matches` comes back `ORDER BY bracket`, and `grand < losers < main`,
+  so the bracket page rendered the grand final first and the winners bracket
+  last — the tournament read backwards. Any section list built by grouping on a
+  column name needs an explicit order of its own.
+- **A converging connector line is a claim about where teams go.** Drawing one
+  wherever a round is not the last assumes every round halves. Winners brackets
+  do; losers brackets alternate between merging their own winners and absorbing
+  the teams dropping down, so half their rounds keep the same match count.
+  Drawing the merge there tells the viewer the wrong path. Draw it only when
+  the next round genuinely has half as many matches.
 - **An entrance animation that carries an element in must be able to finish
   without running.** OBS freezes off-scene browser sources, so `animationend`
   can never fire. If the element's resting state is `opacity: 0` and only the
