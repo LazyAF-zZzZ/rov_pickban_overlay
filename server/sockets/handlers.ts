@@ -37,6 +37,7 @@ import {
 } from '../services/draft-engine';
 import { isAuthorizedSocket } from '../http/auth';
 import { DATA_ROOM } from '../services/sync';
+import { pushOverlayScoreToMatch } from '../services/series';
 
 type Payload = Record<string, unknown>;
 
@@ -76,10 +77,19 @@ export function registerHandlers(socket: Socket): void {
     emitState();
   });
 
+  // ช่องคะแนนบนหน้า control เป็นตัวตั้งของคะแนนซีรีส์
+  //
+  // เดิมเขียนลง state ของ overlay อย่างเดียว สายยังเป็นคะแนนเก่า
+  // ผู้ชนะรายเกมไม่ถูกบันทึก และ nextGameNo (ซึ่งอ่านจากตารางแข่ง) ไม่ขยับ
+  // เกมถัดไปจึงได้เลขเดิม แล้วดราฟต์ใหม่เขียนทับดราฟต์เกมก่อนหน้า
+  //
+  // ตอนนี้เขียนต่อลงตารางแข่ง แล้วเดาผู้ชนะด้วยกติกาเดียวกับการกรอกในสาย
+  // ไม่ได้ผูกกับแมตช์ของทัวร์นาเมนต์อยู่ (แมตช์เดี่ยว) ก็ไม่มีอะไรเกิดขึ้น
   controlEvent(socket, 'updateScore', ({ team, score }) => {
     if (!isTeamKey(team)) return;
     getState()[team].score = clampNumber(score, 0, 99);
     emitState();
+    pushOverlayScoreToMatch();
   });
 
   controlEvent(socket, 'updatePlayerName', ({ team, index, name }) => {

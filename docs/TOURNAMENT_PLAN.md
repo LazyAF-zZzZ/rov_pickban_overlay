@@ -33,7 +33,7 @@ and **not yet merged or pushed**.
 | `23bd837` | Phase 8 — `/analytics`, per-game winner capture, live room |
 | `23bd837` | Phase 7 — `/overlay-teams` team list with staggered slide-in |
 
-Current state: **0 type errors under `strict`, 151 tests passing.** Creating a
+Current state: **0 type errors under `strict`, 155 tests passing.** Creating a
 tournament, adding a team with its players in one form, uploading logos,
 drawing single/double elimination, round robin and group brackets, recording
 Bo3/Bo5 results, opening a match in the control panel and having its draft
@@ -365,6 +365,29 @@ Draft capture shipped in Phase 5, but *per-game winners* did not. `games.setWinn
 existed from Phase 5 and was called from nowhere, so `games.winner` was NULL for
 every game ever recorded — win rate had no numerator, and no way to reconstruct
 one. A Bo3 that ends 2-1 records the series winner; nothing says who took game 2.
+
+**The score can be typed in either place, and they stay in step.** The box on
+the Control Panel and the boxes in the bracket both write to
+`matches.score_a/score_b`, and each reflects back to the other — no reopening
+the match to make the numbers agree.
+
+The Control Panel box used to write only to overlay state. That looked harmless
+and was not: the bracket kept the old score, no game winner was recorded, and
+`nextGameNo` reads from the **match record**, so reopening the match handed back
+the *same* game number. `restoreDraft` then loaded the previous game's draft and
+the new one overwrote it. Scoring on the wrong page destroyed a game's picks.
+
+Two details that are easy to get wrong:
+
+- **A clamped score must be reflected back.** A Bo5 caps at 3, so typing 9 stores
+  3 — and the overlay is corrected to 3 rather than left showing a number the
+  bracket disagrees with.
+- **Which side is blue is not a given.** `goLive` puts side A on blue, but
+  `switchTeams` swaps the overlay wholesale. The mapping is resolved against the
+  game's frozen `blueName`/`redName` rather than assuming blue is always A.
+
+A standalone quick match has no live pointer, so scoring one touches no
+tournament at all.
 
 **The winner now comes from the series score**, in `server/services/series.ts`.
 Typing 1-0 on the match session page records game 1 to the side that gained the

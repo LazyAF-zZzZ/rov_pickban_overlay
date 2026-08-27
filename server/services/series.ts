@@ -20,6 +20,7 @@
 
 import { getStores } from '../store/index';
 import type { Match, MatchResult } from '../store/matches';
+import { getState, emitState } from '../store/live-state';
 import { notifyData } from './sync';
 
 // ฝั่ง A ของแมตช์ขึ้นจอเป็นสีน้ำเงินเสมอ (ดู goLive) คะแนน A จึงคู่กับ blue
@@ -77,5 +78,78 @@ export function recordSeriesResult(
   if (syncGameWinners(before, result.match)) {
     notifyData({ topic: 'games', tournamentId: result.match.tournamentId });
   }
+  // กรอกคะแนนจากในสาย ก็ต้องเห็นบนจอทันทีเหมือนกัน
+  pushMatchScoreToOverlay(result.match);
   return result;
+}
+
+// คะแนนมีสองที่ที่กรอกได้: ช่องบนหน้า control และกล่องคะแนนในสาย
+//
+// ทั้งสองที่เขียนลงที่เดียวกันคือ matches.score_a/score_b แล้วสะท้อนกลับหากัน
+// เดิมช่องบนหน้า control เขียนลง state ของ overlay อย่างเดียว ไม่แตะตารางแข่งเลย
+// ผลคือกรอกที่หน้า control แล้วสายยังเป็นคะแนนเก่า ไม่มีการบันทึกผู้ชนะรายเกม
+// และที่แย่กว่านั้นคือ nextGameNo อ่านจากตารางแข่ง เกมถัดไปจึงได้เลขเดิม
+// แล้วดราฟต์เกมใหม่จะไปเขียนทับดราฟต์ของเกมก่อนหน้า
+
+// ฝั่งน้ำเงินบนจอ คือทีมไหนของแมตช์
+//
+// ปกติ goLive วางฝั่ง A เป็นน้ำเงินเสมอ แต่ switchTeams สลับทั้งสองฝั่งบนจอได้
+// จึงเทียบกับสำเนาแช่แข็งของเกมแทนที่จะเชื่อว่าน้ำเงินคือ A ตลอด
+// เทียบด้วยชื่อ เพราะ state ของ overlay ไม่ได้เก็บ id ของทีมไว้
+function bluePlaysSideB(gameBlueName: string, gameRedName: string): boolean {
+  const state = getState();
+  return state.teamBlue.name === gameRedName && state.teamRed.name === gameBlueName;
+}
+
+function sidesOf(matchId: string): { swapped: boolean } {
+  const { liveMatch, games } = getStores();
+  const pointer = liveMatch.get();
+  if (pointer.matchId !== matchId || !pointer.gameId) return { swapped: false };
+  const game = games.get(pointer.gameId);
+  if (!game) return { swapped: false };
+  return { swapped: bluePlaysSideB(game.blueName, game.redName) };
+}
+
+// คะแนนของแมตช์เปลี่ยน ถ้าแมตช์นั้นกำลังออกอากาศ ให้ overlay ตามทันที
+// ไม่ต้องรอเอาแมตช์ขึ้นจอใหม่ ซึ่งเป็นทางเดียวที่เคยทำให้ตัวเลขตรงกัน
+function pushMatchScoreToOverlay(match: Match): void {
+  const { liveMatch } = getStores();
+  if (liveMatch.get().matchId !== match.id) return;
+
+  const { swapped } = sidesOf(match.id);
+  const blue = swapped ? match.scoreB : match.scoreA;
+  const red = swapped ? match.scoreA : match.scoreB;
+
+  const state = getState();
+  if (state.teamBlue.score === blue && state.teamRed.score === red) return;
+  state.teamBlue.score = blue;
+  state.teamRed.score = red;
+  emitState();
+}
+
+// เรียกหลังช่องคะแนนบนหน้า control ถูกแก้
+//
+// หน้า control เป็นตัวตั้ง: ค่าที่พิมพ์ตรงนั้นถูกเขียนลงตารางแข่ง
+// แล้วผู้ชนะรายเกมก็ถูกเดาจากค่านั้นด้วยกติกาเดียวกับการกรอกในสาย
+export function pushOverlayScoreToMatch(): void {
+  const { liveMatch, matches } = getStores();
+  const pointer = liveMatch.get();
+  if (!pointer.matchId) return;   // แมตช์เดี่ยว ไม่ได้ผูกกับทัวร์นาเมนต์ อย่าไปแตะอะไร
+
+  const match = matches.get(pointer.matchId);
+  if (!match) return;
+
+  const state = getState();
+  const { swapped } = sidesOf(match.id);
+  const scoreA = swapped ? state.teamRed.score : state.teamBlue.score;
+  const scoreB = swapped ? state.teamBlue.score : state.teamRed.score;
+  if (scoreA === match.scoreA && scoreB === match.scoreB) return;
+
+  const result = recordSeriesResult(pointer.matchId, scoreA, scoreB);
+  if (result.error !== undefined) return;
+
+  // ตารางแข่งตัดคะแนนตามจำนวนเกมที่ชนะได้จริงของ BoN
+  // พิมพ์ 5 ใน Bo3 จะเหลือ 2 ถ้าไม่สะท้อนกลับ จอจะโชว์ 5 ส่วนสายโชว์ 2
+  pushMatchScoreToOverlay(result.match);
+  notifyData({ topic: 'matches', tournamentId: result.match.tournamentId });
 }

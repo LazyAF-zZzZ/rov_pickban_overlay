@@ -122,3 +122,71 @@ test('a manual override is not overwritten by a later, unrelated score change', 
   assert.strictEqual(all[0], 'red', 'the override on game 1 survives');
   assert.strictEqual(all[1], 'red', 'game 2 still gets filled in');
 });
+
+// ---- คะแนนสองที่ต้องตรงกันเสมอ ----
+//
+// ช่องบนหน้า control กับกล่องคะแนนในสาย เขียนลงที่เดียวกัน แล้วสะท้อนกลับหากัน
+
+const live = require('../server/services/live-match') as typeof import('../server/services/live-match');
+const liveState = require('../server/store/live-state') as typeof import('../server/store/live-state');
+const { pushOverlayScoreToMatch } = require('../server/services/series') as typeof import('../server/services/series');
+
+// เอาแมตช์ขึ้นจอจริง เพราะการจับคู่ฝั่งอาศัยสำเนาแช่แข็งของเกม
+function onAir() {
+  const { matches } = getStores();
+  const { match } = setup(0);
+  const result = live.goLive(match.id);
+  assert.ok(result.live, result.error ?? 'goLive failed');
+  return must(matches.get(match.id));
+}
+
+test('a score typed on the control panel lands on the match and records the winner', () => {
+  const match = onAir();
+  const { matches, games } = getStores();
+
+  liveState.getState().teamBlue.score = 1;
+  pushOverlayScoreToMatch();
+
+  const after = must(matches.get(match.id));
+  assert.strictEqual(after.scoreA, 1, 'the series score followed the control panel');
+  assert.strictEqual(after.scoreB, 0);
+  assert.deepStrictEqual(
+    games.forMatch(match.id).map((g) => g.winner), ['blue'],
+    'and the game winner came from it, exactly as typing it in the bracket would'
+  );
+});
+
+test('a score typed in the bracket shows on the overlay without reopening the match', () => {
+  const match = onAir();
+  assert.strictEqual(liveState.getState().teamBlue.score, 0);
+
+  recordSeriesResult(match.id, 1, 0);
+
+  assert.strictEqual(liveState.getState().teamBlue.score, 1, 'the overlay followed the bracket');
+  assert.strictEqual(liveState.getState().teamRed.score, 0);
+});
+
+test('a score above what the format allows is clamped, and the overlay is corrected', () => {
+  const match = onAir();   // Bo5 ต้องชนะ 3 เกม
+  const { matches } = getStores();
+
+  liveState.getState().teamBlue.score = 9;
+  pushOverlayScoreToMatch();
+
+  assert.strictEqual(must(matches.get(match.id)).scoreA, 3, 'clamped to what a Bo5 can reach');
+  assert.strictEqual(
+    liveState.getState().teamBlue.score, 3,
+    'the overlay must not keep showing 9 while the bracket says 3'
+  );
+});
+
+test('scoring a standalone match touches no tournament at all', () => {
+  const { liveMatch, matches } = getStores();
+  const match = onAir();
+  liveMatch.clear();          // แมตช์เดี่ยว ไม่ได้ผูกกับทัวร์นาเมนต์
+
+  liveState.getState().teamBlue.score = 2;
+  pushOverlayScoreToMatch();
+
+  assert.strictEqual(must(matches.get(match.id)).scoreA, 0, 'the match record is left alone');
+});
