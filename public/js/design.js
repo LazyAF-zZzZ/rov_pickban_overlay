@@ -157,16 +157,16 @@ async function clearSkin(slot) {
 
 function updateSkinOptions() {
   socket.emit('updateSkinOptions', {
-    enabled: document.getElementById('skinEnabled')?.checked,
-    showPanels: document.getElementById('skinShowPanels')?.checked
+    enabled: /** @type {HTMLInputElement} */ (document.getElementById('skinEnabled'))?.checked,
+    showPanels: /** @type {HTMLInputElement} */ (document.getElementById('skinShowPanels'))?.checked
   });
 }
 
 function renderSkin(skin) {
   if (!skin) return;
 
-  const enabled = document.getElementById('skinEnabled');
-  const panels = document.getElementById('skinShowPanels');
+  const enabled = /** @type {HTMLInputElement} */ (document.getElementById('skinEnabled'));
+  const panels = /** @type {HTMLInputElement} */ (document.getElementById('skinShowPanels'));
   if (enabled && document.activeElement !== enabled) enabled.checked = skin.enabled === true;
   if (panels && document.activeElement !== panels) panels.checked = skin.showPanels !== false;
 
@@ -301,7 +301,7 @@ function themeRow(field) {
     range.type = 'range';
     range.min = field.min;
     range.max = field.max;
-    range.step = 1;
+    range.step = '1';
     range.addEventListener('input', () => pushTheme(field.key, Number(range.value)));
     inputs.appendChild(range);
     themeRows[field.key] = { row, value, set: (v) => { range.value = v; } };
@@ -370,7 +370,7 @@ function renderPreviewSize(overlaySize) {
 }
 
 function loadPreview(size) {
-  const iframe = document.getElementById('themePreview');
+  const iframe = /** @type {HTMLIFrameElement} */ (document.getElementById('themePreview'));
   if (!iframe) return;
   iframe.src = withToken(size === '1440' ? '/overlay-1440' : '/overlay');
 }
@@ -380,7 +380,7 @@ document.getElementById('tpReload')?.addEventListener('click', () => {
   showToast('Preview reloaded', 'blue');
 });
 
-document.querySelectorAll('.tp-bd').forEach((btn) => {
+document.querySelectorAll('.tp-bd').forEach((/** @type {HTMLElement} */ btn) => {
   btn.addEventListener('click', () => {
     const frame = document.getElementById('tpFrame');
     frame.classList.remove('checker', 'dark', 'light');
@@ -393,7 +393,7 @@ document.querySelectorAll('.tp-bd').forEach((btn) => {
 // จำพื้นหลังที่เลือกไว้ คนคุมมักดูบนพื้นเดิมทุกครั้ง
 (() => {
   const saved = localStorage.getItem('rovPreviewBackdrop') || 'checker';
-  document.querySelector(`.tp-bd[data-bd="${saved}"]`)?.click();
+  /** @type {HTMLElement} */ (document.querySelector(`.tp-bd[data-bd="${saved}"]`))?.click();
 })();
 
 buildThemeEditor();

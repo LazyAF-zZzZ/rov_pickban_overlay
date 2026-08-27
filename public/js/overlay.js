@@ -24,6 +24,7 @@ const LOGO_FILES = { teamBlue: 'blue-team', teamRed: 'red-team' };
 //
 // Colours arrive validated as #rrggbb from the server, numbers clamped -
 // nothing here is interpolated into CSS without having passed that.
+/** @type {Record<string, [string, (v: any) => string]>} */
 const THEME_VARS = {
     blue: ['--ov-blue', (v) => v],
     red: ['--ov-red', (v) => v],
@@ -251,7 +252,7 @@ function playOnce(element, className) {
 
 function updateBans(team, bans) {
     bans.forEach((hero, index) => {
-        const slot = document.querySelector(`.ban-slot[data-team="${team}"][data-index="${index}"]`);
+        const slot = /** @type {HTMLElement} */ (document.querySelector(`.ban-slot[data-team="${team}"][data-index="${index}"]`));
         if (!slot) return;
 
         // state ถูกส่งมาทุกวินาทีตอนจับเวลา ถ้าสร้าง img ใหม่ทุกครั้ง
@@ -307,9 +308,9 @@ function showHeroArtWhenReady(slot, heroImage, hero, cssUrl) {
 
 function updatePicks(team, picks) {
     picks.forEach((hero, index) => {
-        const slot = document.querySelector(`.pick-slot[data-team="${team}"][data-index="${index}"]`);
+        const slot = /** @type {HTMLElement} */ (document.querySelector(`.pick-slot[data-team="${team}"][data-index="${index}"]`));
         if (slot) {
-            const heroImage = slot.querySelector('.hero-image');
+            const heroImage = /** @type {HTMLElement} */ (slot.querySelector('.hero-image'));
             if (hero) {
                 slot.classList.add('filled');
                 const nextImage = `url("${imageUrl('heroes', hero)}")`;

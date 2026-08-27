@@ -8,6 +8,7 @@ wrapped in Electron. **All user data stays on the user's device** — no account
 ```bash
 npm run build      # tsc: server/ + tests/ -> build/
 npm run typecheck  # tsc --noEmit, no output written
+npm run typecheck:web # tsc --checkJs over public/js/, one page at a time
 npm start          # build, then run the server
 npm run app        # build, then run the Electron app
 npm test           # build, then node --test over build/tests/
@@ -26,8 +27,13 @@ stays plain JavaScript — it is the entry point Electron requires, and it fails
 `build/` is the tsc output. `dist/` is electron-builder's output. They are different
 directories and neither is committed.
 
-Browser scripts in `public/js/` are still plain JavaScript, not compiled. They are served
-directly as classic scripts, so there is no bundler in the path.
+Browser scripts in `public/js/` are plain JavaScript, served directly as classic scripts,
+so there is no bundler in the path. They are **type-checked all the same**: `npm run
+typecheck:web` runs `tsc --checkJs` over them, one page at a time, using the shared
+contract in `types/web.d.ts`. Per page matters — classic scripts share a global scope,
+so checking every file at once invents redeclaration errors between files that never
+meet in a browser. Annotate with JSDoc casts when the compiler cannot see what an
+element is; they are comments, so nothing changes at runtime.
 
 The real code is in `server/`:
 

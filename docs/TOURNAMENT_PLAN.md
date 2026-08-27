@@ -422,13 +422,28 @@ pattern already in `public/js/overlay.js`.
 
 - **A relative asset path on a nested page breaks silently** — see §9. `/tournament/:id`, `/tournament/:id/bracket` and now `/teams/:id` are all affected. Any new nested page must use absolute `/js/` and `/css/` paths; tests cover the tournament and team pages.
 - **A match played without going on air has no team snapshot.** Scores can be typed straight into the tournament page, which never creates a game record. If an opponent is deleted later, that row loses its name for good — see §4. Creating the snapshot at draw time would close the gap.
-- **`public/js/` is not TypeScript, and it has now cost a real bug.** Phase 3
-  shipped `tournament.js` referencing `controlToken` without destructuring it
-  from `window.RovClient`. Logo upload threw `ReferenceError`, the `catch`
-  turned it into a toast, and it looked like an upload failure. A compiler would
-  have caught it before the browser did. Converting needs a second tsconfig
-  (browser target, no module syntax, `window.RovClient` globals) and a serving
-  strategy for the output. This is the strongest remaining argument for doing it.
+- **`public/js/` is now type-checked, though still `.js`.** `npm run typecheck:web`
+  runs `tsc --checkJs` over every browser script, with `types/web.d.ts` declaring
+  the shared contract (`window.RovClient`, `window.RovTeamUI`, `window.HotkeyUtils`,
+  `io`, and the expando properties the code hangs on DOM nodes).
+
+  It checks **one page at a time**, reading each page's `<script src>` list to
+  decide which files form a program. That matters: these are classic scripts
+  sharing one global scope per page, so checking them all together produces a
+  hundred phantom "cannot redeclare `socket`" errors between files that never
+  meet in a browser. Per page, the check mirrors what actually loads — which is
+  exactly what catches a file using a name nobody on that page defined.
+
+  It found the Phase 3 bug class again on its first run: `focusActiveSlot` in
+  `control.js` read `idx` and `total`, both locals of `updateDraftUI`. Every
+  draft phase change threw `ReferenceError`, froze the status text and skipped
+  the rest of the `stateUpdate` handler. Also fixed: `THEME_VARS` needed a type
+  annotation, and two numbers were being assigned to string DOM properties.
+
+  Renaming the files to `.ts` is still not done, and is now the smaller half of
+  the job. It buys stricter inference at the cost of a build step and a serving
+  strategy for the output; the checker above gets the bug-catching without
+  either. Do it when something needs types the JSDoc form cannot express.
 - **Global hotkeys via Electron `globalShortcut`.** Agreed but not built. Lets a
   caster drive the draft while OBS has focus. The app's own hotkeys page
   currently implies this is impossible — true for a browser page, not for the
@@ -515,6 +530,17 @@ Each of these cost real debugging time. They are also in `CLAUDE.md`.
   top of the file — nothing renders, no handler binds, and the console error
   points at a line that looks fine. `team-api.test.ts` asserts the tag is
   present *and* ordered first on all three pages that need it.
+- **Classic scripts share one global scope per page, so type-check per page.**
+  Throwing every file in `public/js/` at `tsc` at once reports ~100 phantom
+  "cannot redeclare `socket`" errors between files that never load together.
+  `tools/check-web-types.js` reads each page's `<script src>` list and checks
+  that set as one program, which is what the browser actually does.
+- **A variable used in the wrong function is invisible until it runs.**
+  `focusActiveSlot` read `idx` and `total`, which belong to `updateDraftUI`.
+  Nothing failed at load; it threw only when the draft phase changed, froze the
+  status text and silently dropped the rest of the `stateUpdate` handler. Tests
+  never touched it because it is browser-only. This is the second bug of exactly
+  this shape in the project, which is why the checker now exists.
 - **Grouping by a database column gives you alphabetical order, not meaningful
   order.** `matches` comes back `ORDER BY bracket`, and `grand < losers < main`,
   so the bracket page rendered the grand final first and the winners bracket

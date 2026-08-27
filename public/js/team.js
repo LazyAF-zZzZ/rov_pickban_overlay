@@ -84,8 +84,8 @@ function renderHead(t, record) {
 }
 
 function renderForm(t) {
-  document.getElementById('fName').value = t.name;
-  document.getElementById('fTag').value = t.tag || '';
+  /** @type {HTMLInputElement} */ (document.getElementById('fName')).value = t.name;
+  /** @type {HTMLInputElement} */ (document.getElementById('fTag')).value = t.tag || '';
   playerRows = buildPlayerRows(document.getElementById('playerRows'), t.players, `captain-${t.id}`);
 }
 
@@ -247,8 +247,8 @@ async function save() {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: document.getElementById('fName').value,
-        tag: document.getElementById('fTag').value,
+        name: /** @type {HTMLInputElement} */ (document.getElementById('fName')).value,
+        tag: /** @type {HTMLInputElement} */ (document.getElementById('fTag')).value,
         players: playerRows ? playerRows.read() : []
       })
     });

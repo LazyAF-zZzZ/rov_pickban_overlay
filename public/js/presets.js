@@ -45,11 +45,11 @@ function buildPlayerInputs() {
 }
 
 function val(id) {
-  return document.getElementById(id)?.value.trim() || '';
+  return /** @type {HTMLInputElement} */ (document.getElementById(id))?.value.trim() || '';
 }
 
 function setVal(id, value) {
-  const el = document.getElementById(id);
+  const el = /** @type {HTMLInputElement} */ (document.getElementById(id));
   if (el) el.value = value || '';
 }
 
@@ -403,7 +403,7 @@ function askConfirm({ title, body, confirmLabel = 'CONFIRM', danger = false }) {
   okBtn.classList.toggle('confirm', !danger);
 
   // คืน focus ให้ของเดิมตอนปิด ไม่ให้ค้างอยู่กับปุ่มที่หายไปแล้ว
-  const previousFocus = document.activeElement;
+  const previousFocus = /** @type {HTMLElement} */ (document.activeElement);
   modal.hidden = false;
   okBtn.focus();
 
@@ -420,7 +420,7 @@ function askConfirm({ title, body, confirmLabel = 'CONFIRM', danger = false }) {
 document.getElementById('confirmOk')?.addEventListener('click', () => confirmResolve?.(true));
 document.getElementById('confirmCancel')?.addEventListener('click', () => confirmResolve?.(false));
 document.getElementById('confirmModal')?.addEventListener('mousedown', (event) => {
-  if (event.target.id === 'confirmModal') confirmResolve?.(false); // คลิกนอกกล่อง
+  if (/** @type {HTMLElement} */ (event.target).id === 'confirmModal') confirmResolve?.(false); // คลิกนอกกล่อง
 });
 document.addEventListener('keydown', (event) => {
   if (!confirmResolve) return;
@@ -428,15 +428,15 @@ document.addEventListener('keydown', (event) => {
 });
 
 document.getElementById('presetSearch')?.addEventListener('input', (event) => {
-  filter = event.target.value.trim().toLowerCase();
+  filter = /** @type {HTMLInputElement} */ (event.target).value.trim().toLowerCase();
   renderList();
 });
 
 buildPlayerInputs();
 
 // Enter ที่ช่องไหนในฟอร์มก็เซฟ ไม่ต้องเอื้อมไปกดปุ่ม
-document.querySelector('.save-panel')?.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter' && event.target.tagName === 'INPUT') {
+document.querySelector('.save-panel')?.addEventListener('keydown', (/** @type {KeyboardEvent} */ event) => {
+  if (event.key === 'Enter' && /** @type {HTMLElement} */ (event.target).tagName === 'INPUT') {
     event.preventDefault();
     savePreset();
   }

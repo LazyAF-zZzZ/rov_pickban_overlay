@@ -7,7 +7,7 @@
     const locked = body.dataset.lockSize;
 
     // ลิงก์ CSS ของ 1440 จะถูกเปิด/ปิดตามขนาดที่เลือก
-    const sheet1440 = document.getElementById('size1440');
+    const sheet1440 = /** @type {HTMLLinkElement} */ (document.getElementById('size1440'));
 
     function applySize(size) {
         const next = size === '1440' ? '1440' : '1080';
@@ -75,7 +75,7 @@
         const size = body.dataset.size === '1440' ? '1440' : '1080';
 
         skinTargets.forEach(([base, selector]) => {
-            const el = document.querySelector(selector);
+            const el = /** @type {HTMLElement} */ (document.querySelector(selector));
             if (!el) return;
             const slot = base + size;                       // เลือกไฟล์ตามขนาดที่ใช้อยู่
             const version = (skin && skin.slots && skin.slots[slot]) || 0;

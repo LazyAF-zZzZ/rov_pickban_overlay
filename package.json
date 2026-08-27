@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:web": "node tools/check-web-types.js",
     "start": "npm run build && node server.js",
     "serve": "npm run build && node server.js",
     "app": "npm run build && electron .",

@@ -120,7 +120,7 @@ async function clearTeamLogo(team) {
 
 function bindLogoInputs() {
   Object.entries(LOGO_UI).forEach(([team, ids]) => {
-    const input = document.getElementById(ids.file);
+    const input = /** @type {HTMLInputElement} */ (document.getElementById(ids.file));
     if (!input) return;
     input.addEventListener('change', () => {
       if (input.files[0]) uploadTeamLogo(team, input.files[0]);
@@ -195,10 +195,10 @@ function ensureDropdown() {
   ddEl.hidden = true;
   // mousedown, not click: click would land after blur has already closed us.
   ddEl.addEventListener('mousedown', (event) => {
-    const item = event.target.closest('.hero-dd-item');
+    const item = /** @type {HTMLElement} */ (event.target).closest('.hero-dd-item');
     if (!item) return;
     event.preventDefault();
-    chooseSuggestion(Number(item.dataset.index));
+    chooseSuggestion(Number(/** @type {HTMLElement} */ (item).dataset.index));
   });
   document.body.appendChild(ddEl);
 
@@ -233,7 +233,7 @@ function openDropdown(input) {
   ddItems.forEach((hero, index) => {
     const item = document.createElement('div');
     item.className = `hero-dd-item${index === 0 ? ' active' : ''}`;
-    item.dataset.index = index;
+    item.dataset.index = String(index);
     item.textContent = hero;
     el.appendChild(item);
   });
@@ -501,12 +501,12 @@ function renderHotkeyHints() {
 }
 
 function setVal(id, val) {
-  const el = document.getElementById(id);
+  const el = /** @type {HTMLInputElement} */ (document.getElementById(id));
   if (el && document.activeElement !== el) el.value = val ?? '';
 }
 
 function setSelect(id, val) {
-  const el = document.getElementById(id);
+  const el = /** @type {HTMLInputElement} */ (document.getElementById(id));
   if (el && document.activeElement !== el) {
     el.value = val || '';
     el.dataset.lastHero = val || '';
@@ -606,13 +606,13 @@ function flashSaved(indicatorId) {
 
 // ผูกแบบ delegate เพราะแถวผู้เล่นถูกสร้างด้วย JS ทีหลัง
 document.addEventListener('input', (event) => {
-  const el = event.target;
+  const el = /** @type {HTMLInputElement} */ (event.target);
   if (!el.id) return;
 
   if (el.id === 'tournamentName' || el.id === 'matchTitle') {
     autosave('matchInfo', 'matchInfoSaved', () => socket.emit('updateMatchInfo', {
-      tournament: document.getElementById('tournamentName').value,
-      title: document.getElementById('matchTitle').value
+      tournament: /** @type {HTMLInputElement} */ (document.getElementById('tournamentName')).value,
+      title: /** @type {HTMLInputElement} */ (document.getElementById('matchTitle')).value
     }));
     return;
   }
@@ -705,7 +705,7 @@ function askConfirm({ title, body, confirmLabel = 'CONFIRM' }) {
     confirmResolve = (answer) => {
       modal.hidden = true;
       confirmResolve = null;
-      if (previousFocus && document.contains(previousFocus)) previousFocus.focus();
+      if (previousFocus && document.contains(previousFocus)) /** @type {HTMLElement} */ (previousFocus).focus();
       resolve(answer);
     };
   });
@@ -714,7 +714,7 @@ function askConfirm({ title, body, confirmLabel = 'CONFIRM' }) {
 document.getElementById('confirmOk')?.addEventListener('click', () => confirmResolve?.(true));
 document.getElementById('confirmCancel')?.addEventListener('click', () => confirmResolve?.(false));
 document.getElementById('confirmModal')?.addEventListener('mousedown', (event) => {
-  if (event.target.id === 'confirmModal') confirmResolve?.(false);
+  if (/** @type {HTMLElement} */ (event.target).id === 'confirmModal') confirmResolve?.(false);
 });
 
 // ล้างดราฟต์ทั้งหมด กู้คืนไม่ได้ (Ctrl+Z ย้อนได้ทีละช่องเท่านั้น)
@@ -750,8 +750,8 @@ function swapPlayer(color, idx, btn) {
       return;
     }
     if (swPl.color === color) {
-      const a = document.getElementById(`${color}Player${swPl.idx}`);
-      const b = document.getElementById(`${color}Player${idx}`);
+      const a = /** @type {HTMLInputElement} */ (document.getElementById(`${color}Player${swPl.idx}`));
+      const b = /** @type {HTMLInputElement} */ (document.getElementById(`${color}Player${idx}`));
       if (a && b) [a.value, b.value] = [b.value, a.value];
       socket.emit('updatePlayerName', { team, index: swPl.idx, name: a.value });
       socket.emit('updatePlayerName', { team, index: idx, name: b.value });
@@ -818,6 +818,18 @@ function updateDraftUI(state) {
   if (pl) pl.textContent = (state.draftLabel || 'READY').toUpperCase();
   if (pi) pi.textContent = idx >= 0 ? `Phase ${idx + 1} / ${total}` : `Phase 0 / ${total}`;
 
+  // แถบสถานะของปุ่มใหญ่ ต้องอยู่ในฟังก์ชันนี้ เพราะ idx กับ total เป็นตัวแปรของที่นี่
+  //
+  // เดิมบล็อกนี้ไปอยู่ท้าย focusActiveSlot ซึ่งมองไม่เห็นตัวแปรทั้งสองตัว
+  // ทุกครั้งที่เปลี่ยนเฟส มันจึงโยน ReferenceError: idx is not defined
+  // ผลคือข้อความสถานะค้างที่ค่าเดิม และงานที่เหลือใน handler ของ stateUpdate
+  // ถูกข้ามไปเงียบๆ โดยไม่มีอะไรบนหน้าจอบอกว่าพัง
+  const bs = document.getElementById('bb_status');
+  if (bs) {
+    bs.textContent = idx < 0 ? 'Ready' : idx >= total ? 'Done' :
+      `${state.draftLabel} - ${state.draftRunning ? 'Running' : 'Paused'}`;
+  }
+
   draftSequence.forEach((_, i) => {
     const b = document.getElementById(`sb${i}`);
     if (b) b.className = `seq-badge${i === idx ? ' current' : i < idx ? ' done' : ''}`;
@@ -850,20 +862,14 @@ function focusActiveSlot(state) {
 
   // A phase can own two slots (e.g. "Red Pick 1+2"); go to the first empty one.
   const targetId = slots.find((slotId) => {
-    const el = document.getElementById(slotId);
+    const el = /** @type {HTMLInputElement} */ (document.getElementById(slotId));
     return el && !el.value;
   }) || slots[0];
 
-  const target = document.getElementById(targetId);
+  const target = /** @type {HTMLInputElement} */ (document.getElementById(targetId));
   if (!target) return;
   target.focus();
   target.select();
-
-  const bs = document.getElementById('bb_status');
-  if (bs) {
-    bs.textContent = idx < 0 ? 'Ready' : idx >= total ? 'Done' :
-      `${state.draftLabel} - ${state.draftRunning ? 'Running' : 'Paused'}`;
-  }
 }
 
 function parseTimeToSecs(t) {
@@ -885,7 +891,7 @@ function isTypingField(el) {
 // Once something is typed the keys go back to normal editing - which matters
 // for hero names containing a space, like "bolt baron".
 function shortcutsAllowed() {
-  const el = document.activeElement;
+  const el = /** @type {HTMLInputElement} */ (document.activeElement);
   if (!isTypingField(el)) return true;
   return el.classList.contains('hero-search-input') && el.value === '';
 }
@@ -909,7 +915,7 @@ document.addEventListener('keydown', (event) => {
   // Undo ถูกเช็คก่อน shortcutsAllowed() เพราะต้องใช้ได้ระหว่างเคอร์เซอร์
   // อยู่ในช่องด้วย แต่ถ้าในช่องมีข้อความอยู่ ให้เป็น undo ของการพิมพ์แทน
   if (matchesBinding(event, hotkeys.undo)) {
-    const el = document.activeElement;
+    const el = /** @type {HTMLInputElement} */ (document.activeElement);
     if (isTypingField(el) && el.value) return;
     event.preventDefault();
     undoLast();

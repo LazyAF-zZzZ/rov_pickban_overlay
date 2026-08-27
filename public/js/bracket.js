@@ -105,7 +105,9 @@ function matchBox(match, number) {
   if (playable) {
     // กล่องทั้งใบเป็นปุ่ม "เอาขึ้นจอ" อยู่ ช่องคะแนนอยู่ข้างในกล่องนั้น
     // ถ้าไม่หยุด event ไว้ การกดจะกรอกคะแนนไม่ได้เลย เพราะเด้งไป Control Panel ก่อน
-    const commit = () => recordResult(match, Number(a.score.value), Number(b.score.value));
+    // ช่องคะแนนเป็น input เสมอเมื่อ playable ส่วนที่ยังไม่รู้ทีมเป็น span อ่านค่าไม่ได้
+    const scoreOf = (side) => Number(/** @type {HTMLInputElement} */ (side.score).value);
+    const commit = () => recordResult(match, scoreOf(a), scoreOf(b));
     [a.score, b.score].forEach((input) => {
       ['click', 'mousedown', 'dblclick'].forEach((type) => {
         input.addEventListener(type, (event) => event.stopPropagation());
@@ -340,7 +342,7 @@ async function recordResult(match, scoreA, scoreB) {
 }
 
 async function drawMatches() {
-  const randomise = document.getElementById('randomiseDraw').checked;
+  const randomise = /** @type {HTMLInputElement} */ (document.getElementById('randomiseDraw')).checked;
   if (drawn.length > 0 && !window.confirm(
     'Draw again?\n\nThe current bracket and every score recorded on it are replaced.'
   )) return;
@@ -382,7 +384,7 @@ async function load() {
 
   document.getElementById('headName').textContent = tournament.name;
   document.title = `${tournament.name} - match session - ROV Overlay Tool`;
-  document.getElementById('backLink').href = withToken(`/tournament/${encodeURIComponent(tournamentId)}`);
+  /** @type {HTMLAnchorElement} */ (document.getElementById('backLink')).href = withToken(`/tournament/${encodeURIComponent(tournamentId)}`);
 
   apply(matchData.matches || []);
 }

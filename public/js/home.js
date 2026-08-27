@@ -101,7 +101,7 @@ async function loadOptions() {
 // บอกเพดานทีมของรูปแบบที่เลือกไว้ตั้งแต่ตอนสร้าง
 // จะได้ไม่ไปเจอตอนเพิ่มทีมครบ 24 แล้วค่อยรู้ว่าพบกันหมดรับได้เท่านี้
 function renderFormatHint() {
-  const id = document.getElementById('fFormat').value;
+  const id = /** @type {HTMLInputElement} */ (document.getElementById('fFormat')).value;
   const spec = options?.formats.find((f) => f.id === id);
   const hint = document.getElementById('formatHint');
   hint.textContent = spec
@@ -112,14 +112,14 @@ function renderFormatHint() {
 function toggleCreate(show) {
   document.getElementById('createPanel').hidden = !show;
   document.getElementById('newBtn').hidden = show;
-  if (show) document.getElementById('fName').focus();
+  if (show) /** @type {HTMLInputElement} */ (document.getElementById('fName')).focus();
 }
 
 async function createTournament() {
-  const name = document.getElementById('fName').value.trim();
+  const name = /** @type {HTMLInputElement} */ (document.getElementById('fName')).value.trim();
   if (!name) {
     showToast('Tournament name is required', 'red');
-    document.getElementById('fName').focus();
+    /** @type {HTMLInputElement} */ (document.getElementById('fName')).focus();
     return;
   }
 
@@ -129,9 +129,9 @@ async function createTournament() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name,
-        format: document.getElementById('fFormat').value,
-        bestOf: Number(document.getElementById('fBestOf').value),
-        note: document.getElementById('fNote').value
+        format: /** @type {HTMLInputElement} */ (document.getElementById('fFormat')).value,
+        bestOf: Number(/** @type {HTMLInputElement} */ (document.getElementById('fBestOf')).value),
+        note: /** @type {HTMLInputElement} */ (document.getElementById('fNote')).value
       })
     });
     showToast(`Created ${tournament.name}`, 'green');

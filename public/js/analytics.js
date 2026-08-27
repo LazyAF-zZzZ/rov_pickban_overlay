@@ -272,21 +272,21 @@ async function reload() {
 
 function boot() {
   on('fTournament', 'change', (event) => {
-    scope.tournamentId = event.target.value;
+    scope.tournamentId = /** @type {HTMLInputElement} */ (event.target).value;
     reload();
   });
   on('fTeam', 'change', (event) => {
-    scope.teamId = event.target.value;
+    scope.teamId = /** @type {HTMLInputElement} */ (event.target).value;
     reload();
   });
   on('resetScopeBtn', 'click', () => {
     scope = { tournamentId: '', teamId: '' };
-    document.getElementById('fTournament').value = '';
-    document.getElementById('fTeam').value = '';
+    /** @type {HTMLInputElement} */ (document.getElementById('fTournament')).value = '';
+    /** @type {HTMLInputElement} */ (document.getElementById('fTeam')).value = '';
     reload();
   });
   on('searchBox', 'input', (event) => {
-    filter = event.target.value.trim();
+    filter = /** @type {HTMLInputElement} */ (event.target).value.trim();
     render();
   });
 

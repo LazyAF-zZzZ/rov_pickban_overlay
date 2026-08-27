@@ -140,8 +140,8 @@ function setPendingLogo(file) {
 }
 
 function resetForm() {
-  document.getElementById('newTeamName').value = '';
-  document.getElementById('newTeamTag').value = '';
+  /** @type {HTMLInputElement} */ (document.getElementById('newTeamName')).value = '';
+  /** @type {HTMLInputElement} */ (document.getElementById('newTeamTag')).value = '';
   if (newTeamPlayers) newTeamPlayers.clear();
   setPendingLogo(null);
 }
@@ -149,7 +149,7 @@ function resetForm() {
 // สร้างทีม + ผู้เล่น + โลโก้ ในการกดครั้งเดียว
 // โลโก้ต้องอัปโหลดหลังสร้างเสมอ เพราะชื่อไฟล์มาจาก id ที่เซิร์ฟเวอร์เพิ่งออกให้
 async function createTeam() {
-  const nameInput = document.getElementById('newTeamName');
+  const nameInput = /** @type {HTMLInputElement} */ (document.getElementById('newTeamName'));
   const name = nameInput.value.trim();
   if (!name) {
     showToast('Team name is required', 'red');
@@ -164,7 +164,7 @@ async function createTeam() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name,
-        tag: document.getElementById('newTeamTag').value,
+        tag: /** @type {HTMLInputElement} */ (document.getElementById('newTeamTag')).value,
         players: newTeamPlayers ? newTeamPlayers.read() : []
       })
     }));
@@ -234,7 +234,7 @@ function boot() {
   });
 
   on('searchBox', 'input', (event) => {
-    filter = event.target.value.trim();
+    filter = /** @type {HTMLInputElement} */ (event.target).value.trim();
     render();
   });
 

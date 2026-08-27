@@ -63,8 +63,8 @@ function renderHead(t) {
 }
 
 function renderForm(t) {
-  document.getElementById('fName').value = t.name;
-  document.getElementById('fNote').value = t.note || '';
+  /** @type {HTMLInputElement} */ (document.getElementById('fName')).value = t.name;
+  /** @type {HTMLInputElement} */ (document.getElementById('fNote')).value = t.note || '';
 
   fillSelect(
     document.getElementById('fFormat'),
@@ -76,7 +76,7 @@ function renderForm(t) {
     options.bestOf.map((n) => ({ value: n, label: `Best of ${n}` })),
     t.bestOf
   );
-  document.getElementById('fStatus').value = t.status;
+  /** @type {HTMLInputElement} */ (document.getElementById('fStatus')).value = t.status;
 
   renderFormatHint();
 }
@@ -84,7 +84,7 @@ function renderForm(t) {
 // เตือนตั้งแต่ตอนเลือก ถ้ารูปแบบใหม่รับทีมได้น้อยกว่าที่มีอยู่
 // เซิร์ฟเวอร์ปฏิเสธอยู่แล้ว แต่รู้ก่อนกดเซฟย่อมดีกว่ารู้ตอนโดนปฏิเสธ
 function renderFormatHint() {
-  const spec = formatSpec(document.getElementById('fFormat').value);
+  const spec = formatSpec(/** @type {HTMLInputElement} */ (document.getElementById('fFormat')).value);
   const hint = document.getElementById('formatHint');
   if (!spec) {
     hint.textContent = '';
@@ -111,7 +111,7 @@ function renderTeams(t, teams) {
 
   // เต็มแล้วก็ปิดปุ่มไปเลย พร้อมบอกเหตุผลที่ tooltip
   // เซิร์ฟเวอร์ก็ปฏิเสธอยู่แล้ว แต่ปุ่มที่กดไม่ได้ชัดกว่าปุ่มที่กดแล้วขึ้น error
-  const addBtn = document.getElementById('addTeamBtn');
+  const addBtn = /** @type {HTMLButtonElement} */ (document.getElementById('addTeamBtn'));
   addBtn.disabled = full;
   addBtn.style.opacity = full ? '0.45' : '';
   addBtn.style.cursor = full ? 'not-allowed' : '';
@@ -399,11 +399,11 @@ async function save() {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: document.getElementById('fName').value,
-        format: document.getElementById('fFormat').value,
-        bestOf: Number(document.getElementById('fBestOf').value),
-        status: document.getElementById('fStatus').value,
-        note: document.getElementById('fNote').value
+        name: /** @type {HTMLInputElement} */ (document.getElementById('fName')).value,
+        format: /** @type {HTMLInputElement} */ (document.getElementById('fFormat')).value,
+        bestOf: Number(/** @type {HTMLInputElement} */ (document.getElementById('fBestOf')).value),
+        status: /** @type {HTMLInputElement} */ (document.getElementById('fStatus')).value,
+        note: /** @type {HTMLInputElement} */ (document.getElementById('fNote')).value
       })
     });
     current = tournament;
@@ -455,7 +455,7 @@ async function refreshRegistry() {
 
 // เอาเฉพาะทีมที่ยังไม่ได้อยู่ในทัวร์นาเมนต์นี้
 function renderPicker() {
-  const picker = document.getElementById('pickTeam');
+  const picker = /** @type {HTMLSelectElement} */ (document.getElementById('pickTeam'));
   const inRoster = new Set(roster.map((t) => t.id));
   const available = registry.filter((t) => !inRoster.has(t.id));
 
@@ -468,12 +468,12 @@ function renderPicker() {
       : 'Every registered team is already in';
     picker.appendChild(opt);
     picker.disabled = true;
-    document.getElementById('addExistingBtn').disabled = true;
+    /** @type {HTMLButtonElement} */ (document.getElementById('addExistingBtn')).disabled = true;
     return;
   }
 
   picker.disabled = false;
-  document.getElementById('addExistingBtn').disabled = false;
+  /** @type {HTMLButtonElement} */ (document.getElementById('addExistingBtn')).disabled = false;
   available.forEach((team) => {
     const opt = document.createElement('option');
     opt.value = team.id;
@@ -493,7 +493,7 @@ async function addTeamToTournament(teamId) {
 }
 
 async function addExisting() {
-  const teamId = document.getElementById('pickTeam').value;
+  const teamId = /** @type {HTMLInputElement} */ (document.getElementById('pickTeam')).value;
   if (!teamId) return;
   try {
     await addTeamToTournament(teamId);
@@ -508,8 +508,8 @@ async function addExisting() {
 // โลโก้ต้องอัปโหลดหลังสร้างเสมอ เพราะชื่อไฟล์มาจาก id ที่เซิร์ฟเวอร์เพิ่งออกให้
 // ฝั่งผู้ใช้ไม่ต้องรู้เรื่องนี้ เลือกไฟล์ไว้ก่อนแล้วกดปุ่มเดียวจบ
 async function createAndAdd() {
-  const nameInput = document.getElementById('newTeamName');
-  const tagInput = document.getElementById('newTeamTag');
+  const nameInput = /** @type {HTMLInputElement} */ (document.getElementById('newTeamName'));
+  const tagInput = /** @type {HTMLInputElement} */ (document.getElementById('newTeamTag'));
   const name = nameInput.value.trim();
   if (!name) {
     showToast('Team name is required', 'red');
@@ -557,8 +557,8 @@ async function createAndAdd() {
 }
 
 function resetNewTeamForm() {
-  document.getElementById('newTeamName').value = '';
-  document.getElementById('newTeamTag').value = '';
+  /** @type {HTMLInputElement} */ (document.getElementById('newTeamName')).value = '';
+  /** @type {HTMLInputElement} */ (document.getElementById('newTeamTag')).value = '';
   if (newTeamPlayers) newTeamPlayers.clear();
   setPendingLogo(null);
 }
@@ -816,7 +816,7 @@ function boot() {
 
   const bracketLink = document.getElementById('bracketLink');
   if (bracketLink) {
-    bracketLink.href = withToken(`/tournament/${encodeURIComponent(tournamentId)}/bracket`);
+    /** @type {HTMLAnchorElement} */ (bracketLink).href = withToken(`/tournament/${encodeURIComponent(tournamentId)}/bracket`);
   }
 
   on('addExistingBtn', 'click', addExisting);

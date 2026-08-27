@@ -43,7 +43,7 @@ function playOnce(element, className) {
 function renderResultPicks(teamColor, picks) {
     picks.forEach((hero, index) => {
         const card = document.getElementById(`${teamColor}Pick${index}Result`);
-        const artEl = document.getElementById(`${teamColor}HeroArt${index}`);
+        const artEl = /** @type {HTMLImageElement} */ (document.getElementById(`${teamColor}HeroArt${index}`));
         if (!card || !artEl) return;
 
         if (!hero) {
