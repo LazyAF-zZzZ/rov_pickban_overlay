@@ -33,7 +33,7 @@ and **not yet merged or pushed**.
 | `23bd837` | Phase 8 — `/analytics`, per-game winner capture, live room |
 | `23bd837` | Phase 7 — `/overlay-teams` team list with staggered slide-in |
 
-Current state: **0 type errors under `strict`, 144 tests passing.** Creating a
+Current state: **0 type errors under `strict`, 151 tests passing.** Creating a
 tournament, adding a team with its players in one form, uploading logos,
 drawing single/double elimination, round robin and group brackets, recording
 Bo3/Bo5 results, opening a match in the control panel and having its draft
@@ -366,9 +366,34 @@ existed from Phase 5 and was called from nowhere, so `games.winner` was NULL for
 every game ever recorded — win rate had no numerator, and no way to reconstruct
 one. A Bo3 that ends 2-1 records the series winner; nothing says who took game 2.
 
-Fixed by a **WHO WON GAME N?** control on the Control Panel's ON AIR bar, writing
-through `PUT /api/games/:gameId/winner`. Pressing the already-chosen side clears
-it, so a misclick needs no separate undo. Any game played before this existed has
+**The winner now comes from the series score**, in `server/services/series.ts`.
+Typing 1-0 on the match session page records game 1 to the side that gained the
+point. It was briefly a manual BLUE/RED press on the Control Panel's ON AIR bar,
+which meant one fact entered twice in two places — and a fact only ever recorded
+by remembering to record it.
+
+It guesses only when the answer is certain:
+
+| Score change | What it records |
+|---|---|
+| one side +1 | that side won the game just played |
+| one side +2 | that side won both of those games — still unambiguous |
+| both sides gained | **nothing** — the count is known, the order is not |
+| score lowered | clears the winners of games that no longer happened |
+
+Refusing the ambiguous case matters more than covering it. A wrong winner flows
+into hero win rates and nobody ever notices; an empty one is visible and can be
+filled in by hand.
+
+Lowering the score has to clear, not just stop. Reopening that match reuses the
+same game number, so a stale winner would end up attached to a freshly drafted
+game.
+
+The BLUE/RED buttons remain as the override, for the ambiguous case and for
+correcting a bad guess. `PUT /api/games/:gameId/winner` still backs them.
+
+A match scored without ever going on air has no game record, so there is nothing
+to attribute — and none is invented. Any game played before capture existed has
 no win rate and never will.
 
 **Denominator is games, not draft slots.** Dividing by slots makes every hero's

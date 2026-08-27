@@ -1074,7 +1074,12 @@ function winnerControls(live) {
 
   const label = document.createElement('span');
   label.className = 'lb-muted';
-  label.textContent = `Who won game ${live.gameNo ?? 1}?`;
+  const gameNo = live.gameNo ?? 1;
+  // ปกติค่านี้เติมเองจากคะแนนซีรีส์ที่กรอกในหน้าจัดการแข่ง
+  // ปุ่มที่นี่เหลือไว้เป็นตัวแก้ เผื่อกรอกคะแนนสองฝั่งพร้อมกันจนระบบเดาไม่ได้
+  label.textContent = live.winner
+    ? `Game ${gameNo} winner`
+    : `Game ${gameNo} winner - fills in from the series score`;
   wrap.appendChild(label);
 
   [{ side: 'blue', text: 'BLUE' }, { side: 'red', text: 'RED' }].forEach(({ side, text }) => {
@@ -1082,18 +1087,14 @@ function winnerControls(live) {
     button.type = 'button';
     button.className = `tlink lb-${side}`;
     button.textContent = text;
+    button.title = live.winner === side
+      ? 'Recorded. Press again to clear.'
+      : `Override: record ${text} as winning game ${gameNo}`;
     // กดซ้ำที่ฝั่งเดิม = ล้างค่า เผื่อกดผิด จะได้ไม่ต้องมีปุ่มยกเลิกแยกอีกปุ่ม
     if (live.winner === side) button.classList.add('chosen');
     button.addEventListener('click', () => setGameWinner(live.winner === side ? null : side));
     wrap.appendChild(button);
   });
-
-  if (!live.winner) {
-    const hint = document.createElement('span');
-    hint.className = 'lb-muted';
-    hint.textContent = 'not recorded';
-    wrap.appendChild(hint);
-  }
 
   return wrap;
 }

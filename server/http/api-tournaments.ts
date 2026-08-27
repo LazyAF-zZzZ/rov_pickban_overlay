@@ -14,6 +14,7 @@ import { requireControl } from './auth';
 import { goLive, clearLive, describeLive, notifyAnalytics } from '../services/live-match';
 import { toHeroStats, summarise } from '../domain/analytics';
 import { notifyData } from '../services/sync';
+import { recordSeriesResult } from '../services/series';
 
 const NOT_FOUND = /not found/i;
 
@@ -256,7 +257,9 @@ export function tournamentRoutes(): Router {
   router.put('/api/matches/:matchId/result', requireControl, (req, res) => {
     const body = (req.body || {}) as { scoreA?: unknown; scoreB?: unknown };
     const { matches } = getStores();
-    const result = matches.setResult(req.params.matchId, body.scoreA, body.scoreB);
+    // ผ่าน service ไม่ใช่ store ตรงๆ เพราะการกรอกคะแนนซีรีส์เป็นตัวกำหนด
+    // ผู้ชนะรายเกมไปด้วย ซึ่งเป็นงานข้ามสอง store (matches กับ games)
+    const result = recordSeriesResult(req.params.matchId, body.scoreA, body.scoreB);
     if (result.error !== undefined) {
       res.status(NOT_FOUND.test(result.error) ? 404 : 400).json({ error: result.error });
       return;
