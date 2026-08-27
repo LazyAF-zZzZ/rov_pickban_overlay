@@ -11,8 +11,9 @@ conversation history, everything needed to continue is here or in `CLAUDE.md`.
 
 ## 0. Where things stand
 
-**Last updated 2026-08-07.** Everything below is committed **and pushed** —
-`origin/main` is at `5d1c32b` or later, the working tree is clean.
+**Last updated 2026-08-12.** Everything up to `014bafe` is committed **and
+pushed**. Everything after it is written and verified but **not yet committed** —
+stamp each commit id into this table as it lands.
 
 | Commit | What |
 |---|---|
@@ -26,12 +27,28 @@ conversation history, everything needed to continue is here or in `CLAUDE.md`.
 | `dcee2c3` | Double elimination with grand-final reset |
 | `72ddb6f` | Phase 5 — match to control panel, live pointer, **draft capture** |
 | `418b23d` | Bracket page at `/tournament/:id/bracket` |
+| *(pending)* | Phase 6 — `/teams` directory, `/teams/:id` profile with match history |
+| *(pending)* | Match session split out of the tournament page, bracket-only |
+| *(pending)* | Teams section on the tournament page: foldable and compact |
+| *(pending)* | Phase 8 — `/analytics`, per-game winner capture, live room |
+| *(pending)* | Phase 7 — `/overlay-teams` team list with staggered slide-in |
 
-Current state: **0 type errors under `strict`, 114 tests passing.** Creating a
+Current state: **0 type errors under `strict`, 139 tests passing.** Creating a
 tournament, adding a team with its players in one form, uploading logos,
 drawing single/double elimination, round robin and group brackets, recording
 Bo3/Bo5 results, opening a match in the control panel and having its draft
 recorded all work end to end in the browser.
+
+**The team registry has its own pages now.** `/teams` lists every team ever
+created with a search box and a one-form create; `/teams/:id` is the profile —
+roster editing, logo, the tournaments entered, and match history across all of
+them. Both were driven in a real browser, not only through tests: creating a
+team, drawing a bracket, playing it out and deleting an opponent all render as
+intended.
+
+Record counting has one rule worth keeping: **a bye is listed but never counted
+as played.** Counting it would flatter whichever team happened to draw the odd
+slot.
 
 **Draft capture is live.** Every pick and ban is mirrored into its game record
 the moment it is made — no save step, nothing to forget. This was the deadline
@@ -41,21 +58,91 @@ item: games drafted before capture existed would have been unrecoverable.
 startup, so anyone using only the overlay never grows a database file. It is
 gitignored — it is user data, not source.
 
-**Bracket view** lives at `/tournament/:id/bracket`, reached from the BRACKET
-VIEW button next to DRAW MATCHES. Rounds are columns, connectors are drawn with
-CSS pseudo-elements, and clicking a playable match puts it on air and opens the
-control panel. Late rounds are named Final / Semifinals / Quarterfinals rather
-than by number.
+**The match session is its own page.** `/tournament/:id/bracket` is no longer a
+read-only bracket view — it is where matches are *run*. It owns DRAW MATCHES
+(seeded or random), CLEAR, score entry, and putting a match on air. The
+tournament page keeps only pre-match setup — details, teams, OBS URLs — plus a
+progress count and a link through.
+
+The split follows how the tool is actually used: entering teams and choosing a
+format happens once, before the event; drawing and scoring happens live, under
+time pressure, and wants a page with nothing else on it.
+
+**The Teams section on the tournament page folds, and its rows are compact.**
+One row is a single 40px line — small logo, name, tag, seed and player count
+inline, with the remove button reduced to `✕`. Twelve teams take 535px instead
+of roughly 930. The fold state is remembered in `localStorage`, because teams
+are arranged once at the start while the page is reopened all event; having to
+re-fold on every visit would annoy more than the missing button ever did. The
+count badge stays in the header when folded, so the section still reports how
+many teams are in.
+
+Density is a `.team.compact` modifier, **not** a change to `.team` — `/teams`
+uses the same class with more badges per row and a search box to cut the list
+down, so it keeps the roomier layout.
+
+**The bracket is the only match view.** The flat list that used to sit on the
+tournament page is gone rather than duplicated. Two views of one dataset drift,
+and the list had already drifted — it labelled rounds `Round N` while the
+bracket called the same rounds Final / Semifinals. Scores are typed directly
+into the boxes in the bracket.
+
+Rounds are columns, connectors are drawn with CSS pseudo-elements, and clicking
+a playable match puts it on air and opens the control panel. Late rounds are
+named Final / Semifinals / Quarterfinals rather than by number — **but only for
+elimination formats.** Round robin keeps `Round N`; its last round is not a
+final, every team is still playing.
 
 The layout uses one rule: every round column is the same height and its slots
 share it with `flex: 1`. Round 2 has half as many slots, so each is twice as
 tall, and centring the box in its slot lands it exactly between the two feeding
 it. No pixel maths, and it holds for any bracket size.
 
-**Next up: Phase 6** — the `/teams` directory and `/teams/:id` profile with
-match history. Then Phase 7 (team-list overlay with the staggered slide-in) and
-Phase 8 (analytics, which now has real drafts to read, because capture has been
-recording since Phase 5).
+**Every phase in the table below is now built.** Phase 8 was done ahead of
+Phase 7, out of order, because the plan's own analytics section was the thing
+being worked from at the time.
+
+**The `/teams` collision, for the record.** Appendix A below was written
+before the directory existed and lists `/teams` as an overlay route; Phase 6
+took that path for the operator page, so the overlay uses `/overlay-teams`. There is a
+comment on the route table in `server/http/pages.ts` saying so.
+
+**Phase 7 is built.** `/overlay-teams` shows the roster of a tournament as a
+staggered slide-in, for the pre-show. It is **not** `/teams` — that is the
+operator directory from Phase 6, and a test now asserts the two stay apart.
+
+URL options, all optional: `?tournament=<id>` (defaults to the live match's
+tournament, then the newest one), `?title=`, `?subtitle=`, `?columns=1..6`,
+`?roster=off`, `?stagger=<ms>`. The tournament page's OBS section lists it with
+the id already in the URL, ready to paste.
+
+**The entrance guarantees its own end state.** Cards start at `opacity: 0` and
+are carried in by the animation, so an animation that never runs means a blank
+graphic on air — worse than no animation at all. A timer adds `.settled` after
+`stagger x (n-1) + duration + 600ms`, which forces the final state outright.
+Verified by pausing every animation and confirming: `animationend` fired zero
+times, and all six cards still ended at full opacity.
+
+Two things only showed up by running it, not by reading it:
+
+- **`Number(null)` is `0`, and `0` passes `Number.isFinite`.** The parameter
+  parser returned 0 for anything not supplied, so the default stagger never
+  applied and every card entered at once. Nothing errored; the feature this
+  phase is named after was simply absent.
+- **A 90ms stagger x 64 teams is a six-second entrance.** The step now shrinks
+  so the whole cascade lands inside ~2.2s, unless `?stagger=` was given
+  explicitly, in which case the operator's choice is respected.
+
+**Large rosters scale rather than clip.** Only nine rows fit at full size, so
+past ~45 teams the last cards fell off the canvas — and `overflow: hidden` cut
+them silently, which on a broadcast graphic means teams missing from the list
+with nobody noticing. The grid now measures its real extent and scales to fit;
+64 teams render at 0.75 with every card inside 1920x1080.
+
+Measure that extent from the last card's `getBoundingClientRect().bottom`, not
+`scrollHeight`. With `overflow: visible` the content is not in a scrollable
+region, so `scrollHeight` equals `clientHeight` and reports "never overflowing".
+The first version did exactly that and the scaling never once ran.
 
 ### Starting a fresh session
 
@@ -177,7 +264,28 @@ The logo still uploads after creation because its filename comes from the
 server-generated id, but that is hidden from the user.
 
 The create form and the edit panel share one `buildPlayerRows` helper. They
-were written twice at first, which is how the two drift apart.
+were written twice at first, which is how the two drift apart. It now lives in
+`public/js/lib/team-ui.js` as `window.RovTeamUI`, together with `logoImage`,
+`sendLogo` and the defensive `on()` binder, because Phase 6 added two more
+pages that needed all four. **Any page loading it must include the script tag
+before its own** — a test asserts this for all three pages that do.
+
+**Phase 6 cashed in the snapshot.** `server/store/history.ts` reads a team's
+matches from every tournament at once. Opponent names normally come from the
+registry by join, but when an opponent has been deleted `matches.team_b_id` is
+NULL (`ON DELETE SET NULL`) and the join yields nothing — so the query falls
+back to the frozen `blue_name`/`red_name` on the game record. The profile shows
+that name greyed out and unlinked, with a tooltip saying where it came from.
+Without the snapshot, a deleted team would turn every match it ever played into
+"opponent unknown".
+
+The fallback matches on **team id, not on side**, so it does not depend on
+`goLive` always putting side A on blue.
+
+Its limit, worth knowing: the snapshot is written when a match goes **on air**,
+not when the bracket is drawn. A match whose score was typed in without ever
+opening it in the control panel has no game record, so a later deletion of the
+opponent leaves that row with no name to recover.
 
 ---
 
@@ -215,6 +323,10 @@ existing one, because saved matches will reference it.
 
 ## 6. Analytics
 
+**Built.** `/analytics`, with scope filters for tournament and team. The metric
+table below is implemented in `server/domain/analytics.ts` (pure maths) over
+`server/store/analytics.ts` (one grouped query). Recompute-on-read, as planned.
+
 **Capture continuously, not at the end.** Today every RESET MATCH and preset load
 destroys the current pick/ban data. Mirror each pick and ban into the game record
 as it happens, so nothing is lost if the operator forgets to save, and
@@ -222,6 +334,17 @@ as it happens, so nothing is lost if the operator forgets to save, and
 
 This must ship with or before the first playable match. Games drafted before
 capture exists are unrecoverable.
+
+**The same deadline applied twice, and the second time was nearly missed.**
+Draft capture shipped in Phase 5, but *per-game winners* did not. `games.setWinner`
+existed from Phase 5 and was called from nowhere, so `games.winner` was NULL for
+every game ever recorded — win rate had no numerator, and no way to reconstruct
+one. A Bo3 that ends 2-1 records the series winner; nothing says who took game 2.
+
+Fixed by a **WHO WON GAME N?** control on the Control Panel's ON AIR bar, writing
+through `PUT /api/games/:gameId/winner`. Pressing the already-chosen side clears
+it, so a misclick needs no separate undo. Any game played before this existed has
+no win rate and never will.
 
 **Denominator is games, not draft slots.** Dividing by slots makes every hero's
 share sum to 100%, which answers no useful question.
@@ -231,8 +354,20 @@ share sum to 100%, which answers no useful question.
 | Pick rate | games picked ÷ games |
 | Ban rate | games banned ÷ games |
 | Presence | games picked **or** banned ÷ games — lead with this |
-| Win rate | wins ÷ games picked |
+| Win rate | wins ÷ games picked **that have a recorded winner** |
 | Ban priority | restricted to first-phase bans |
+
+Win rate deviates from the original wording on purpose. Dividing by every game a
+hero was picked in counts games nobody recorded a winner for as losses, which
+silently understates every hero as soon as one game is missed. The denominator is
+games with a winner, the page reports how many that is, and a hero with none
+shows `—` rather than `0.0%` — "not measured" and "never won" must not look alike.
+
+**First-phase bans are ban `idx` 0 and 1.** `DRAFT_SEQUENCE` phases 1-4 write
+`blueBan0/redBan0/blueBan1/redBan1`; the second ban phase (9-12) writes idx 2-3.
+So ban priority needs no schema change — it falls out of the index already
+stored. A test pins this to the sequence so a future draft format cannot quietly
+break it.
 
 Scale: 129 heroes, 18 consumed per game, so a typical hero sits near 7.8% pick /
 6.2% ban / 14% presence. Signal is in the top ~30.
@@ -244,6 +379,20 @@ lurches downward mid-draft.
 Cost is negligible — 300 games × 18 slots is a sub-millisecond loop, so recompute
 on read rather than maintaining incremental counters. Broadcast to a Socket.IO
 **room** so only the analytics page pays for the payload.
+
+**The room carries a signal, not a payload.** Clients view different scopes (all
+games / one tournament / one team), so one broadcast payload cannot serve them.
+The server emits a bare `analyticsChanged` to the `analytics` room and each page
+refetches its own scope. It fires on two edges only: a draft locking, and a
+winner being recorded — the only two moments the locked numbers can move.
+
+The lock edge is rising-only. Capture runs on every pick, so emitting whenever
+the draft *is* locked would tell the page to refetch on every later keystroke.
+
+**The live layer hides itself once the draft completes.** A finished draft is
+already inside the percentages, so leaving it on screen under "not counted until
+the draft is complete" states the opposite of the truth. The page recomputes
+completeness from the state it already receives rather than asking the server.
 
 ---
 
@@ -258,9 +407,9 @@ on read rather than maintaining incremental counters. Broadcast to a Socket.IO
 | 3 | Team registry UI, logos, rosters, 128 cap in the UI | done `16fe9bb` |
 | 4 | Formats, bracket generation, random matching | done `a3cf985` + double elim |
 | 5 | Match → control panel, live pointer, draft capture | done `72ddb6f` |
-| 6 | `/teams` directory and `/teams/:id` profile with history | **next** |
-| 7 | Team-list overlay with staggered slide-in | |
-| 8 | Pick/ban analytics, live, per tournament and per team | |
+| 6 | `/teams` directory and `/teams/:id` profile with history | done *(pending commit)* |
+| 7 | Team-list overlay with staggered slide-in, at `/overlay-teams` | done *(pending commit)* |
+| 8 | Pick/ban analytics, live, per tournament and per team | done *(pending commit)* |
 
 The team-list overlay must not rely on `animationend` alone — OBS freezes browser
 sources that are off-scene, so the event may never fire. Use the timer fallback
@@ -270,7 +419,8 @@ pattern already in `public/js/overlay.js`.
 
 ## 8. Open items
 
-- **A relative asset path on `/tournament/:id` breaks silently** — see §9. Any new nested page must use absolute `/js/` and `/css/` paths.
+- **A relative asset path on a nested page breaks silently** — see §9. `/tournament/:id`, `/tournament/:id/bracket` and now `/teams/:id` are all affected. Any new nested page must use absolute `/js/` and `/css/` paths; tests cover the tournament and team pages.
+- **A match played without going on air has no team snapshot.** Scores can be typed straight into the tournament page, which never creates a game record. If an opponent is deleted later, that row loses its name for good — see §4. Creating the snapshot at draw time would close the gap.
 - **`public/js/` is not TypeScript, and it has now cost a real bug.** Phase 3
   shipped `tournament.js` referencing `controlToken` without destructuring it
   from `window.RovClient`. Logo upload threw `ReferenceError`, the `catch`
@@ -285,13 +435,22 @@ pattern already in `public/js/overlay.js`.
 - **The losers bracket has never been seen rendered.** `bracket.js` groups by
   the `bracket` column so it should section into Winners / Losers / Grand final
   on its own, but that is inference, not observation. Draw a double-elimination
-  bracket and look at it before trusting the layout.
+  bracket and look at it before trusting the layout. This matters more now that
+  the bracket is the only way to see or score a match.
+- **The match session page is still at `/tournament/:id/bracket`.** The name
+  describes the view, not the job it now does. Renaming it to `/matches` would
+  read better but breaks bookmarks and a test; not worth doing on its own,
+  worth folding into any later change that touches those routes.
+- **A 128-team bracket has never been scored through the boxes.** Score entry
+  moved into the match boxes, which are ~24px wide. That is comfortable at four
+  teams; it is untested at the sizes where the bracket scrolls in both
+  directions.
 - **All four test goals are met.** 1: the 128-team cap is enforced in the store
   and refuses the 129th. 2: Bo1/3/5/7 all decide on a strict majority through
   one `seriesWinner`. 3: round robin uses the circle method so no team can
   appear twice in a round, by construction rather than by retrying. 4: the room
   for future work is the migration runner, the pure `domain/` layer and the
-  114-test suite.
+  127-test suite.
 
 ---
 
@@ -335,6 +494,72 @@ Each of these cost real debugging time. They are also in `CLAUDE.md`.
   makes the very next emit overwrite the stored one with emptiness — simply
   looking at a match would erase it. `goLive` calls `restoreDraft` before
   `setState`, and a regression test covers it.
+- **An empty opponent slot means two different things, again.** Same shape as
+  the bye trap above, one level up. In a team's history a NULL opponent is
+  either "the other semifinal has not been played, so nobody is here yet" or
+  "somebody was here and their team was deleted". `history.ts` splits them on
+  the match status: only a **complete** match with an empty slot is a deleted
+  opponent, and only then does it read the frozen name off the game record.
+  Treating them alike shows "to be decided" on matches that were played and
+  won years ago. Both directions have a test.
+- **A page using `buildPlayerRows` must load `/js/lib/team-ui.js` before its
+  own script.** Miss the tag and the page dies on the destructure line at the
+  top of the file — nothing renders, no handler binds, and the console error
+  points at a line that looks fine. `team-api.test.ts` asserts the tag is
+  present *and* ordered first on all three pages that need it.
+- **An entrance animation that carries an element in must be able to finish
+  without running.** OBS freezes off-scene browser sources, so `animationend`
+  can never fire. If the element's resting state is `opacity: 0` and only the
+  animation makes it visible, a frozen source shows an empty graphic forever.
+  Every such animation needs a timer that forces the end state outright, not
+  just one that cleans up a transient class.
+- **`Number(null)` is `0`, and `0` is finite.** `Number(params.get('x'))` for a
+  parameter that was not supplied gives 0, which sails past `Number.isFinite`
+  and becomes a real value instead of falling back to the default. Check for
+  `null` and empty string *before* converting.
+- **`scrollHeight` equals `clientHeight` when overflow is visible.** Content
+  that spills out of a non-scrolling container is not in the scrollable overflow
+  region, so `scrollHeight` reports no overflow no matter how far it spills.
+  Measure the last child's `getBoundingClientRect().bottom` instead. An
+  overflow check written the first way never fires, and on a broadcast graphic
+  that means teams silently missing off the bottom of the canvas.
+- **A store method nobody calls is not a feature.** `games.setWinner` was written
+  in Phase 5, fully implemented, covered by the type checker — and reached from
+  no route, service or handler for three phases. Nothing failed, no test broke;
+  the column was simply always NULL. Grep for a caller before assuming stored
+  data exists, especially data that cannot be reconstructed later.
+- **Never let "not measured" render the same as "measured zero".** A hero with no
+  recorded winner has `winRate: null` and shows `—`; a hero that lost every game
+  shows `0.0%`. Collapsing null to 0 would have made every hero look terrible in
+  exact proportion to how often the operator forgot to press the button.
+- **`Get-Content -Raw` + `Set-Content -Encoding utf8` destroys Thai comments.**
+  PowerShell 5.1 reads a BOM-less UTF-8 file as the ANSI codepage, so writing it
+  back as UTF-8 double-encodes every non-ASCII byte, and `-Encoding utf8` adds a
+  BOM on top. Nine files of load-bearing comments were mangled in one command.
+  It is reversible (read bytes as UTF-8, re-encode as CP1252, strip the stray
+  leading byte) but the fix is not to do it: **edit HTML with the Edit tool, not
+  with shell text rewriting.**
+- **A control that lives inside a foldable section must open the fold itself.**
+  The add-team form sits inside the part that folds away, but its button sits in
+  the header that stays. Pressing + ADD TEAM while folded set `hidden = false`
+  on a panel nobody could see — a button that visibly does nothing. It now
+  unfolds first, then opens the panel.
+- **A clickable box with an input inside it eats the input's clicks.** The whole
+  match box is the "put this on air" button, and the score fields sit inside it.
+  Without `stopPropagation` on `click`, `mousedown` and `dblclick`, trying to
+  type a score navigates to the Control Panel instead. Verified by clicking the
+  field and asserting the URL did not change.
+- **Naming rounds Final / Semifinals only makes sense when losing eliminates.**
+  `roundTitle` keyed off the bracket being `main`, which round robin also uses,
+  so a three-round round robin announced "Quarterfinals, Semifinals, Final"
+  while every team was still playing. It takes the `elimination` flag now. The
+  bug predates the match-session split but was invisible while the flat list,
+  which said `Round N`, was the view people used.
+- **Driving the app in a browser writes to real local data.** A verification
+  pass that puts a match on air rewrites the tracked `data/state.json`, and any
+  tournament feature creates `data/tournament.db`. Stop the server before
+  deleting the db (Windows holds WAL handles) and `git checkout -- data/state.json`
+  afterwards, or the next commit carries a stranger's test match.
 
 ---
 

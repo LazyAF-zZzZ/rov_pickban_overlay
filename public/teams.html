@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teams - ROV Overlay Tool</title>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">ROV <span>|</span> OVERLAY TOOL</div>
+  <nav class="topnav" aria-label="Pages">
+    <a class="tlink" href="/">HOME</a>
+    <a class="tlink active" href="/teams" aria-current="page">TEAMS</a>
+    <a class="tlink" href="/analytics">ANALYTICS</a>
+    <a class="tlink" href="/control">CONTROL</a>
+    <a class="tlink" href="/presets">PRESETS</a>
+    <a class="tlink" href="/design">DESIGN</a>
+    <a class="tlink" href="/hotkeys">HOTKEYS</a>
+  </nav>
+</div>
+
+<div class="wrap">
+
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Team registry</div>
+      <div class="status-tags" id="countBadges"></div>
+      <div class="spacer"></div>
+      <button type="button" class="tlink primary" id="newBtn">+ NEW TEAM</button>
+    </div>
+
+    <!-- ทะเบียนเก็บได้ไม่จำกัด (เพดาน 128 อยู่ที่ระดับทัวร์นาเมนต์)
+         พอมีหลายร้อยทีม การไล่หาด้วยตาไม่ไหว ช่องค้นหาจึงจำเป็น ไม่ใช่ของแถม -->
+    <div class="frow" style="margin-bottom:14px;">
+      <div class="fld">
+        <label for="searchBox">Search</label>
+        <input id="searchBox" type="search" placeholder="Team name or tag" autocomplete="off">
+      </div>
+    </div>
+
+    <!-- สร้างทีมพร้อมผู้เล่นในฟอร์มเดียว ชุดเดียวกับที่หน้าทัวร์นาเมนต์ใช้ -->
+    <div class="panel" id="createPanel" hidden>
+      <div class="frow">
+        <div class="fld">
+          <label for="newTeamName">Team name</label>
+          <input id="newTeamName" type="text" maxlength="24" placeholder="Flash Wolves" autocomplete="off">
+        </div>
+        <div class="fld" style="flex:0 0 130px;">
+          <label for="newTeamTag">Tag</label>
+          <input id="newTeamTag" type="text" maxlength="6" placeholder="FW" autocomplete="off">
+        </div>
+        <div class="fld" style="flex:0 0 auto;justify-content:flex-end;">
+          <button type="button" class="tlink" id="newTeamLogoBtn">CHOOSE LOGO</button>
+        </div>
+      </div>
+
+      <label class="fld" style="margin-bottom:8px;"><span>Players</span></label>
+      <div id="newTeamPlayers"></div>
+
+      <div class="frow" style="margin-top:12px;margin-bottom:0;">
+        <button type="button" class="tlink primary" id="createBtn">CREATE TEAM</button>
+        <button type="button" class="tlink" id="clearBtn">CLEAR FORM</button>
+        <div class="spacer" style="margin-left:auto;"></div>
+        <button type="button" class="tlink" id="closeBtn">CLOSE</button>
+      </div>
+    </div>
+
+    <div id="teamsList"></div>
+  </div>
+
+  <div class="foot" id="foot"></div>
+
+</div>
+
+<div class="toast" id="toast_el"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/lib/app-client.js"></script>
+<script src="/js/lib/team-ui.js"></script>
+<script src="/js/teams.js"></script>
+</body>
+</html>

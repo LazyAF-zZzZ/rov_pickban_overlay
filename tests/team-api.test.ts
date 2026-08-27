@@ -238,3 +238,100 @@ test('logo endpoints 404 for an unknown team', async () => {
   );
   assert.strictEqual((await send('DELETE', '/api/teams/nope/logo')).status, 404);
 });
+
+// ---- ทะเบียนทีม: ประวัติและหน้าเว็บ ----
+
+test('the history endpoint carries the team alongside its record', async () => {
+  const id = await newTeam('Historian');
+
+  const { status, body } = await send('GET', `/api/teams/${id}/history`);
+  assert.strictEqual(status, 200);
+  assert.strictEqual(body.team.name, 'Historian', 'the page needs the team itself, not a second call');
+  assert.deepStrictEqual(body.matches, []);
+  assert.deepStrictEqual(body.tournaments, []);
+  assert.strictEqual(body.record.played, 0);
+});
+
+test('the history endpoint 404s for an unknown team', async () => {
+  const res = await send('GET', '/api/teams/nope/history');
+  assert.strictEqual(res.status, 404);
+  assert.match(res.body.error, /not found/i);
+});
+
+test('summaries come back for the whole registry in one call', async () => {
+  const tid = await newTournament();
+  const id = await newTeam('Counted');
+  await send('POST', `/api/tournaments/${tid}/teams`, { teamId: id });
+
+  const { status, body } = await send('GET', '/api/team-summaries');
+  assert.strictEqual(status, 200);
+  const mine = body.summaries.find((s: any) => s.teamId === id);
+  assert.ok(mine, 'a team that entered a tournament has a summary');
+  assert.strictEqual(mine.tournaments, 1);
+  assert.strictEqual(mine.won, 0);
+});
+
+test('the team directory and profile pages are served with absolute asset paths', async () => {
+  const directory = await send('GET', '/teams');
+  assert.strictEqual(directory.status, 200);
+  assert.ok(String(directory.body).includes('/js/teams.js'), 'serves the directory page');
+
+  // /teams/:id ลึกกว่าหน้าอื่นหนึ่งชั้นเหมือน /tournament/:id
+  // path สัมพัทธ์จะไปโผล่ที่ /teams/js/... แล้ว 404 เงียบๆ
+  const profile = await send('GET', '/teams/anything');
+  assert.strictEqual(profile.status, 200);
+  assert.ok(String(profile.body).includes('/js/team.js'), 'serves the profile page');
+  assert.ok(!String(profile.body).includes('src="js/'), 'no relative script paths');
+  assert.ok(!String(profile.body).includes('href="css/'), 'no relative stylesheet paths');
+});
+
+// หน้าที่ใช้ buildPlayerRows ต้องโหลด team-ui.js ก่อนสคริปต์ของตัวเอง
+// ลืมแท็กนี้ = หน้าตายตั้งแต่บรรทัด destructure โดยไม่มีอะไรบอกว่าเพราะอะไร
+test('every page that builds player rows loads the shared team module', async () => {
+  const pages = [
+    { url: '/teams', script: '/js/teams.js' },
+    { url: '/teams/anything', script: '/js/team.js' },
+    { url: '/tournament/anything', script: '/js/tournament.js' },
+    // หน้า match session ใช้ badge() กับ on() จากโมดูลเดียวกัน
+    { url: '/tournament/anything/bracket', script: '/js/bracket.js' }
+  ];
+
+  for (const page of pages) {
+    const html = String((await send('GET', page.url)).body);
+    const libAt = html.indexOf('/js/lib/team-ui.js');
+    assert.ok(libAt > -1, `${page.url} loads team-ui.js`);
+    assert.ok(libAt < html.indexOf(page.script), `${page.url} loads it before ${page.script}`);
+  }
+});
+
+// ---- overlay รายชื่อทีม (Phase 7) ----
+
+test('the team list overlay and the operator team page are different pages', async () => {
+  const overlay = await send('GET', '/overlay-teams');
+  const operator = await send('GET', '/teams');
+
+  assert.strictEqual(overlay.status, 200);
+  assert.strictEqual(operator.status, 200);
+
+  // เคยวางแผนให้ overlay ใช้ /teams (ดู Appendix A ของแผน) แล้ว Phase 6
+  // เอา /teams ไปใช้เป็นหน้าคนคุมงานก่อน ถ้าชนกันเมื่อไหร่หน้าหนึ่งจะหายไปเงียบๆ
+  assert.ok(String(overlay.body).includes('/js/overlay-teams.js'), 'the overlay serves its own script');
+  assert.ok(String(operator.body).includes('/js/teams.js'), 'the operator page is untouched');
+  assert.ok(!String(overlay.body).includes('/js/teams.js'), 'the two pages do not share a script');
+});
+
+test('the team list overlay is a view-only page: no control token machinery', async () => {
+  const html = String((await send('GET', '/overlay-teams')).body);
+
+  // overlay ทุกหน้าต่อ socket เปล่าๆ ไม่ผ่าน app-client.js ซึ่งแนบโทเคนให้
+  // ถ้าหลุดเข้ามา หน้าที่เอาไว้โชว์บนสตรีมจะกลายเป็นหน้าที่สั่งงานได้
+  assert.ok(!html.includes('app-client.js'), 'no control client on a broadcast page');
+  assert.ok(html.includes('/socket.io/socket.io.js'), 'but it still takes state updates');
+
+  // overlay-size.js อ่านตัวแปร socket ที่ overlay-teams.js ประกาศไว้
+  // สลับลำดับเมื่อไหร่ ขนาดจอกับภาพพื้นหลังจะหยุดตามค่าที่เลือกไว้
+  assert.ok(
+    html.indexOf('/js/overlay-teams.js') < html.indexOf('/js/overlay-size.js'),
+    'overlay-teams.js is loaded before overlay-size.js reads its socket'
+  );
+});

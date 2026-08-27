@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics - ROV Overlay Tool</title>
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/analytics.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">ROV <span>|</span> OVERLAY TOOL</div>
+  <nav class="topnav" aria-label="Pages">
+    <a class="tlink" href="/">HOME</a>
+    <a class="tlink" href="/teams">TEAMS</a>
+    <a class="tlink active" href="/analytics" aria-current="page">ANALYTICS</a>
+    <a class="tlink" href="/control">CONTROL</a>
+    <a class="tlink" href="/presets">PRESETS</a>
+    <a class="tlink" href="/design">DESIGN</a>
+    <a class="tlink" href="/hotkeys">HOTKEYS</a>
+  </nav>
+</div>
+
+<div class="wrap">
+
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Pick &amp; ban analytics</div>
+      <div class="status-tags" id="summaryBadges"></div>
+      <div class="spacer"></div>
+      <input id="searchBox" type="search" placeholder="Find a hero" autocomplete="off" class="hero-search">
+    </div>
+
+    <div class="frow">
+      <div class="fld">
+        <label for="fTournament">Tournament</label>
+        <select id="fTournament"></select>
+      </div>
+      <div class="fld">
+        <label for="fTeam">Team</label>
+        <select id="fTeam"></select>
+      </div>
+      <div class="fld" style="flex:0 0 auto;justify-content:flex-end;">
+        <button type="button" class="tlink" id="resetScopeBtn">ALL GAMES</button>
+      </div>
+    </div>
+
+    <!-- ดราฟต์ที่กำลังเล่นอยู่ แยกออกมาเป็นชั้นของตัวเอง
+         ห้ามเอาไปรวมในเปอร์เซ็นต์ข้างล่าง ไม่งั้นตอนดราฟต์ยังไม่จบ
+         ตัวหารจะโตขึ้นก่อนตัวเศษ แล้วอัตราของฮีโร่ทุกตัวจะร่วงพร้อมกัน -->
+    <div class="live-layer" id="liveLayer" hidden>
+      <div class="live-layer-head">
+        <span class="live-dot"></span>
+        <span id="liveTitle">Drafting now</span>
+        <span class="live-note" id="liveNote"></span>
+      </div>
+      <div class="live-heroes" id="liveHeroes"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div id="statsBody"></div>
+  </div>
+
+  <div class="foot" id="foot"></div>
+
+</div>
+
+<div class="toast" id="toast_el"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/lib/app-client.js"></script>
+<script src="/js/lib/team-ui.js"></script>
+<script src="/js/analytics.js"></script>
+</body>
+</html>

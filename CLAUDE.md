@@ -45,8 +45,15 @@ without starting a server — that is what makes the test suite cheap to extend.
 
 Browser pages are classic scripts (no bundler, no modules). Shared client code follows the
 IIFE-plus-global pattern: `public/js/lib/app-client.js` exports `window.RovClient`,
-`public/js/hotkey-utils.js` exports `window.HotkeyUtils`. New control pages load
-`socket.io.js`, then `app-client.js`, then their own script.
+`public/js/lib/team-ui.js` exports `window.RovTeamUI`, `public/js/hotkey-utils.js` exports
+`window.HotkeyUtils`. New control pages load `socket.io.js`, then `app-client.js`, then their
+own script.
+
+**Any page that renders a team roster loads `team-ui.js` before its own script.** It holds
+`buildPlayerRows`, `logoImage`, `sendLogo` and the defensive `on()` binder. Forget the tag and
+the page dies at its first line, where it destructures `window.RovTeamUI` — blank page, no
+handlers, and an error pointing at code that reads fine. A test in `team-api.test.ts` asserts
+both the presence and the ordering for every page that needs it.
 
 ## Rules that are not obvious
 
@@ -112,7 +119,8 @@ What to update when a phase moves:
 
 ## Where new work goes
 
-- new page → `public/<name>.html` + `public/js/<name>.js`, route in `server/http/pages.ts`
+- new page → `public/<name>.html` + `public/js/<name>.js`, route in `server/http/pages.ts`.
+  A page served under a path segment (`/teams/:id`) must use absolute `/js/` and `/css/` hrefs
 - new API → a new `server/http/api-<thing>.ts`, mounted in `server/index.ts`
 - new rules → `server/domain/`, with tests in `tests/`
 - new persisted data → its own module in `server/store/`; for tournament data that means a

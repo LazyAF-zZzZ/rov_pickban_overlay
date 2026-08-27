@@ -31,12 +31,22 @@
 .bracket-hint { font-size: 11px; color: var(--muted); }
 .bracket-head .spacer { margin-left: auto; }
 
+/* คำอธิบายวิธีใช้ แยกลงมาอีกแถว
+   แถวบนมีปุ่มควบคุมจนเต็มแล้ว ถ้ายัดรวมกันคำอธิบายจะโดนดันตกบรรทัดแบบไม่ตั้งใจ */
+.bracket-subhead {
+  padding: 7px 18px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.18);
+}
+
 /* ต้องเลื่อนได้ทั้งสองแกน
-   สาย 128 ทีมมีรอบแรก 64 คู่ สูงหลายพันพิกเซล ถ้าซ่อนแกนตั้งจะถูกตัดหายไปเฉยๆ */
+   สาย 128 ทีมมีรอบแรก 64 คู่ สูงหลายพันพิกเซล ถ้าซ่อนแกนตั้งจะถูกตัดหายไปเฉยๆ
+   ตัวลบคือความสูงของแถบบน + แถบควบคุม + แถบคำอธิบาย รวมกัน
+   เพิ่มแถวบนหัวเมื่อไหร่ ต้องบวกตัวเลขนี้ตามด้วย ไม่งั้นสายจะยาวเกินจอไปเงียบๆ */
 .bracket-scroll {
   overflow: auto;
   padding: 18px;
-  max-height: calc(100vh - 118px);
+  max-height: calc(100vh - 150px);
 }
 
 .bracket-section { margin-bottom: 26px; }
@@ -183,6 +193,27 @@
   padding: 1px 0;
 }
 .mrow.won .sc { color: #6ee7b7; }
+
+/* ช่องกรอกคะแนนในกล่อง ต้องหน้าตาเหมือน .sc เดิมทุกอย่างตอนไม่ได้แตะ
+   กล่องเล็กมาก ถ้าทำให้ดูเป็นฟอร์มเต็มรูปแบบ สายทั้งสายจะกลายเป็นตารางกรอกข้อมูล */
+.mrow .sc-input {
+  flex: 0 0 24px;
+  width: 24px;
+  border: 1px solid transparent;
+  cursor: text;
+  /* ปุ่มลูกศรขึ้นลงเล็กเกินกว่าจะกดถูกในกล่องขนาดนี้ และกินที่ของตัวเลข */
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.mrow .sc-input::-webkit-outer-spin-button,
+.mrow .sc-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.mrow .sc-input:hover { border-color: var(--border2); }
+.mrow .sc-input:focus {
+  outline: none;
+  border-color: var(--blue);
+  background: rgba(0, 0, 0, 0.5);
+  color: var(--text);
+}
 
 /* เลขคู่ วางบนเส้นเชื่อม เหมือนที่ Challonge ทำ
    ไว้อ้างอิงตอนคุยกันว่า "คู่ที่ 21" */

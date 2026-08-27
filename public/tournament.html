@@ -14,6 +14,8 @@
   <div class="logo">ROV <span>|</span> OVERLAY TOOL</div>
   <nav class="topnav" aria-label="Pages">
     <a class="tlink" href="/">HOME</a>
+    <a class="tlink" href="/teams">TEAMS</a>
+    <a class="tlink" href="/analytics">ANALYTICS</a>
     <a class="tlink" href="/control">CONTROL</a>
     <a class="tlink" href="/presets">PRESETS</a>
     <a class="tlink" href="/design">DESIGN</a>
@@ -80,7 +82,13 @@
       <div class="status-tags" id="teamBadges"></div>
       <div class="spacer"></div>
       <button type="button" class="tlink primary" id="addTeamBtn">+ ADD TEAM</button>
+      <!-- พับหัวข้อทีมเก็บได้ ทัวร์นาเมนต์ 128 ทีมทำให้ส่วนอื่นของหน้าหล่นไปอยู่ใต้สุด
+           สถานะถูกจำไว้ใน localStorage คนที่จัดทีมเสร็จแล้วจะได้ไม่ต้องพับใหม่ทุกครั้ง -->
+      <button type="button" class="tlink fold" id="teamsToggle"
+              aria-expanded="true" aria-controls="teamsFold" title="Hide the team list">&#9662;</button>
     </div>
+
+    <div id="teamsFold">
 
     <div class="panel" id="addPanel" hidden>
       <div class="frow">
@@ -124,19 +132,19 @@
     </div>
 
     <div id="teamsBody"></div>
+
+    </div>
   </div>
 
+  <!-- การแข่งขันย้ายไปอยู่หน้าของตัวเองแล้ว (/tournament/:id/bracket)
+       หน้านี้เหลือไว้แค่การตั้งค่าก่อนแข่ง: รายละเอียด ทีม และ URL สำหรับ OBS
+       ตรงนี้จึงมีแค่ทางเข้ากับตัวเลขบอกความคืบหน้า ไม่มีตัวควบคุมการแข่งแล้ว -->
   <div class="section" id="matchesSection" hidden>
     <div class="section-head">
-      <div class="section-title">Matches</div>
+      <div class="section-title">Match session</div>
       <div class="status-tags" id="matchBadges"></div>
       <div class="spacer"></div>
-      <label class="badge" style="cursor:pointer;display:flex;align-items:center;gap:6px;">
-        <input type="checkbox" id="randomiseDraw"> Random draw
-      </label>
-      <button type="button" class="tlink primary" id="drawBtn">DRAW MATCHES</button>
-      <a class="tlink" id="bracketLink" href="#">BRACKET VIEW</a>
-      <button type="button" class="tlink danger" id="clearMatchesBtn">CLEAR</button>
+      <a class="tlink primary" id="bracketLink" href="#">OPEN MATCH SESSION</a>
     </div>
     <div id="matchesBody"></div>
   </div>
@@ -156,6 +164,7 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/lib/app-client.js"></script>
+<script src="/js/lib/team-ui.js"></script>
 <script src="/js/tournament.js"></script>
 </body>
 </html>

@@ -22,6 +22,14 @@ export function teamRoutes(): Router {
     res.json({ teams: getStores().teams.list() });
   });
 
+  // สรุปแพ้ชนะของทุกทีมในคำขอเดียว สำหรับหน้ารายชื่อทีม
+  //
+  // แยกจาก /api/teams ตั้งใจ ไม่เอาไปยัดรวมกัน
+  // dropdown เลือกทีมในหน้าทัวร์นาเมนต์เรียก /api/teams บ่อย และไม่ต้องใช้สถิติเลย
+  router.get('/api/team-summaries', (_req, res) => {
+    res.json({ summaries: getStores().history.summaries() });
+  });
+
   router.post('/api/teams', requireControl, (req, res) => {
     const result = getStores().teams.create(req.body);
     if (result.error !== undefined) {
@@ -38,6 +46,21 @@ export function teamRoutes(): Router {
       return;
     }
     res.json({ team });
+  });
+
+  // ประวัติของทีม: ทุกทัวร์นาเมนต์ที่เคยลง และทุกคู่ที่เคยเจอ
+  //
+  // แยก endpoint จาก GET /api/teams/:id ตั้งใจ
+  // หน้าไหนที่ต้องการแค่ชื่อกับรายชื่อผู้เล่น (เช่น dropdown เลือกทีม)
+  // จะได้ไม่ต้องลากตารางแข่งทั้งกองมาด้วยทุกครั้ง
+  router.get('/api/teams/:id/history', (req, res) => {
+    const { teams, history } = getStores();
+    const team = teams.get(req.params.id);
+    if (!team) {
+      res.status(404).json({ error: 'Team not found' });
+      return;
+    }
+    res.json({ team, ...history.forTeam(req.params.id) });
   });
 
   router.put('/api/teams/:id', requireControl, (req, res) => {

@@ -36,6 +36,7 @@ import {
   resumeDraft
 } from '../services/draft-engine';
 import { isAuthorizedSocket } from '../http/auth';
+import { ANALYTICS_ROOM } from '../services/live-match';
 
 type Payload = Record<string, unknown>;
 
@@ -250,6 +251,14 @@ export function registerHandlers(socket: Socket): void {
     [picks[index1], picks[index2]] = [picks[index2]!, picks[index1]!];
     emitState();
   });
+
+  // ห้องของหน้าสถิติ เข้าเองได้โดยไม่ต้องมีโทเคน
+  //
+  // ไม่ผ่าน controlEvent ตั้งใจ: การเข้าห้องไม่ได้แก้ state อะไรเลย
+  // และตัวเลขสถิติก็เปิดอ่านได้อยู่แล้วทาง GET /api/analytics
+  // สิ่งที่ห้องนี้ได้รับคือสัญญาณเปล่าๆ ว่า "ไปดึงมาใหม่" ไม่มีข้อมูลติดไปด้วย
+  socket.on('analytics:join', () => socket.join(ANALYTICS_ROOM));
+  socket.on('analytics:leave', () => socket.leave(ANALYTICS_ROOM));
 
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);

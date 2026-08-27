@@ -12,7 +12,7 @@ import { deepClone } from '../lib/json';
 import { defaultState, sanitizeState } from '../domain/match';
 import type { GameState } from '../domain/match';
 import { carryOverSettings } from '../domain/settings';
-import { getState, setState, emitState, subscribe } from '../store/live-state';
+import { getState, setState, emitState, subscribe, emitToRoom } from '../store/live-state';
 import { stopDraftTimer, syncSecondsFromState } from './draft-engine';
 import { getStores } from '../store/index';
 import type { GameSlot } from '../store/games';
@@ -24,6 +24,10 @@ export interface LiveInfo {
   tournamentId: string | null;
   tournamentName: string | null;
   matchLabel: string | null;
+  // ผู้ชนะของเกมที่กำลังออกอากาศ null = ยังไม่ได้บันทึก
+  // หน้า control ใช้บอกว่ากดไปแล้วหรือยัง ผู้ชนะต่อเกมไม่มีทางเดาย้อนหลังได้
+  winner: 'blue' | 'red' | null;
+  draftLocked: boolean;
 }
 
 export type GoLiveResult = { live: LiveInfo; error?: undefined } | { error: string; live?: undefined };
@@ -54,7 +58,10 @@ export function describeLive(): LiveInfo {
   const { liveMatch, matches, games, tournaments } = getStores();
   const pointer = liveMatch.get();
   if (!pointer.matchId) {
-    return { matchId: null, gameId: null, gameNo: null, tournamentId: null, tournamentName: null, matchLabel: null };
+    return {
+      matchId: null, gameId: null, gameNo: null, tournamentId: null,
+      tournamentName: null, matchLabel: null, winner: null, draftLocked: false
+    };
   }
 
   const match = matches.get(pointer.matchId);
@@ -67,7 +74,9 @@ export function describeLive(): LiveInfo {
     gameNo: game?.gameNo ?? null,
     tournamentId: match?.tournamentId ?? null,
     tournamentName: tournament?.name ?? null,
-    matchLabel: match ? label(match.bracket, match.round) : null
+    matchLabel: match ? label(match.bracket, match.round) : null,
+    winner: game?.winner ?? null,
+    draftLocked: game?.draftLocked === true
   };
 }
 
@@ -132,6 +141,9 @@ export function goLive(matchId: string): GoLiveResult {
   setState(carryOverSettings(next, previous));
   syncSecondsFromState();
   liveMatch.set(matchId, game.id);
+  // เริ่มจากสถานะจริงของเกมที่เพิ่งเปิด ไม่ใช่ false เสมอ
+  // เปิดเกมที่ล็อกไปแล้วซ้ำ ต้องไม่ถูกนับว่า "เพิ่งล็อก" อีกรอบ
+  liveGameLocked = game.draftLocked;
   emitState();
 
   return { live: describeLive() };
@@ -142,9 +154,26 @@ export function clearLive(): LiveInfo {
   return describeLive();
 }
 
+// ห้องของหน้าสถิติ ประกาศไว้ที่เดียวเพื่อไม่ให้ชื่อห้องพิมพ์ผิดคนละแบบสองที่
+export const ANALYTICS_ROOM = 'analytics';
+
+// บอกหน้าสถิติว่าตัวเลขที่ล็อกแล้วเปลี่ยนไป ให้ไปดึงมาใหม่
+//
+// ส่งแค่สัญญาณ ไม่ส่งตัวเลขไปด้วย เพราะแต่ละหน้าอาจกรองคนละขอบเขต
+// (ทั้งหมด / เฉพาะทัวร์นาเมนต์ / เฉพาะทีม) ตัวเลขชุดเดียวจึงใช้ร่วมกันไม่ได้
+export function notifyAnalytics(): void {
+  emitToRoom(ANALYTICS_ROOM, 'analyticsChanged');
+}
+
 // เกาะกับ state กลาง แล้วมิเรอร์ดราฟต์ลงเกมที่ผูกไว้ทุกครั้งที่มีการเปลี่ยน
 // เรียกครั้งเดียวตอนเปิดเซิร์ฟเวอร์
 let attached = false;
+
+// ดราฟต์ของเกมที่กำลังออกอากาศล็อกไปหรือยัง
+//
+// เก็บไว้เพื่อจับ "จังหวะที่เพิ่งล็อก" ซึ่งเป็นจังหวะเดียวที่สถิติเปลี่ยน
+// ระหว่างที่ดราฟต์ยังไม่ครบ ตัวเลขที่ล็อกแล้วไม่ขยับเลย จึงไม่ต้องกวนหน้าสถิติ
+let liveGameLocked = false;
 
 export function attachDraftCapture(): void {
   if (attached) return;
@@ -154,6 +183,12 @@ export function attachDraftCapture(): void {
     const { liveMatch, games } = getStores();
     const pointer = liveMatch.get();
     if (!pointer.gameId) return;   // ไม่ได้ผูกกับแมตช์ไหน = แมตช์เดี่ยว ไม่ต้องบันทึก
-    games.captureDraft(pointer.gameId, state);
+
+    const game = games.captureDraft(pointer.gameId, state);
+    const locked = game?.draftLocked === true;
+    // ขอบขาขึ้นเท่านั้น ไม่ใช่ทุกครั้งที่ล็อกอยู่
+    // ไม่งั้นทุกการแก้ดราฟต์หลังล็อกจะสั่งให้หน้าสถิติดึงข้อมูลใหม่ทั้งชุด
+    if (locked && !liveGameLocked) notifyAnalytics();
+    liveGameLocked = locked;
   });
 }

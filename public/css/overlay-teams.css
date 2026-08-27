@@ -1,0 +1,191 @@
+/* Overlay รายชื่อทีมที่ลงแข่ง สำหรับเปิดก่อนเริ่มงาน
+ *
+ * หลักการเดียวกับ overlay.css: วางบนผืน 1920x1080 แล้วถ้าเลือก 1440p
+ * ก็ขยายทั้งผืนด้วย 4/3 ไม่ได้ทำ layout แยกอีกชุด
+ *
+ * พื้นหลังโปร่งใสเสมอ OBS ซ้อนทับฉากอื่นอยู่ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    width: 1920px;
+    height: 1080px;
+    background: transparent;
+    font-family: 'Kanit', 'Segoe UI', Arial, sans-serif;
+    overflow: hidden;
+}
+
+body[data-size="1440"] { width: 2560px; height: 1440px; }
+body[data-size="1440"] .tl-stage {
+    transform: scale(calc(4 / 3));
+    transform-origin: top left;
+}
+
+.tl-stage {
+    width: 1920px;
+    height: 1080px;
+    padding: 74px 92px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+/* HEAD -------------------------------------------------------------- */
+
+.tl-head { flex: 0 0 auto; }
+
+.tl-title {
+    font-size: 60px;
+    font-weight: 800;
+    letter-spacing: 4px;
+    line-height: 1.05;
+    text-transform: uppercase;
+    color: #ffffff;
+    text-shadow: 0 4px 22px rgba(0, 0, 0, 0.85);
+}
+.tl-sub {
+    margin-top: 8px;
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: 7px;
+    text-transform: uppercase;
+    color: #f5b942;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+}
+
+/* หัวข้อไม่มี delay จึงเข้ามาก่อนการ์ดใบแรกเสมอ */
+.tl-head {
+    opacity: 0;
+    transform: translateY(-26px);
+    animation: tlHeadIn 520ms cubic-bezier(0.16, 0.84, 0.32, 1) forwards;
+}
+
+/* GRID -------------------------------------------------------------- */
+
+.tl-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 3), 1fr);
+    gap: 16px;
+    align-content: start;
+}
+
+.tl-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    /* ขอบซ้ายหนาเป็นตัวนำสายตา ทิศเดียวกับที่การ์ดเลื่อนเข้ามา */
+    border-left: 4px solid #3b82f6;
+    background: linear-gradient(100deg, rgba(17, 18, 32, 0.94), rgba(24, 25, 41, 0.86));
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+
+    /* สถานะเริ่มต้นคือ "ยังไม่เข้ามา" ตัวอนิเมชันเป็นคนพาเข้ามา
+       ถ้าอนิเมชันไม่เคยเล่น การ์ดจะไม่โผล่เลย ตัวจับเวลาใน js
+       จึงต้องมีไว้บังคับสถานะปลายทาง ดูคอมเมนต์ .settled ข้างล่าง */
+    opacity: 0;
+    transform: translateX(-48px);
+    animation: tlCardIn 560ms cubic-bezier(0.16, 0.84, 0.32, 1) forwards;
+    animation-delay: calc(var(--i, 0) * var(--stagger, 90ms));
+}
+
+/* ตัวสำรองของ OBS
+ *
+ * OBS หยุด browser source ที่ไม่ได้ออกอากาศ อนิเมชันจะค้างและ animationend
+ * ไม่ยิงเลย การ์ดที่เริ่มจาก opacity:0 จึงมีสิทธิ์ไม่โผล่ขึ้นมาตลอดกาล
+ * js ตั้งเวลาไว้เติม .settled ให้เสมอ กติกาตรงนี้คือ "จบเกมให้" โดยไม่สนอนิเมชัน */
+.tl-stage.settled .tl-head,
+.tl-stage.settled .tl-card,
+.tl-card.settled {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+}
+
+@keyframes tlCardIn {
+    from { opacity: 0; transform: translateX(-48px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes tlHeadIn {
+    from { opacity: 0; transform: translateY(-26px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* CARD CONTENT ------------------------------------------------------ */
+
+.tl-logo {
+    flex: 0 0 auto;
+    width: 62px;
+    height: 62px;
+    border-radius: 10px;
+    object-fit: contain;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.tl-logo.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.42);
+}
+
+.tl-id { flex: 1; min-width: 0; }
+.tl-name {
+    font-size: 27px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    line-height: 1.15;
+    text-transform: uppercase;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.tl-tag {
+    display: inline-block;
+    margin-top: 3px;
+    padding: 1px 9px;
+    border-radius: 4px;
+    background: rgba(59, 130, 246, 0.22);
+    border: 1px solid rgba(59, 130, 246, 0.5);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: #bfdbfe;
+}
+
+.tl-roster {
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 14px;
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.62);
+}
+.tl-player { white-space: nowrap; }
+/* กัปตันต้องอ่านออกว่าเป็นกัปตัน โดยไม่ต้องมีคำอธิบายบนจอ */
+.tl-player.captain { color: #f5b942; }
+.tl-player.captain::after { content: ' (C)'; font-size: 12px; }
+
+/* ทีมเยอะ ตัวหนังสือต้องเล็กลง ไม่งั้นล้นออกนอกจอเงียบๆ */
+.tl-grid.dense .tl-card { padding: 9px 14px; gap: 12px; border-radius: 9px; }
+.tl-grid.dense .tl-logo { width: 42px; height: 42px; border-radius: 7px; }
+.tl-grid.dense .tl-logo.placeholder { font-size: 14px; }
+.tl-grid.dense .tl-name { font-size: 20px; letter-spacing: 0.5px; }
+.tl-grid.dense .tl-tag { font-size: 12px; letter-spacing: 1.5px; padding: 0 7px; }
+
+/* ข้อความตอนตั้งค่า เช่นยังไม่ได้เลือกทัวร์นาเมนต์
+   จงใจให้จางและเล็ก ถ้าหลุดออกอากาศจะได้ไม่เด่นกว่ากราฟิกจริง */
+.tl-note {
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.34);
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}

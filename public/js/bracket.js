@@ -1,14 +1,22 @@
-// หน้าสายการแข่งแบบเห็นภาพ
+// หน้าจัดการการแข่ง (match session) แสดงผลเป็นสายการแข่งอย่างเดียว
 //
 // อ่าน id จาก /tournament/:id/bracket
 // จัดกลุ่มคู่ตาม bracket แล้วตามรอบ แล้วปล่อยให้ CSS จัดตำแหน่งเอง
 // (ทุกรอบสูงเท่ากัน + flex:1 ต่อช่อง = คู่รอบถัดไปไปอยู่กึ่งกลางของสองคู่ที่ป้อนเข้ามา)
 //
+// หน้านี้รับงานทั้งหมดที่เคยอยู่ในหัวข้อ Matches ของหน้าทัวร์นาเมนต์:
+// จับคู่ ล้างสาย กรอกผล และเอาแมตช์ขึ้นจอ
+// เหตุผลที่แยก: หน้าทัวร์นาเมนต์คือการตั้งค่าก่อนแข่ง (ทีม รูปแบบ URL ของ OBS)
+// ส่วนหน้านี้คือตอนแข่งจริง ซึ่งใช้คนละเวลาและคนละสมาธิกัน
+// และเหลือมุมมองเดียวคือสาย ไม่มีรายการแบบแบนอีก จะได้ไม่ต้องดูแลสองมุมมอง
+// ที่แสดงข้อมูลชุดเดียวกันแล้วค่อยๆ เพี้ยนออกจากกัน
+//
 // ตอนนี้ยังไม่มีสายแพ้ เพราะยังไม่ได้ทำระบบแพ้สองครั้งคัดออก
 // แต่ตัวเรนเดอร์แยกตามค่า bracket อยู่แล้ว วันที่ทำเสร็จสายแพ้จะโผล่มาเอง
 // เป็นอีกหัวข้อหนึ่งใต้สายชนะ โดยไม่ต้องแก้ไฟล์นี้
 
-const { controlToken, socket, fetchJson, withToken, showToast } = window.RovClient;
+const { socket, fetchJson, withToken, showToast } = window.RovClient;
+const { badge, on } = window.RovTeamUI;
 
 const parts = window.location.pathname.split('/').filter(Boolean);
 const tournamentId = decodeURIComponent(parts[1] || '');
@@ -16,6 +24,7 @@ const tournamentId = decodeURIComponent(parts[1] || '');
 let tournament = null;
 let roster = [];
 let liveMatchId = null;
+let drawn = [];   // ตารางแข่งชุดล่าสุดที่โหลด/บันทึกมา
 
 // สูงต่อหนึ่งช่องของรอบแรก ใช้คำนวณความสูงรวมของสาย
 //
@@ -24,22 +33,18 @@ let liveMatchId = null;
 // จนดูเป็นรายการก้อนเดียว ไม่ใช่สายการแข่ง
 const SLOT_HEIGHT = 78;
 
-function badge(text, cls = '') {
-  const el = document.createElement('span');
-  el.className = `badge ${cls}`.trim();
-  el.textContent = text;
-  return el;
-}
-
 function teamOf(id) {
   return roster.find((t) => t.id === id) || null;
 }
 
 // ROW ----------------------------------------------------------------
 
-function teamRow(match, which) {
+// คืน { row, score } เพราะผู้เรียกต้องอ่านค่าของทั้งสองฝั่งพร้อมกันตอนบันทึกผล
+// ฝั่งเดียวบอกอะไรไม่ได้ เซิร์ฟเวอร์รับคะแนนเป็นคู่เสมอ
+function teamRow(match, which, editable) {
   const id = which === 'a' ? match.teamAId : match.teamBId;
   const team = teamOf(id);
+  const value = which === 'a' ? match.scoreA : match.scoreB;
 
   const row = document.createElement('div');
   row.className = 'mrow';
@@ -58,14 +63,27 @@ function teamRow(match, which) {
     name.textContent = match.isBye ? 'bye' : 'to be decided';
   }
 
-  const score = document.createElement('span');
-  score.className = 'sc';
-  score.textContent = String(which === 'a' ? match.scoreA : match.scoreB);
+  // คู่ที่ยังไม่รู้ทีมครบทั้งสองฝั่ง กรอกผลไม่ได้ จึงเป็นข้อความเฉยๆ
+  // ไม่ใช่ช่องกรอกที่ disabled เพราะช่องที่กดไม่ได้ในกล่องเล็กๆ ดูเหมือนพัง
+  let score;
+  if (editable) {
+    score = document.createElement('input');
+    score.type = 'number';
+    score.className = 'sc sc-input';
+    score.min = '0';
+    score.max = String(Math.floor(match.bestOf / 2) + 1);
+    score.value = String(value);
+    score.setAttribute('aria-label', `${team ? team.name : which} score`);
+  } else {
+    score = document.createElement('span');
+    score.className = 'sc';
+    score.textContent = String(value);
+  }
 
   if (match.winnerId) row.classList.add(match.winnerId === id ? 'won' : 'lost');
 
   row.append(seed, name, score);
-  return row;
+  return { row, score };
 }
 
 function matchBox(match, number) {
@@ -77,11 +95,25 @@ function matchBox(match, number) {
   const playable = Boolean(match.teamAId && match.teamBId) && !match.isBye;
   if (playable) {
     box.classList.add('playable');
-    box.title = 'Put this match on air and open the Control Panel';
+    box.title = 'Click to put this match on air. Type in the score boxes to record a result.';
     box.addEventListener('click', () => openInControl(match));
   }
 
-  box.append(teamRow(match, 'a'), teamRow(match, 'b'));
+  const a = teamRow(match, 'a', playable);
+  const b = teamRow(match, 'b', playable);
+  box.append(a.row, b.row);
+
+  if (playable) {
+    // กล่องทั้งใบเป็นปุ่ม "เอาขึ้นจอ" อยู่ ช่องคะแนนอยู่ข้างในกล่องนั้น
+    // ถ้าไม่หยุด event ไว้ การกดจะกรอกคะแนนไม่ได้เลย เพราะเด้งไป Control Panel ก่อน
+    const commit = () => recordResult(match, Number(a.score.value), Number(b.score.value));
+    [a.score, b.score].forEach((input) => {
+      ['click', 'mousedown', 'dblclick'].forEach((type) => {
+        input.addEventListener(type, (event) => event.stopPropagation());
+      });
+      input.addEventListener('change', commit);
+    });
+  }
 
   if (number !== null) {
     const no = document.createElement('div');
@@ -128,9 +160,13 @@ function sectionTitle(name) {
 }
 
 // ชื่อรอบท้ายๆ เรียกตามที่คนเรียกกันจริง ไม่ใช่ "รอบที่ 5"
-function roundTitle(roundNo, totalRounds, bracketName) {
+//
+// ใช้ได้เฉพาะรูปแบบที่แพ้แล้วตกรอบเท่านั้น
+// พบกันหมดรอบสุดท้ายไม่ใช่ "รอบชิง" มันคือรอบที่เหลือของตาราง ทุกทีมยังเล่นพร้อมกันอยู่
+// เรียกว่า Final แล้วคนอ่านจะนึกว่าเหลือสองทีม ทั้งที่ยังเล่นกันทั้งกลุ่ม
+function roundTitle(roundNo, totalRounds, bracketName, elimination) {
   if (bracketName === 'grand') return roundNo === 1 ? 'Grand final' : 'Reset (if needed)';
-  if (bracketName !== 'main') return `Round ${roundNo}`;
+  if (bracketName !== 'main' || !elimination) return `Round ${roundNo}`;
   const fromEnd = totalRounds - roundNo;
   if (fromEnd === 0) return 'Final';
   if (fromEnd === 1) return 'Semifinals';
@@ -145,7 +181,9 @@ function render(matches) {
   if (matches.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'bracket-empty';
-    empty.textContent = 'No matches drawn yet. Go back to the tournament and use DRAW MATCHES.';
+    empty.textContent = tournament && tournament.teamCount < 2
+      ? 'Add at least two teams on the tournament page, then draw the bracket here.'
+      : 'No matches drawn yet. Use DRAW MATCHES above to build the bracket.';
     body.appendChild(empty);
     return;
   }
@@ -195,7 +233,7 @@ function render(matches) {
     roundNumbers.forEach((roundNo, index) => {
       const isLast = index === total - 1;
       wrap.appendChild(roundColumn(
-        roundTitle(roundNo, total, name),
+        roundTitle(roundNo, total, name, elimination),
         (rounds.get(roundNo) || []).sort((a, b) => a.slot - b.slot),
         numbers,
         elimination && !isLast
@@ -205,6 +243,41 @@ function render(matches) {
     section.appendChild(wrap);
     body.appendChild(section);
   });
+}
+
+// ตัวเลขและปุ่มบนแถบหัว ขึ้นกับตารางแข่งชุดปัจจุบัน
+function renderControls() {
+  const badges = document.getElementById('headBadges');
+  badges.textContent = '';
+  if (tournament) {
+    badges.appendChild(badge(tournament.status === 'finished' ? 'Finished' : 'Active', tournament.status));
+    badges.appendChild(badge(`Bo${tournament.bestOf}`));
+    badges.appendChild(badge(`${tournament.teamCount} teams`, 'count'));
+  }
+
+  const played = drawn.filter((m) => m.status === 'complete' && !m.isBye).length;
+  const total = drawn.filter((m) => !m.isBye).length;
+  if (total > 0) {
+    badges.appendChild(badge(`${played} / ${total} played`, played === total ? 'active' : 'count'));
+  }
+
+  const clearBtn = document.getElementById('clearMatchesBtn');
+  if (clearBtn) clearBtn.hidden = drawn.length === 0;
+
+  // จับคู่ใหม่ทับของเดิมได้ แต่ต้องบอกให้ชัดว่าปุ่มกำลังจะทำอะไร
+  const drawBtn = document.getElementById('drawBtn');
+  if (drawBtn) {
+    drawBtn.textContent = drawn.length === 0 ? 'DRAW MATCHES' : 'DRAW AGAIN';
+    drawBtn.title = drawn.length === 0
+      ? 'Build the bracket from the teams entered'
+      : 'Replace the current bracket and every score on it';
+  }
+}
+
+function apply(list) {
+  drawn = list;
+  renderControls();
+  render(drawn);
 }
 
 // ACTIONS -------------------------------------------------------------
@@ -222,6 +295,52 @@ async function openInControl(match) {
   }
 }
 
+async function recordResult(match, scoreA, scoreB) {
+  try {
+    const data = await fetchJson(`/api/matches/${encodeURIComponent(match.id)}/result`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scoreA, scoreB })
+    });
+    // ผู้ชนะเลื่อนไปรอบถัดไปแล้ว ต้องวาดใหม่ทั้งสาย ไม่ใช่แค่กล่องนี้
+    apply(data.matches || []);
+  } catch (error) {
+    // เช่นกรอกให้ทั้งสองฝั่งชนะครบ ค่าที่ค้างในช่องไม่ตรงกับฐานแล้ว โหลดใหม่ให้ตรง
+    showToast(error.message || 'Could not record the result', 'red');
+    reload();
+  }
+}
+
+async function drawMatches() {
+  const randomise = document.getElementById('randomiseDraw').checked;
+  if (drawn.length > 0 && !window.confirm(
+    'Draw again?\n\nThe current bracket and every score recorded on it are replaced.'
+  )) return;
+
+  try {
+    const data = await fetchJson(`/api/tournaments/${encodeURIComponent(tournamentId)}/matches`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ randomise })
+    });
+    apply(data.matches || []);
+    showToast(randomise ? 'Matches drawn at random' : 'Matches drawn by seed', 'green');
+  } catch (error) {
+    showToast(error.message || 'Could not draw matches', 'red');
+  }
+}
+
+async function clearMatches() {
+  if (!window.confirm('Clear the bracket?\n\nEvery match and score is removed.')) return;
+  try {
+    await fetchJson(`/api/tournaments/${encodeURIComponent(tournamentId)}/matches`, { method: 'DELETE' });
+    apply([]);
+    showToast('Bracket cleared', 'blue');
+  } catch (error) {
+    showToast(error.message || 'Could not clear the bracket', 'red');
+  }
+}
+
 async function load() {
   const [detail, matchData, liveData] = await Promise.all([
     fetchJson(`/api/tournaments/${encodeURIComponent(tournamentId)}`),
@@ -234,21 +353,27 @@ async function load() {
   liveMatchId = liveData.live?.matchId || null;
 
   document.getElementById('headName').textContent = tournament.name;
-  document.title = `${tournament.name} bracket - ROV Overlay Tool`;
+  document.title = `${tournament.name} - match session - ROV Overlay Tool`;
   document.getElementById('backLink').href = withToken(`/tournament/${encodeURIComponent(tournamentId)}`);
 
-  const badges = document.getElementById('headBadges');
-  badges.textContent = '';
-  badges.appendChild(badge(tournament.status === 'finished' ? 'Finished' : 'Active', tournament.status));
-  badges.appendChild(badge(`Bo${tournament.bestOf}`));
-  badges.appendChild(badge(`${tournament.teamCount} teams`, 'count'));
+  apply(matchData.matches || []);
+}
 
-  render(matchData.matches || []);
+async function reload() {
+  try {
+    await load();
+  } catch (error) {
+    showToast(error.message || 'Could not reload the bracket', 'red');
+  }
 }
 
 socket.on('connect_error', (error) => showToast(error.message || 'Connection error', 'red'));
 
 (async () => {
+  // ผูกปุ่มก่อนโหลดข้อมูล ปุ่มจะได้ใช้ได้แม้การโหลดครั้งแรกล้ม
+  on('drawBtn', 'click', drawMatches);
+  on('clearMatchesBtn', 'click', clearMatches);
+
   if (!tournamentId) {
     document.getElementById('headName').textContent = 'Tournament not found';
     return;
@@ -256,7 +381,7 @@ socket.on('connect_error', (error) => showToast(error.message || 'Connection err
   try {
     await load();
   } catch (error) {
-    document.getElementById('headName').textContent = 'Could not load this bracket';
+    document.getElementById('headName').textContent = 'Could not load this match session';
     showToast(error.message || 'Could not load the bracket', 'red');
   }
 })();

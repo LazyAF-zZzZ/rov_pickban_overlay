@@ -30,6 +30,15 @@ export function attachIo(instance: Server): void {
   io = instance;
 }
 
+// ส่งเฉพาะห้อง ไม่ใช่ทุกคนที่ต่ออยู่
+//
+// หน้า overlay กับ control ไม่ได้สนใจสถิติเลย การยิงหาให้ทุกคนคือการบังคับ
+// ให้ทุกหน้าที่เปิดอยู่ต้องรับข้อความที่มันทิ้งทันที
+// หน้าไหนต้องการก็เข้าห้องมาเอง (ดู sockets/handlers.ts)
+export function emitToRoom(room: string, event: string, payload: unknown = {}): void {
+  if (io) io.to(room).emit(event, payload);
+}
+
 export function getState(): GameState {
   return gameState;
 }

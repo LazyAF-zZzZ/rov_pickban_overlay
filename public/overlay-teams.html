@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <title>ROV Team List Overlay</title>
+    <!-- เสิร์ฟที่ /overlay-teams ไม่ใช่ /teams
+         /teams เป็นหน้าทะเบียนทีมของคนคุมงานไปแล้ว (Phase 6) -->
+    <link rel="stylesheet" href="/css/fonts.css">
+    <link rel="stylesheet" href="/css/overlay-teams.css">
+</head>
+<body>
+    <div class="tl-stage" id="stage">
+        <div class="tl-head" id="head">
+            <div class="tl-title" id="title"></div>
+            <div class="tl-sub" id="subtitle"></div>
+        </div>
+        <div class="tl-grid" id="grid"></div>
+        <div class="tl-note" id="note" hidden></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- overlay-teams.js ประกาศ socket ไว้ ต้องมาก่อน overlay-size.js ที่ไปอ่านตัวนั้น -->
+    <script src="/js/overlay-teams.js"></script>
+    <script src="/js/overlay-size.js"></script>
+</body>
+</html>

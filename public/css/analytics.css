@@ -1,0 +1,164 @@
+/* หน้าสถิติ pick/ban
+ *
+ * ตารางทำด้วย grid ไม่ใช่ <table> เพราะแต่ละแถวมีทั้งภาพ ตัวเลข และแถบสัดส่วน
+ * ซึ่งจัดความกว้างให้คงที่ด้วย grid ง่ายกว่ามาก และยังใส่ hover ทั้งแถวได้ตรงๆ
+ *
+ * ใช้ร่วมกับ app.css เสมอ ไฟล์นี้มีเฉพาะส่วนที่หน้านี้ใช้ */
+
+.hero-search {
+  flex: 0 0 190px;
+  background: var(--s2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 7px 11px;
+  color: var(--text);
+  font-family: var(--bf);
+  font-size: 13px;
+}
+.hero-search:focus { border-color: var(--blue); outline: none; }
+
+/* TABLE ------------------------------------------------------------- */
+
+.stat-table {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: 40px minmax(90px, 1fr) 74px minmax(70px, 1.4fr) 66px 66px 66px 74px;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.stat-row:last-child { border-bottom: none; }
+.stat-row:not(.head):hover { background: rgba(255, 255, 255, 0.035); }
+
+.stat-row.head {
+  background: var(--s2);
+  border-bottom: 1px solid var(--border2);
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+.stat-row.head .col {
+  font-family: var(--hf);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.col { min-width: 0; font-size: 12px; color: var(--muted2); }
+.col.img { display: flex; align-items: center; }
+.col.name {
+  font-family: var(--hf);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.col.num { text-align: right; font-variant-numeric: tabular-nums; }
+.col.strong { color: var(--text); font-weight: 700; font-size: 13px; }
+.col.win.good { color: #6ee7b7; }
+.col.win.bad { color: #fca5a5; }
+.col.prio { color: #c4b5fd; }
+
+.hero-img {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: var(--s3);
+  border: 1px solid var(--border);
+}
+
+/* แถบสัดส่วน เต็มแถบ = 40% ของเกม ไม่ใช่ 100%
+   ฮีโร่ที่ถูกใช้มากที่สุดยังไม่ถึง 40% ด้วยซ้ำ ถ้าสเกลเต็ม 100
+   ทุกแถบจะสั้นเท่ากันหมดจนเปรียบเทียบไม่ได้ */
+.meter {
+  height: 7px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.meter-fill { height: 100%; border-radius: 4px; }
+.meter-fill.presence { background: linear-gradient(90deg, var(--blue), var(--purple)); }
+
+/* LIVE LAYER -------------------------------------------------------- */
+/* ดราฟต์ที่กำลังเล่น ต้องดูไม่เหมือนตัวเลขสะสมด้านล่างอย่างชัดเจน
+   ไม่งั้นคนอ่านจะนึกว่ามันถูกนับรวมไปแล้ว */
+
+.live-layer {
+  background: rgba(16, 185, 129, 0.07);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 12px;
+  padding: 11px 14px;
+  margin-top: 4px;
+}
+.live-layer-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  font-family: var(--hf);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #6ee7b7;
+  margin-bottom: 9px;
+}
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+}
+.live-note {
+  font-family: var(--bf);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted2);
+}
+
+.live-heroes { display: flex; gap: 6px; flex-wrap: wrap; }
+.live-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px 3px 3px;
+  border-radius: 999px;
+  background: var(--s2);
+  border: 1px solid var(--border2);
+  font-family: var(--hf);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.live-chip .hero-img { width: 20px; height: 20px; border-radius: 50%; }
+.live-chip.blue { border-color: rgba(56, 189, 248, 0.45); }
+.live-chip.red { border-color: rgba(248, 113, 113, 0.45); }
+/* ตัวที่ถูกแบนต้องอ่านออกว่าเป็นการแบน ไม่ใช่การเลือก */
+.live-chip.ban { opacity: 0.62; }
+.live-chip.ban .hero-img { filter: grayscale(1); }
+.live-chip.ban span { text-decoration: line-through; }
+
+@media (max-width: 720px) {
+  /* จอแคบ ตัดแถบสัดส่วนกับอันดับแบนออกก่อน สองอย่างนี้อ่านจากตัวเลขอื่นแทนได้
+     เหลือหกคอลัมน์ ต้องตรงกับจำนวนที่ไม่ได้ถูกซ่อน ไม่งั้น grid จะเลื่อนทั้งแถว */
+  .stat-row { grid-template-columns: 34px minmax(80px, 1fr) 64px 58px 58px 58px; }
+  .stat-row .meter-col, .stat-row .prio { display: none; }
+}

@@ -398,6 +398,72 @@ body {
   margin-top: 12px;
   padding-top: 12px;
 }
+
+/* แถวทีมแบบแน่น ใช้บนหน้าทัวร์นาเมนต์
+ *
+ * ทัวร์นาเมนต์เดียวรับได้ 128 ทีม การ์ดปกติสูงราว 70px คูณ 128
+ * คือหน้าเว็บยาวเกือบเก้าพันพิกเซล เลื่อนหาทีมเดียวก็หมดเวลาแล้ว
+ * แบบแน่นบีบเหลือบรรทัดเดียวราว 38px ซึ่งยังกดปุ่มได้สบายอยู่
+ *
+ * ไม่ไปแก้ .team ตรงๆ เพราะหน้าทะเบียนทีม (/teams) ใช้คลาสเดียวกัน
+ * แต่ที่นั่นแต่ละแถวมี badge มากกว่า (จำนวนทัวร์นาเมนต์ แพ้ชนะ)
+ * และไม่ได้ยาวเท่า เพราะมีช่องค้นหาคัดให้ก่อนแล้ว */
+.team.compact {
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 5px;
+}
+.team.compact .team-row { gap: 9px; flex-wrap: nowrap; }
+.team.compact .team-logo { width: 26px; height: 26px; border-radius: 5px; }
+.team.compact .team-logo.placeholder { font-size: 9px; letter-spacing: 0; }
+
+/* ชื่อกับ badge อยู่บรรทัดเดียวกัน แทนที่จะซ้อนกันสองบรรทัด
+   นี่คือจุดที่ลดความสูงได้มากที่สุด */
+.team.compact .team-id {
+  flex: 1 1 auto;
+  flex-direction: row;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.team.compact .team-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  letter-spacing: 0.7px;
+  /* ชื่อยาวต้องตัดด้วย ... ไม่ใช่ตัดคำขึ้นบรรทัดใหม่ ซึ่งจะทำให้แถวสูงไม่เท่ากัน */
+  word-break: normal;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.team.compact .team-sub { flex: 0 0 auto; gap: 5px; flex-wrap: nowrap; }
+.team.compact .team-sub .badge { font-size: 9px; padding: 1px 5px; }
+.team.compact .team-actions { flex: 0 0 auto; gap: 4px; flex-wrap: nowrap; }
+.team.compact .team-actions .tlink { font-size: 10px; padding: 3px 8px; }
+/* ปุ่มเอาทีมออก เหลือแค่กากบาท ข้อความเต็มอยู่ที่ title และ aria-label
+   กดพลาดไม่อันตราย เพราะยังมีกล่องยืนยันคั่นอยู่ */
+.team.compact .team-actions .tlink.icon {
+  font-size: 12px;
+  line-height: 1;
+  padding: 3px 7px;
+}
+.team.compact .team-edit { margin-top: 9px; padding-top: 9px; }
+
+/* จอแคบเอาปุ่มลงบรรทัดใหม่ ดีกว่าบีบชื่อทีมจนอ่านไม่ออก */
+@media (max-width: 620px) {
+  .team.compact .team-row { flex-wrap: wrap; }
+  .team.compact .team-id { flex-basis: 100%; }
+}
+
+/* ปุ่มพับหัวข้อ กว้างคงที่ ไม่งั้นหัวข้อจะขยับตอนสลับ ▾ กับ ▸ */
+.tlink.fold {
+  flex: 0 0 auto;
+  width: 30px;
+  text-align: center;
+  padding: 4px 0;
+  font-size: 11px;
+}
 .player-row { display: flex; gap: 8px; align-items: center; margin-bottom: 7px; flex-wrap: wrap; }
 .player-row .slot {
   flex: 0 0 22px;
@@ -522,3 +588,71 @@ body {
 }
 .live-bar .muted { color: #64748b; font-weight: 600; letter-spacing: 0.4px; }
 .live-bar a { margin-left: auto; }
+
+/* ปุ่มบันทึกผู้ชนะของเกม อยู่บนแถบ ON AIR ของหน้า control
+ * สีตรงกับฝั่งที่มันหมายถึง คนคุมงานจะได้ไม่ต้องอ่านตัวหนังสือตอนรีบ */
+.lb-winner { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.lb-winner .tlink { font-size: 11px; padding: 3px 9px; }
+.lb-blue { color: #7dd3fc; border-color: rgba(56, 189, 248, 0.45); }
+.lb-blue:hover { color: #e0f2fe; border-color: #38bdf8; }
+.lb-red { color: #fca5a5; border-color: rgba(248, 113, 113, 0.45); }
+.lb-red:hover { color: #fee2e2; border-color: #f87171; }
+/* ตัวที่บันทึกไว้แล้ว ต้องแยกออกจากตัวที่ยังไม่ได้กดในแวบเดียว */
+.lb-blue.chosen { background: rgba(56, 189, 248, 0.22); color: #e0f2fe; border-color: #38bdf8; }
+.lb-red.chosen { background: rgba(248, 113, 113, 0.22); color: #fee2e2; border-color: #f87171; }
+
+/* ทะเบียนทีมและโปรไฟล์ทีม (Phase 6) ------------------------------- */
+
+/* ลิงก์ที่อยู่ในเนื้อหา ไม่ใช่ปุ่ม .tlink
+ * ขีดเส้นใต้ตอนชี้เท่านั้น รายการยาวๆ ที่ขีดเส้นใต้ทุกบรรทัดอ่านยาก */
+.link { color: inherit; text-decoration: none; }
+.link:hover { color: var(--blue); text-decoration: underline; }
+
+.team-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.team-logo.big { width: 66px; height: 66px; font-size: 18px; }
+
+/* แถวประวัติใช้โครงเดียวกับ .match แต่คนละคอลัมน์
+ * .match เป็นคู่แข่งซ้าย-คะแนน-ขวา ส่วนตรงนี้มองจากทีมเดียวออกไป
+ * จึงเป็น รอบ / คู่แข่ง / คะแนน / จำนวนเกม / ผล */
+.hist-round {
+  flex: 0 0 150px;
+  font-family: var(--hf);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--muted2);
+}
+.hist-opp {
+  flex: 1;
+  min-width: 130px;
+  font-family: var(--hf);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+}
+.hist-opp.tbd {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+/* ทีมที่ถูกลบไปแล้ว ชื่อมาจากสำเนาแช่แข็ง ไม่ใช่ทะเบียน จึงกดไม่ได้
+ * ทำให้ดูจางลงและมี cursor เป็น help เพื่อบอกว่ามีคำอธิบายอยู่ที่ tooltip */
+.hist-opp.gone { color: var(--muted2); cursor: help; }
+.hist-score {
+  flex: 0 0 62px;
+  text-align: center;
+  font-family: var(--hf);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
+}
+.hist-bo { flex: 0 0 40px; font-size: 11px; color: var(--muted); text-align: center; }
+.hist-outcome { flex: 0 0 96px; display: flex; justify-content: flex-end; }
+
+.badge.loss { color: #fca5a5; border-color: rgba(239, 68, 68, 0.4); }
+
+a.round-head { text-decoration: none; }
+a.round-head:hover { color: var(--blue); }

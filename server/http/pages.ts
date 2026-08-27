@@ -12,10 +12,18 @@ export const PAGES: Record<string, string> = {
   // / เป็นหน้าแรกแล้ว ไม่ใช่ control panel
   // control ย้ายไป /control ส่วน /index.html ทิ้ง redirect ไว้ให้ของเก่าที่ bookmark ไว้
   '/': 'home.html',
+  // ทะเบียนทีมกลาง อยู่คนละระดับกับทีมในทัวร์นาเมนต์
+  //
+  // ระวัง: overlay รายชื่อทีมใน Phase 7 ห้ามใช้ /teams ซ้ำกับหน้านี้
+  // ให้ไปใช้ /overlay-teams แทน (แผน Appendix A เขียน /teams ไว้ก่อนที่หน้านี้จะมี)
+  '/teams': 'teams.html',
+  '/analytics': 'analytics.html',
   '/control': 'control.html',
   '/overlay': 'overlay.html',
   '/overlay-1440': 'overlay-1440.html',
   '/result': 'result.html',
+  // รายชื่อทีมสำหรับเปิดก่อนเริ่มงาน ชื่อ /overlay-teams เพราะ /teams เป็นหน้าคนคุมงานแล้ว
+  '/overlay-teams': 'overlay-teams.html',
   // หน้าตั้งค่าภาพพื้นหลัง แยกจาก Control Panel เพราะเป็นงานก่อนแข่ง
   '/design': 'design.html',
   '/hotkeys': 'hotkeys.html',
@@ -36,6 +44,12 @@ export function pageRoutes(): Router {
   // ไม่งั้นเบราว์เซอร์จะไปหาที่ /tournament/js/... แล้วได้ 404
   router.get('/tournament/:id', (_req, res) => {
     res.sendFile(path.join(PUBLIC_DIR, 'tournament.html'));
+  });
+
+  // โปรไฟล์ทีม ลึกกว่าหน้าอื่นหนึ่งชั้นเหมือน /tournament/:id
+  // team.html จึงต้องอ้าง /js/... /css/... แบบเต็มเช่นกัน
+  router.get('/teams/:id', (_req, res) => {
+    res.sendFile(path.join(PUBLIC_DIR, 'team.html'));
   });
 
   // สายการแข่งแบบเห็นภาพ อยู่ลึกสองชั้น (/tournament/:id/bracket)

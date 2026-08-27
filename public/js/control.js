@@ -1053,8 +1053,63 @@ async function renderLiveBar() {
   back.href = withToken(`/tournament/${encodeURIComponent(live.tournamentId || '')}`);
   back.textContent = 'BACK TO TOURNAMENT';
 
-  bar.append(dot, where, note, back);
+  bar.append(dot, where, note, winnerControls(live), back);
   bar.hidden = false;
+}
+
+// ใครชนะเกมนี้
+//
+// ต้องกดตอนนั้น ย้อนหลังไม่ได้: คะแนนซีรีส์ 2-1 บอกแค่ว่าใครชนะซีรีส์
+// ไม่ได้บอกว่าเกมที่สองใครชนะ อัตราชนะรายฮีโร่จึงขึ้นกับปุ่มนี้ทั้งหมด
+// เกมที่จบไปโดยไม่มีใครกด จะไม่มีวันมีอัตราชนะย้อนหลังได้อีก
+function winnerControls(live) {
+  const wrap = document.createElement('span');
+  wrap.className = 'lb-winner';
+
+  const label = document.createElement('span');
+  label.className = 'lb-muted';
+  label.textContent = `Who won game ${live.gameNo ?? 1}?`;
+  wrap.appendChild(label);
+
+  [{ side: 'blue', text: 'BLUE' }, { side: 'red', text: 'RED' }].forEach(({ side, text }) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `tlink lb-${side}`;
+    button.textContent = text;
+    // กดซ้ำที่ฝั่งเดิม = ล้างค่า เผื่อกดผิด จะได้ไม่ต้องมีปุ่มยกเลิกแยกอีกปุ่ม
+    if (live.winner === side) button.classList.add('chosen');
+    button.addEventListener('click', () => setGameWinner(live.winner === side ? null : side));
+    wrap.appendChild(button);
+  });
+
+  if (!live.winner) {
+    const hint = document.createElement('span');
+    hint.className = 'lb-muted';
+    hint.textContent = 'not recorded';
+    wrap.appendChild(hint);
+  }
+
+  return wrap;
+}
+
+async function setGameWinner(winner) {
+  const live = await fetchJson('/api/live-match').then((d) => d.live).catch(() => null);
+  if (!live?.gameId) {
+    showToast('No game is on air', 'red');
+    return;
+  }
+
+  try {
+    await fetchJson(`/api/games/${encodeURIComponent(live.gameId)}/winner`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ winner })
+    });
+    showToast(winner ? `Game winner: ${winner.toUpperCase()}` : 'Game winner cleared', winner ? 'green' : 'blue');
+    renderLiveBar();
+  } catch (error) {
+    showToast(error.message || 'Could not record the winner', 'red');
+  }
 }
 
 renderLiveBar();

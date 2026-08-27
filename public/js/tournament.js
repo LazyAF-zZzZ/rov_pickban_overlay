@@ -6,9 +6,11 @@
 // ทุกอย่างในหน้านี้ประกอบด้วย textContent / value ไม่มีการต่อ innerHTML
 // เพราะชื่อทัวร์นาเมนต์กับโน้ตเป็นข้อความที่ผู้ใช้พิมพ์เอง
 
-// controlToken ต้องมีด้วย ใช้ตอนอัปโหลดโลโก้ ซึ่งส่ง body เป็นไฟล์ดิบ
-// จึงใช้ fetchJson (ที่แนบ header ให้เอง) ไม่ได้ ต้องประกอบ header เอง
-const { controlToken, socket, fetchJson, absoluteUrl, withToken, showToast } = window.RovClient;
+const { socket, fetchJson, absoluteUrl, withToken, showToast } = window.RovClient;
+
+// ช่องผู้เล่น โลโก้ และตัวอัปโหลด ใช้ร่วมกับหน้า /teams และ /teams/:id
+// อย่าก็อปกลับมาไว้ในไฟล์นี้อีก — สองชุดที่แก้คนละที่คือที่มาของบั๊กเดิม
+const { badge, buildPlayerRows, logoImage, sendLogo, hiddenFilePicker, on } = window.RovTeamUI;
 
 // /tournament/g3a1b2c3  ->  g3a1b2c3
 const tournamentId = decodeURIComponent(window.location.pathname.split('/').filter(Boolean)[1] || '');
@@ -17,7 +19,6 @@ let options = null;
 let current = null;   // ทัวร์นาเมนต์ที่โหลดมาล่าสุด ใช้ตอนกด REVERT
 let roster = [];      // ทีมที่ลงแข่งในทัวร์นาเมนต์นี้
 let registry = [];    // ทีมทั้งหมดในทะเบียนกลาง ไว้ใส่ใน dropdown
-let liveMatchId = null; // คู่ที่กำลังออกอากาศ มีได้ทีละหนึ่งทั้งระบบ
 let newTeamPlayers = null; // ตัวอ่านค่าช่องผู้เล่นในฟอร์มสร้างทีมใหม่
 let pendingLogo = null;    // ไฟล์โลโก้ที่เลือกไว้ รออัปโหลดหลังทีมถูกสร้าง
 
@@ -25,17 +26,13 @@ let pendingLogo = null;    // ไฟล์โลโก้ที่เลือ�
 const SOURCES = [
   { name: 'Overlay 1080p', path: '/overlay', size: '1920 x 1080' },
   { name: 'Overlay 1440p', path: '/overlay-1440', size: '2560 x 1440' },
-  { name: 'Result', path: '/result', size: 'matches overlay size' }
+  { name: 'Result', path: '/result', size: 'matches overlay size' },
+  // รายชื่อทีมของทัวร์นาเมนต์นี้ ต้องแนบ id ไปกับ URL ด้วย
+  // ไม่งั้น overlay จะเดาเอาจากแมตช์ที่ออกอากาศ ซึ่งไม่ใช่สิ่งที่คนก๊อป URL จากหน้านี้ตั้งใจ
+  { name: 'Team list', path: '/overlay-teams', size: 'matches overlay size', perTournament: true }
 ];
 
 // HELPERS ------------------------------------------------------------
-
-function badge(text, cls = '') {
-  const el = document.createElement('span');
-  el.className = `badge ${cls}`.trim();
-  el.textContent = text;
-  return el;
-}
 
 function formatSpec(id) {
   return options?.formats.find((f) => f.id === id) || null;
@@ -104,84 +101,6 @@ function renderFormatHint() {
   }
 }
 
-// PLAYER ROWS ---------------------------------------------------------
-//
-// ใช้ตัวเดียวกันทั้งฟอร์มสร้างทีมใหม่และฟอร์มแก้ทีมเดิม
-// เคยเขียนแยกกันสองที่ พอแก้ที่หนึ่งอีกที่ก็เพี้ยนตาม จึงรวมมาไว้ที่เดียว
-//
-// คืนฟังก์ชันอ่านค่ากลับไป ผู้เรียกจึงไม่ต้องรู้ว่าข้างในวางโครงยังไง
-const ROSTER_SIZE = 5;
-
-function buildPlayerRows(container, players, captainGroup) {
-  container.textContent = '';
-
-  const rows = Array.from({ length: ROSTER_SIZE }, (_, i) => {
-    const player = players?.[i] || {};
-
-    const row = document.createElement('div');
-    row.className = 'player-row';
-
-    const slot = document.createElement('div');
-    slot.className = 'slot';
-    slot.textContent = String(i + 1);
-
-    const name = document.createElement('input');
-    name.type = 'text';
-    name.className = 'pname';
-    name.maxLength = 24;
-    name.placeholder = `Player ${i + 1}`;
-    name.value = player.name || '';
-
-    const role = document.createElement('input');
-    role.type = 'text';
-    role.className = 'prole';
-    role.maxLength = 16;
-    role.placeholder = 'Role';
-    role.value = player.role || '';
-
-    const capLabel = document.createElement('label');
-    capLabel.className = 'cap';
-    const cap = document.createElement('input');
-    cap.type = 'radio';
-    cap.name = captainGroup;
-    cap.checked = player.isCaptain === true;
-    capLabel.append(cap, document.createTextNode('Captain'));
-
-    row.append(slot, name, role, capLabel);
-    container.appendChild(row);
-    return { name, role, cap };
-  });
-
-  return {
-    read: () => rows.map((r) => ({
-      name: r.name.value,
-      role: r.role.value,
-      isCaptain: r.cap.checked
-    })),
-    clear: () => rows.forEach((r) => {
-      r.name.value = '';
-      r.role.value = '';
-      r.cap.checked = false;
-    }),
-    focusFirst: () => rows[0]?.name.focus()
-  };
-}
-
-// โลโก้: v = 0 คือยังไม่มีภาพ ตัวเลขอื่นคือเวลาที่อัปโหลด ใช้กัน cache
-function logoImage(team) {
-  if (team.logo?.v && team.logo?.ext) {
-    const img = document.createElement('img');
-    img.className = 'team-logo';
-    img.alt = '';
-    img.src = `/images/team-logos/${encodeURIComponent(team.id)}.${team.logo.ext}?v=${team.logo.v}`;
-    return img;
-  }
-  const box = document.createElement('div');
-  box.className = 'team-logo placeholder';
-  box.textContent = (team.tag || team.name || '?').slice(0, 3).toUpperCase();
-  return box;
-}
-
 function renderTeams(t, teams) {
   roster = teams;
 
@@ -212,9 +131,11 @@ function renderTeams(t, teams) {
   teams.forEach((team) => body.appendChild(teamCard(team)));
 }
 
+// แถวแบบแน่น (.compact) ชื่อกับ badge อยู่บรรทัดเดียวกัน
+// โครงเหมือนการ์ดในหน้าทะเบียนทีมทุกอย่าง ต่างกันแค่ CSS
 function teamCard(team) {
   const card = document.createElement('div');
-  card.className = 'team';
+  card.className = 'team compact';
 
   const row = document.createElement('div');
   row.className = 'team-row';
@@ -240,14 +161,25 @@ function teamCard(team) {
   editBtn.className = 'tlink';
   editBtn.textContent = 'EDIT';
 
+  // โปรไฟล์ทีมคือที่ที่เห็นประวัติข้ามทัวร์นาเมนต์ ซึ่งหน้านี้ไม่มีทางแสดงได้
+  // หน้านี้เห็นแค่ทัวร์นาเมนต์เดียว
+  const profileLink = document.createElement('a');
+  profileLink.className = 'tlink';
+  profileLink.textContent = 'PROFILE';
+  profileLink.href = withToken(`/teams/${encodeURIComponent(team.id)}`);
+  profileLink.title = 'Roster, record and match history across every tournament';
+
+  // กากบาทแทนคำว่า REMOVE เพื่อประหยัดที่ในแถวแบบแน่น
+  // ความหมายเต็มอยู่ที่ title กับ aria-label และยังมีกล่องยืนยันคั่นก่อนลบจริง
   const removeBtn = document.createElement('button');
   removeBtn.type = 'button';
-  removeBtn.className = 'tlink danger';
-  removeBtn.textContent = 'REMOVE';
+  removeBtn.className = 'tlink danger icon';
+  removeBtn.textContent = '✕';
   removeBtn.title = 'Take this team out of the tournament. The team stays in the registry.';
+  removeBtn.setAttribute('aria-label', `Remove ${team.name} from this tournament`);
   removeBtn.addEventListener('click', () => removeFromTournament(team));
 
-  actions.append(editBtn, removeBtn);
+  actions.append(editBtn, profileLink, removeBtn);
   row.append(logoImage(team), id, actions);
   card.appendChild(row);
 
@@ -390,7 +322,11 @@ function renderSources() {
   wrap.textContent = '';
 
   SOURCES.forEach((source) => {
-    const url = absoluteUrl(source.path);
+    // บาง source ต้องรู้ว่าเป็นทัวร์นาเมนต์ไหน ไม่ใช่ URL ตายตัวเหมือนอันอื่น
+    const path = source.perTournament
+      ? `${source.path}?tournament=${encodeURIComponent(tournamentId)}`
+      : source.path;
+    const url = absoluteUrl(path);
 
     const row = document.createElement('div');
     row.className = 'src';
@@ -415,7 +351,7 @@ function renderSources() {
 
     const open = document.createElement('a');
     open.className = 'tlink';
-    open.href = withToken(source.path);
+    open.href = withToken(path);
     open.target = '_blank';
     open.rel = 'noopener';
     open.textContent = 'OPEN';
@@ -691,24 +627,6 @@ async function deleteTeam(team) {
   }
 }
 
-// ส่งไฟล์ดิบ ไม่ใช้ multipart ให้ตรงกับที่ฝั่งเซิร์ฟเวอร์รับ
-// โยน error ออกไป ผู้เรียกเป็นคนตัดสินใจว่าจะบอกผู้ใช้ยังไง
-async function sendLogo(teamId, file) {
-  if (file.size > 4 * 1024 * 1024) throw new Error('Logo must be 4 MB or smaller');
-
-  const response = await fetch(withToken(`/api/teams/${encodeURIComponent(teamId)}/logo`), {
-    method: 'POST',
-    headers: {
-      'Content-Type': file.type,
-      ...(controlToken ? { Authorization: `Bearer ${controlToken}` } : {})
-    },
-    body: file
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || response.statusText);
-  return data;
-}
-
 async function uploadLogo(team, file) {
   try {
     await sendLogo(team.id, file);
@@ -731,188 +649,91 @@ async function clearLogo(team) {
   }
 }
 
-// MATCHES ------------------------------------------------------------
+// FOLD ----------------------------------------------------------------
+//
+// หัวข้อทีมพับเก็บได้ ทัวร์นาเมนต์เต็ม 128 ทีมดันหัวข้อ Match session
+// กับ OBS ลงไปอยู่ใต้สุดของหน้า พับแล้วสองหัวข้อนั้นกลับมาอยู่ในจอเดียว
+//
+// จำสถานะไว้ เพราะการจัดทีมทำครั้งเดียวตอนต้น แต่หน้านี้ถูกเปิดซ้ำทั้งงาน
+// ต้องมาพับใหม่ทุกครั้งที่เปิดคือสิ่งที่น่ารำคาญกว่าการไม่มีปุ่มพับเสียอีก
+const TEAMS_FOLD_KEY = 'rovTournamentTeamsFolded';
 
-function teamName(id) {
-  if (!id) return null;
-  return roster.find((t) => t.id === id)?.name || registry.find((t) => t.id === id)?.name || 'Unknown team';
-}
-
-function side(match, which) {
-  const id = which === 'a' ? match.teamAId : match.teamBId;
-  const el = document.createElement('div');
-  el.className = `match-side${which === 'b' ? ' right' : ''}`;
-  const name = teamName(id);
-  if (!name) {
-    el.classList.add('tbd');
-    el.textContent = match.isBye ? 'bye' : 'to be decided';
-  } else {
-    el.textContent = name;
-    if (match.winnerId === id) el.classList.add('winner');
-  }
-  return el;
-}
-
-function matchRow(match) {
-  const row = document.createElement('div');
-  row.className = `match ${match.status}${match.isBye ? ' bye' : ''}`;
-
-  const score = document.createElement('div');
-  score.className = 'match-score';
-
-  const bothKnown = Boolean(match.teamAId && match.teamBId) && !match.isBye;
-  const a = document.createElement('input');
-  const b = document.createElement('input');
-  [a, b].forEach((input) => {
-    input.type = 'number';
-    input.min = '0';
-    input.max = String(Math.floor(match.bestOf / 2) + 1);
-    input.disabled = !bothKnown;
-  });
-  a.value = String(match.scoreA);
-  b.value = String(match.scoreB);
-
-  const commit = () => recordResult(match, Number(a.value), Number(b.value));
-  a.addEventListener('change', commit);
-  b.addEventListener('change', commit);
-
-  const dash = document.createElement('span');
-  dash.className = 'dash';
-  dash.textContent = '-';
-  score.append(a, dash, b);
-
-  row.append(side(match, 'a'), score, side(match, 'b'));
-
-  // เปิดคู่นี้ขึ้นจอแล้วเด้งไปหน้า Control Panel
-  // ทำได้เฉพาะคู่ที่รู้ตัวผู้เล่นทั้งสองฝั่งแล้วและไม่ใช่บาย
-  if (bothKnown) {
-    const open = document.createElement('button');
-    open.type = 'button';
-    open.className = 'tlink primary';
-    open.textContent = liveMatchId === match.id ? 'ON AIR' : 'OPEN';
-    if (liveMatchId === match.id) open.classList.add('live-now');
-    open.addEventListener('click', () => openInControl(match));
-    row.appendChild(open);
-  }
-
-  return row;
-}
-
-async function openInControl(match) {
+function readFoldPreference() {
+  // localStorage โยน error ได้ในโหมดส่วนตัวบางเบราว์เซอร์ ค่าเริ่มต้นคือกางไว้
   try {
-    const data = await fetchJson(`/api/matches/${encodeURIComponent(match.id)}/live`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
-    });
-    liveMatchId = data.live?.matchId || null;
-    showToast(`Game ${data.live?.gameNo ?? 1} is on air`, 'green');
-    window.location.href = withToken('/control');
-  } catch (error) {
-    showToast(error.message || 'Could not put this match on air', 'red');
+    return localStorage.getItem(TEAMS_FOLD_KEY) === '1';
+  } catch {
+    return false;
   }
 }
 
-function renderMatches(list) {
+function setTeamsFolded(folded, remember = true) {
+  const fold = document.getElementById('teamsFold');
+  const button = document.getElementById('teamsToggle');
+  if (!fold || !button) return;
+
+  fold.hidden = folded;
+  button.textContent = folded ? '▸' : '▾';
+  button.title = folded ? 'Show the team list' : 'Hide the team list';
+  button.setAttribute('aria-expanded', folded ? 'false' : 'true');
+
+  if (!remember) return;
+  try {
+    localStorage.setItem(TEAMS_FOLD_KEY, folded ? '1' : '0');
+  } catch {
+    /* จำไม่ได้ก็ไม่เป็นไร ปุ่มยังใช้ได้ในหน้านี้ */
+  }
+}
+
+function teamsAreFolded() {
+  return document.getElementById('teamsFold')?.hidden === true;
+}
+
+// MATCH SESSION ------------------------------------------------------
+//
+// การจับคู่ การกรอกผล และการเอาแมตช์ขึ้นจอ ย้ายไปหน้า /tournament/:id/bracket
+// หน้านี้เหลือไว้แค่ "ถึงไหนแล้ว" กับทางเข้า
+//
+// เหตุผลที่ยังโหลดตารางแข่งมาทั้งชุด ทั้งที่ใช้แค่ตัวเลข:
+// endpoint เดียวกันนี้ถูกเรียกอยู่แล้วตอนอยู่หน้านี้ และการนับต้องแยกบายออก
+// ซึ่งเซิร์ฟเวอร์ไม่ได้ส่งตัวเลขสรุปมาให้ การนับเองจึงถูกกว่าการเพิ่ม endpoint
+function renderMatchSummary(list) {
   const badges = document.getElementById('matchBadges');
   badges.textContent = '';
+
   const played = list.filter((m) => m.status === 'complete' && !m.isBye).length;
   const total = list.filter((m) => !m.isBye).length;
-  if (total > 0) badges.appendChild(badge(`${played} / ${total} played`, played === total ? 'active' : 'count'));
+  if (total > 0) {
+    badges.appendChild(badge(`${played} / ${total} played`, played === total ? 'active' : 'count'));
+  }
 
-  document.getElementById('clearMatchesBtn').hidden = list.length === 0;
-
-  // ปุ่มดูสายต้องเห็นตลอด แม้ยังไม่ได้จับคู่
-  // เคยซ่อนไว้ตอนยังไม่มีคู่ แล้วกลายเป็นว่าไม่มีใครรู้ว่ามีหน้านี้อยู่
-  // ยังไม่มีคู่ก็ให้กดเข้าไปแล้วหน้านั้นบอกเองว่าให้กลับมากด DRAW MATCHES
-  const bracketLink = document.getElementById('bracketLink');
-  bracketLink.title = list.length === 0
-    ? 'Nothing drawn yet - the bracket page will tell you so'
-    : 'See the full bracket';
+  const link = document.getElementById('bracketLink');
+  link.title = list.length === 0
+    ? 'Nothing drawn yet - draw the bracket in the match session'
+    : 'Run the matches: draw, record scores, put a match on air';
 
   const body = document.getElementById('matchesBody');
   body.textContent = '';
 
+  const note = document.createElement('div');
+  note.className = 'empty';
   if (list.length === 0) {
-    const empty = document.createElement('div');
-    empty.className = 'empty';
-    empty.textContent = current && current.teamCount < 2
-      ? 'Add at least two teams, then draw the matches.'
-      : 'No matches drawn yet. Use DRAW MATCHES to build the schedule.';
-    body.appendChild(empty);
-    return;
+    note.textContent = current && current.teamCount < 2
+      ? 'Add at least two teams, then open the match session to draw the bracket.'
+      : 'No bracket drawn yet. Open the match session to draw it.';
+  } else {
+    note.textContent = `${total} ${total === 1 ? 'match' : 'matches'} drawn. ` +
+      'Scores, the bracket and putting a match on air all live in the match session.';
   }
-
-  // จัดกลุ่มตามสายและรอบ ตามลำดับที่เซิร์ฟเวอร์ส่งมา
-  let currentHead = '';
-  list.forEach((match) => {
-    const head = match.bracket === 'main' ? `Round ${match.round}` : `Group ${match.bracket} - round ${match.round}`;
-    if (head !== currentHead) {
-      currentHead = head;
-      const title = document.createElement('div');
-      title.className = 'round-head';
-      title.textContent = head;
-      body.appendChild(title);
-    }
-    body.appendChild(matchRow(match));
-  });
+  body.appendChild(note);
 }
 
-async function loadMatches() {
+async function loadMatchSummary() {
   try {
-    // รู้ก่อนว่าคู่ไหนออกอากาศอยู่ ปุ่มจะได้ขึ้น ON AIR ให้ถูกตัว
-    const [matchData, liveData] = await Promise.all([
-      fetchJson(`/api/tournaments/${encodeURIComponent(tournamentId)}/matches`),
-      fetchJson('/api/live-match').catch(() => ({ live: {} }))
-    ]);
-    liveMatchId = liveData.live?.matchId || null;
-    renderMatches(matchData.matches || []);
+    const data = await fetchJson(`/api/tournaments/${encodeURIComponent(tournamentId)}/matches`);
+    renderMatchSummary(data.matches || []);
   } catch (error) {
-    showToast(error.message || 'Could not load matches', 'red');
-  }
-}
-
-async function drawMatches() {
-  const randomise = document.getElementById('randomiseDraw').checked;
-  const existing = document.getElementById('matchesBody').querySelector('.match');
-  if (existing && !window.confirm('Draw again?\n\nThe current schedule and every score recorded on it are replaced.')) {
-    return;
-  }
-
-  try {
-    const data = await fetchJson(`/api/tournaments/${encodeURIComponent(tournamentId)}/matches`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ randomise })
-    });
-    renderMatches(data.matches || []);
-    showToast(randomise ? 'Matches drawn at random' : 'Matches drawn by seed', 'green');
-  } catch (error) {
-    showToast(error.message || 'Could not draw matches', 'red');
-  }
-}
-
-async function clearMatches() {
-  if (!window.confirm('Clear the schedule?\n\nEvery match and score is removed.')) return;
-  try {
-    await fetchJson(`/api/tournaments/${encodeURIComponent(tournamentId)}/matches`, { method: 'DELETE' });
-    renderMatches([]);
-    showToast('Schedule cleared', 'blue');
-  } catch (error) {
-    showToast(error.message || 'Could not clear the schedule', 'red');
-  }
-}
-
-async function recordResult(match, scoreA, scoreB) {
-  try {
-    const data = await fetchJson(`/api/matches/${encodeURIComponent(match.id)}/result`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scoreA, scoreB })
-    });
-    renderMatches(data.matches || []);
-  } catch (error) {
-    showToast(error.message || 'Could not record the result', 'red');
-    loadMatches();
+    showToast(error.message || 'Could not load the match summary', 'red');
   }
 }
 
@@ -931,7 +752,7 @@ async function load() {
   renderTeams(current, data.teams || []);
   renderSources();
   await refreshRegistry();
-  await loadMatches();
+  await loadMatchSummary();
 
   ['detailSection', 'teamsSection', 'matchesSection', 'obsSection'].forEach((id) => {
     document.getElementById(id).hidden = false;
@@ -947,23 +768,8 @@ function renderFoot() {
 
 // BOOT ---------------------------------------------------------------
 //
-// ผูก event ผ่าน on() เสมอ อย่าเรียก getElementById(...).addEventListener ตรงๆ
-//
-// เหตุผล: ถ้า element ตัวใดตัวหนึ่งหายไป (เช่นเบราว์เซอร์ยัง cache html ตัวเก่า
-// อยู่ แต่โหลด js ตัวใหม่มาแล้ว) การเรียกตรงๆ จะโยน TypeError
-// แล้วบรรทัดที่เหลือ *ทั้งหมด* ใต้จุดนั้นไม่ถูกรันเลย รวมถึง load()
-// อาการที่ผู้ใช้เจอคือหน้าขึ้นมาแต่กดอะไรไม่ได้สักอย่าง โดยไม่มีอะไรบอกว่าพัง
-// on() จะข้ามตัวที่หายแล้วบ่นลง console แทน ตัวอื่นยังผูกได้ตามปกติ
-
-function on(id, event, handler) {
-  const el = document.getElementById(id);
-  if (!el) {
-    console.warn(`tournament.js: #${id} is missing, its ${event} handler was skipped`);
-    return null;
-  }
-  el.addEventListener(event, handler);
-  return el;
-}
+// ผูก event ผ่าน on() (จาก team-ui.js) เสมอ
+// อย่าเรียก getElementById(...).addEventListener ตรงๆ — เหตุผลอยู่ในไฟล์นั้น
 
 function boot() {
   on('saveBtn', 'click', save);
@@ -981,24 +787,22 @@ function boot() {
   if (playersBox) newTeamPlayers = buildPlayerRows(playersBox, [], 'captain-new-team');
 
   // ตัวเลือกไฟล์โลโก้ ซ่อนไว้ ใช้ปุ่มที่จัดสไตล์แล้วกดแทน
-  const logoPicker = document.createElement('input');
-  logoPicker.type = 'file';
-  logoPicker.accept = 'image/png,image/jpeg,image/webp';
-  logoPicker.hidden = true;
-  document.body.appendChild(logoPicker);
-  logoPicker.addEventListener('change', () => {
-    setPendingLogo(logoPicker.files?.[0] || null);
-    logoPicker.value = '';
-  });
+  const logoPicker = hiddenFilePicker(setPendingLogo);
   on('newTeamLogoBtn', 'click', () => logoPicker.click());
   on('clearNewTeamBtn', 'click', () => {
     resetNewTeamForm();
     showToast('Form cleared', 'blue');
   });
 
+  setTeamsFolded(readFoldPreference(), false);
+  on('teamsToggle', 'click', () => setTeamsFolded(!teamsAreFolded()));
+
   on('addTeamBtn', 'click', () => {
     const panel = document.getElementById('addPanel');
     if (!panel) return;
+    // ฟอร์มเพิ่มทีมอยู่ในส่วนที่พับ กดเพิ่มทีมตอนพับอยู่จึงต้องกางให้ก่อน
+    // ไม่งั้นปุ่มจะดูเหมือนเสีย ทั้งที่ฟอร์มเปิดแล้วแต่ซ่อนอยู่
+    setTeamsFolded(false);
     panel.hidden = !panel.hidden;
     if (!panel.hidden) {
       renderPicker();
@@ -1015,8 +819,6 @@ function boot() {
     bracketLink.href = withToken(`/tournament/${encodeURIComponent(tournamentId)}/bracket`);
   }
 
-  on('drawBtn', 'click', drawMatches);
-  on('clearMatchesBtn', 'click', clearMatches);
   on('addExistingBtn', 'click', addExisting);
   on('createTeamBtn', 'click', createAndAdd);
   on('newTeamName', 'keydown', (event) => {

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team - ROV Overlay Tool</title>
+<!-- หน้านี้เสิร์ฟที่ /teams/:id ซึ่งลึกกว่าหน้าอื่นหนึ่งชั้น
+     ทุก path ของ css/js จึงต้องขึ้นต้นด้วย / เสมอ ห้ามใช้ path สัมพัทธ์
+     ไม่งั้นเบราว์เซอร์จะไปหาที่ /teams/js/... แล้วได้ 404 -->
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">ROV <span>|</span> OVERLAY TOOL</div>
+  <nav class="topnav" aria-label="Pages">
+    <a class="tlink" href="/">HOME</a>
+    <a class="tlink active" href="/teams" aria-current="page">TEAMS</a>
+    <a class="tlink" href="/analytics">ANALYTICS</a>
+    <a class="tlink" href="/control">CONTROL</a>
+    <a class="tlink" href="/presets">PRESETS</a>
+    <a class="tlink" href="/design">DESIGN</a>
+    <a class="tlink" href="/hotkeys">HOTKEYS</a>
+  </nav>
+</div>
+
+<div class="wrap">
+
+  <div class="section">
+    <div class="section-head">
+      <a class="tlink" href="/teams">&larr; ALL TEAMS</a>
+      <div class="spacer"></div>
+      <div class="status-tags" id="headBadges"></div>
+    </div>
+    <div class="team-head" id="teamHead"></div>
+  </div>
+
+  <div class="section" id="detailSection" hidden>
+    <div class="section-head">
+      <div class="section-title">Team details</div>
+    </div>
+    <div class="panel">
+      <div class="frow">
+        <div class="fld">
+          <label for="fName">Team name</label>
+          <input id="fName" type="text" maxlength="24" autocomplete="off">
+        </div>
+        <div class="fld" style="flex:0 0 130px;">
+          <label for="fTag">Tag</label>
+          <input id="fTag" type="text" maxlength="6" autocomplete="off">
+        </div>
+      </div>
+
+      <label class="fld" style="margin-bottom:8px;"><span>Players</span></label>
+      <div id="playerRows"></div>
+
+      <div class="frow" style="margin-top:12px;align-items:center;">
+        <button type="button" class="tlink" id="uploadLogoBtn">UPLOAD LOGO</button>
+        <button type="button" class="tlink" id="clearLogoBtn">CLEAR LOGO</button>
+        <span class="hint" style="color:var(--muted);">PNG, JPG or WEBP, up to 4 MB</span>
+      </div>
+
+      <div class="frow" style="margin-bottom:0;">
+        <button type="button" class="tlink primary" id="saveBtn">SAVE CHANGES</button>
+        <button type="button" class="tlink" id="revertBtn">REVERT</button>
+        <div class="spacer" style="margin-left:auto;"></div>
+        <button type="button" class="tlink danger" id="deleteBtn">DELETE TEAM</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="tournamentsSection" hidden>
+    <div class="section-head">
+      <div class="section-title">Tournaments</div>
+    </div>
+    <div id="tournamentsBody"></div>
+  </div>
+
+  <div class="section" id="historySection" hidden>
+    <div class="section-head">
+      <div class="section-title">Match history</div>
+      <div class="spacer"></div>
+      <span class="bracket-hint" id="historyHint"></span>
+    </div>
+    <div id="historyBody"></div>
+  </div>
+
+  <div class="foot" id="foot"></div>
+
+</div>
+
+<div class="toast" id="toast_el"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/lib/app-client.js"></script>
+<script src="/js/lib/team-ui.js"></script>
+<script src="/js/team.js"></script>
+</body>
+</html>

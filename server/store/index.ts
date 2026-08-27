@@ -19,6 +19,10 @@ import type { GameStore } from './games';
 import { createGameStore } from './games';
 import type { LiveMatchStore } from './live-match';
 import { createLiveMatchStore } from './live-match';
+import type { HistoryStore } from './history';
+import { createHistoryStore } from './history';
+import type { AnalyticsStore } from './analytics';
+import { createAnalyticsStore } from './analytics';
 
 export interface Stores {
   db: DatabaseSync;
@@ -27,6 +31,8 @@ export interface Stores {
   matches: MatchStore;
   games: GameStore;
   liveMatch: LiveMatchStore;
+  history: HistoryStore;
+  analytics: AnalyticsStore;
 }
 
 let stores: Stores | null = null;
@@ -42,7 +48,9 @@ export function getStores(): Stores {
       tournaments,
       matches: createMatchStore(db, tournaments),
       games: createGameStore(db),
-      liveMatch: createLiveMatchStore(db)
+      liveMatch: createLiveMatchStore(db),
+      history: createHistoryStore(db),
+      analytics: createAnalyticsStore(db)
     };
   }
   return stores;

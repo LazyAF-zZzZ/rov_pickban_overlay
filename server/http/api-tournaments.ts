@@ -11,7 +11,8 @@ import express, { Router } from 'express';
 import { getStores } from '../store/index';
 import { FORMATS, BEST_OF_OPTIONS, STATUSES, MAX_TEAMS } from '../domain/tournament';
 import { requireControl } from './auth';
-import { goLive, clearLive, describeLive } from '../services/live-match';
+import { goLive, clearLive, describeLive, notifyAnalytics } from '../services/live-match';
+import { toHeroStats, summarise } from '../domain/analytics';
 
 const NOT_FOUND = /not found/i;
 
@@ -198,6 +199,49 @@ export function tournamentRoutes(): Router {
       return;
     }
     res.json({ games: games.forMatch(req.params.matchId) });
+  });
+
+  // ผู้ชนะของ "เกม" ไม่ใช่ของซีรีส์
+  //
+  // ต้องบันทึกตอนนั้น เดาย้อนหลังไม่ได้เลย
+  // ซีรีส์ Bo3 ที่จบ 2-1 บอกได้แค่ว่าใครชนะซีรีส์ ไม่ได้บอกว่าเกมที่สองใครชนะ
+  // อัตราชนะรายฮีโร่จึงต้องอาศัยการกดบันทึกตรงนี้เท่านั้น
+  router.put('/api/games/:gameId/winner', requireControl, (req, res) => {
+    const body = (req.body || {}) as { winner?: unknown };
+    const raw = body.winner;
+    // อนุญาต null ตั้งใจ ไว้ล้างค่าตอนกดผิด
+    const winner = raw === 'blue' || raw === 'red' ? raw : null;
+    if (raw !== null && raw !== undefined && winner === null) {
+      res.status(400).json({ error: 'Winner must be blue, red or null' });
+      return;
+    }
+
+    const game = getStores().games.setWinner(req.params.gameId, winner);
+    if (!game) {
+      res.status(404).json({ error: 'Game not found' });
+      return;
+    }
+
+    // อัตราชนะเปลี่ยนทันที หน้าสถิติที่เปิดค้างอยู่ต้องรู้
+    notifyAnalytics();
+    res.json({ ok: true, game, live: describeLive() });
+  });
+
+  // สถิติ pick/ban กรองได้ตามทัวร์นาเมนต์หรือตามทีม
+  router.get('/api/analytics', (req, res) => {
+    const query = req.query as { tournamentId?: unknown; teamId?: unknown };
+    const scope = {
+      tournamentId: typeof query.tournamentId === 'string' && query.tournamentId ? query.tournamentId : null,
+      teamId: typeof query.teamId === 'string' && query.teamId ? query.teamId : null
+    };
+
+    const raw = getStores().analytics.read(scope);
+    const heroes = toHeroStats(raw.counts, raw.games);
+    res.json({
+      scope,
+      summary: summarise(heroes, raw.games, raw.decidedGames),
+      heroes
+    });
   });
 
   router.put('/api/matches/:matchId/result', requireControl, (req, res) => {
