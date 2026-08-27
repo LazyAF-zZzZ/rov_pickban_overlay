@@ -12,8 +12,8 @@ conversation history, everything needed to continue is here or in `CLAUDE.md`.
 ## 0. Where things stand
 
 **Last updated 2026-08-12.** Everything up to `014bafe` is committed **and
-pushed**. Everything after it is written and verified but **not yet committed** —
-stamp each commit id into this table as it lands.
+pushed**. Everything after it is committed on the branch `tournament-phases-6-7-8`
+and **not yet merged or pushed**.
 
 | Commit | What |
 |---|---|
@@ -27,11 +27,11 @@ stamp each commit id into this table as it lands.
 | `dcee2c3` | Double elimination with grand-final reset |
 | `72ddb6f` | Phase 5 — match to control panel, live pointer, **draft capture** |
 | `418b23d` | Bracket page at `/tournament/:id/bracket` |
-| *(pending)* | Phase 6 — `/teams` directory, `/teams/:id` profile with match history |
-| *(pending)* | Match session split out of the tournament page, bracket-only |
-| *(pending)* | Teams section on the tournament page: foldable and compact |
-| *(pending)* | Phase 8 — `/analytics`, per-game winner capture, live room |
-| *(pending)* | Phase 7 — `/overlay-teams` team list with staggered slide-in |
+| `23bd837` | Phase 6 — `/teams` directory, `/teams/:id` profile with match history |
+| `23bd837` | Match session split out of the tournament page, bracket-only |
+| `23bd837` | Teams section on the tournament page: foldable and compact |
+| `23bd837` | Phase 8 — `/analytics`, per-game winner capture, live room |
+| `23bd837` | Phase 7 — `/overlay-teams` team list with staggered slide-in |
 
 Current state: **0 type errors under `strict`, 139 tests passing.** Creating a
 tournament, adding a team with its players in one form, uploading logos,
@@ -407,9 +407,9 @@ completeness from the state it already receives rather than asking the server.
 | 3 | Team registry UI, logos, rosters, 128 cap in the UI | done `16fe9bb` |
 | 4 | Formats, bracket generation, random matching | done `a3cf985` + double elim |
 | 5 | Match → control panel, live pointer, draft capture | done `72ddb6f` |
-| 6 | `/teams` directory and `/teams/:id` profile with history | done *(pending commit)* |
-| 7 | Team-list overlay with staggered slide-in, at `/overlay-teams` | done *(pending commit)* |
-| 8 | Pick/ban analytics, live, per tournament and per team | done *(pending commit)* |
+| 6 | `/teams` directory and `/teams/:id` profile with history | done `23bd837` |
+| 7 | Team-list overlay with staggered slide-in, at `/overlay-teams` | done `23bd837` |
+| 8 | Pick/ban analytics, live, per tournament and per team | done `23bd837` |
 
 The team-list overlay must not rely on `animationend` alone — OBS freezes browser
 sources that are off-scene, so the event may never fire. Use the timer fallback
