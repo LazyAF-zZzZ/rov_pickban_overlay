@@ -7,7 +7,7 @@
 // ประกอบด้วย textContent ทั้งหมด ไม่มีการต่อ innerHTML
 // ชื่อทีมกับชื่อผู้เล่นเป็นข้อความที่ผู้ใช้พิมพ์เอง
 
-const { socket, fetchJson, withToken, showToast } = window.RovClient;
+const { socket, fetchJson, withToken, showToast, onDataChange } = window.RovClient;
 const { badge, buildPlayerRows, logoImage, sendLogo, hiddenFilePicker, on } = window.RovTeamUI;
 
 let teams = [];
@@ -239,6 +239,16 @@ function boot() {
   });
 
   socket.on('connect_error', (error) => showToast(error.message || 'Connection error', 'red'));
+
+  // ทะเบียนถูกแก้จากหน้าอื่นได้ (โปรไฟล์ทีม หรือฟอร์มสร้างทีมในหน้าทัวร์นาเมนต์)
+  // roster เปลี่ยน = ตัวเลขจำนวนทัวร์นาเมนต์ในแต่ละแถวเปลี่ยนตาม
+  //
+  // ฟอร์มสร้างทีมอยู่คนละก้อน DOM กับรายชื่อ การวาดรายชื่อใหม่จึงไม่กระทบสิ่งที่กำลังกรอก
+  onDataChange((change) => {
+    if (change.topic === 'teams' || change.topic === 'roster' || change.topic === 'matches') {
+      reload();
+    }
+  });
 
   document.getElementById('foot').textContent =
     'Teams here are shared by every tournament. Adding a team to a tournament does not copy it - ' +

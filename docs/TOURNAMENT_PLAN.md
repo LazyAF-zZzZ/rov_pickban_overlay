@@ -33,7 +33,7 @@ and **not yet merged or pushed**.
 | `23bd837` | Phase 8 — `/analytics`, per-game winner capture, live room |
 | `23bd837` | Phase 7 — `/overlay-teams` team list with staggered slide-in |
 
-Current state: **0 type errors under `strict`, 139 tests passing.** Creating a
+Current state: **0 type errors under `strict`, 144 tests passing.** Creating a
 tournament, adding a team with its players in one form, uploading logos,
 drawing single/double elimination, round robin and group brackets, recording
 Bo3/Bo5 results, opening a match in the control panel and having its draft
@@ -144,6 +144,30 @@ Measure that extent from the last card's `getBoundingClientRect().bottom`, not
 `scrollHeight`. With `overflow: visible` the content is not in a scrollable
 region, so `scrollHeight` equals `clientHeight` and reports "never overflowing".
 The first version did exactly that and the scaling never once ran.
+
+**Pages sync themselves in real time.** Tournament, match session, team
+registry, team profile, control panel and analytics all follow changes made
+anywhere else, with no refresh. Two operators on two screens now see the same
+thing, which is the case the tool is actually used in.
+
+The mechanism generalises the analytics room from Phase 8 rather than adding a
+second one. `server/services/sync.ts` emits `dataChanged` into one room with a
+topic — `teams`, `tournaments`, `roster`, `matches`, `games` or `live` — plus
+the ids it concerns. It carries **no data**: pages filter to different scopes, so
+one payload cannot serve them all, and each page refetches only what it shows.
+Overlays never join the room, so they pay nothing for operator churn. A test
+asserts exactly that.
+
+**Auto-refresh must never overwrite what someone is typing.** A refresh landing
+mid-edit wipes a half-typed roster, and during an event that is worse than being
+briefly stale. `deferWhileEditing(root, run)` runs the refresh immediately when
+nobody is editing inside that region, and otherwise waits until they finish and
+then runs it once, however many signals arrived meanwhile.
+
+It waits on a **timer, not `focusout`**. Focus events do not fire at all while
+the window is unfocused — which is the normal state when the operator has tabbed
+over to OBS with the cursor still parked in a field. The event version leaves
+that page stale forever; the timer does not care whether the window has focus.
 
 ### Starting a fresh session
 
@@ -530,6 +554,16 @@ Each of these cost real debugging time. They are also in `CLAUDE.md`.
   top of the file — nothing renders, no handler binds, and the console error
   points at a line that looks fine. `team-api.test.ts` asserts the tag is
   present *and* ordered first on all three pages that need it.
+- **Focus events do not fire when the window is not focused.** `focusout`,
+  `blur`, even a direct listener on the element: all silent while
+  `document.hasFocus()` is false, though `document.activeElement` still moves.
+  Anything that waits for the user to "finish editing" must poll instead, or it
+  waits forever the moment they alt-tab to OBS.
+- **`String.replace` swaps the first match, which is rarely the one you meant.**
+  A codemod anchored on `renderLiveBar();` landed the real-time subscription
+  inside `setGameWinner` instead of at the end of `control.js`. It parsed, it
+  type-checked, and it simply never ran until someone recorded a winner. When
+  scripting an edit, anchor on something unique or assert the match count.
 - **Classic scripts share one global scope per page, so type-check per page.**
   Throwing every file in `public/js/` at `tsc` at once reports ~100 phantom
   "cannot redeclare `socket`" errors between files that never load together.

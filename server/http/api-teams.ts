@@ -12,6 +12,7 @@ import { LOGO_DIR, LOGO_MAX_BYTES, teamLogoFilePath, removeTeamLogoFiles } from 
 import { getStores } from '../store/index';
 import { requireControl } from './auth';
 import { validateUpload, rawImage } from './upload';
+import { notifyData } from '../services/sync';
 
 const NOT_FOUND = /not found/i;
 
@@ -36,6 +37,7 @@ export function teamRoutes(): Router {
       res.status(400).json({ error: result.error });
       return;
     }
+    notifyData({ topic: 'teams', teamId: result.team.id });
     res.json({ ok: true, team: result.team });
   });
 
@@ -69,6 +71,7 @@ export function teamRoutes(): Router {
       res.status(NOT_FOUND.test(result.error) ? 404 : 400).json({ error: result.error });
       return;
     }
+    notifyData({ topic: 'teams', teamId: req.params.id });
     res.json({ ok: true, team: result.team });
   });
 
@@ -86,6 +89,9 @@ export function teamRoutes(): Router {
       res.status(404).json({ error: result.error });
       return;
     }
+    // ทีมหลุดจากทุกทัวร์นาเมนต์ที่เคยลงด้วย roster ของหน้าอื่นจึงเปลี่ยนตาม
+    notifyData({ topic: 'teams', teamId: req.params.id });
+    notifyData({ topic: 'roster' });
     res.json({ ok: true });
   });
 
@@ -114,6 +120,7 @@ export function teamRoutes(): Router {
 
     // v = เวลาที่อัปโหลด ไว้กัน cache ของเบราว์เซอร์กับ OBS
     const result = teams.setLogo(id, { v: Date.now(), ext: checked.ext });
+    notifyData({ topic: 'teams', teamId: id });
     res.json({ ok: true, team: result.team });
   });
 
@@ -125,6 +132,7 @@ export function teamRoutes(): Router {
     }
     removeTeamLogoFiles(req.params.id);
     const result = teams.setLogo(req.params.id, { v: 0, ext: '' });
+    notifyData({ topic: 'teams', teamId: req.params.id });
     res.json({ ok: true, team: result.team });
   });
 

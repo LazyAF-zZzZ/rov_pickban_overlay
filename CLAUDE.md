@@ -107,6 +107,18 @@ escapes through some tooling turns them into real bytes in the file. `lib/saniti
 compares char codes instead, and `npm run check` fails the build if raw control bytes
 appear anywhere.
 
+**Pages refresh themselves when data changes elsewhere.** `server/services/sync.ts` emits
+`dataChanged` into one Socket.IO room with a topic (`teams`, `tournaments`, `roster`,
+`matches`, `games`, `live`) and the ids involved — a signal, never the data, because each
+page filters to its own scope. Every write endpoint calls `notifyData`; a new one that does
+not is a page that silently goes stale. Overlays never join the room.
+
+**Never let an auto-refresh overwrite a field being edited.** Use
+`RovClient.deferWhileEditing(root, run)`: it refreshes now if nobody is typing inside
+`root`, and otherwise waits until they stop. It polls rather than listening for `focusout`,
+because focus events do not fire at all while the window is unfocused — exactly what happens
+when the operator tabs over to OBS with the cursor still in a field.
+
 ## Standing rule: keep the plan current
 
 **Any work that touches a phase must update `docs/TOURNAMENT_PLAN.md` in the same

@@ -36,7 +36,7 @@ import {
   resumeDraft
 } from '../services/draft-engine';
 import { isAuthorizedSocket } from '../http/auth';
-import { ANALYTICS_ROOM } from '../services/live-match';
+import { DATA_ROOM } from '../services/sync';
 
 type Payload = Record<string, unknown>;
 
@@ -252,13 +252,14 @@ export function registerHandlers(socket: Socket): void {
     emitState();
   });
 
-  // ห้องของหน้าสถิติ เข้าเองได้โดยไม่ต้องมีโทเคน
+  // ห้องของหน้าฝั่งคนคุมงาน เข้าเองได้โดยไม่ต้องมีโทเคน
   //
   // ไม่ผ่าน controlEvent ตั้งใจ: การเข้าห้องไม่ได้แก้ state อะไรเลย
-  // และตัวเลขสถิติก็เปิดอ่านได้อยู่แล้วทาง GET /api/analytics
-  // สิ่งที่ห้องนี้ได้รับคือสัญญาณเปล่าๆ ว่า "ไปดึงมาใหม่" ไม่มีข้อมูลติดไปด้วย
-  socket.on('analytics:join', () => socket.join(ANALYTICS_ROOM));
-  socket.on('analytics:leave', () => socket.leave(ANALYTICS_ROOM));
+  // และข้อมูลที่ห้องนี้พูดถึงก็เปิดอ่านได้อยู่แล้วทาง GET ปกติ
+  // สิ่งที่ส่งเข้าห้องคือสัญญาณเปล่าๆ ว่า "หัวข้อนี้เปลี่ยนแล้ว ไปดึงมาใหม่"
+  // ไม่มีข้อมูลติดไปด้วย (ดู services/sync.ts)
+  socket.on('data:join', () => socket.join(DATA_ROOM));
+  socket.on('data:leave', () => socket.leave(DATA_ROOM));
 
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);

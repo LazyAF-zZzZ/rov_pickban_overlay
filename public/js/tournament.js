@@ -6,7 +6,7 @@
 // ทุกอย่างในหน้านี้ประกอบด้วย textContent / value ไม่มีการต่อ innerHTML
 // เพราะชื่อทัวร์นาเมนต์กับโน้ตเป็นข้อความที่ผู้ใช้พิมพ์เอง
 
-const { socket, fetchJson, absoluteUrl, withToken, showToast } = window.RovClient;
+const { socket, fetchJson, absoluteUrl, withToken, showToast, onDataChange, deferWhileEditing } = window.RovClient;
 
 // ช่องผู้เล่น โลโก้ และตัวอัปโหลด ใช้ร่วมกับหน้า /teams และ /teams/:id
 // อย่าก็อปกลับมาไว้ในไฟล์นี้อีก — สองชุดที่แก้คนละที่คือที่มาของบั๊กเดิม
@@ -823,6 +823,29 @@ function boot() {
   on('createTeamBtn', 'click', createAndAdd);
   on('newTeamName', 'keydown', (event) => {
     if (event.key === 'Enter') createAndAdd();
+  });
+
+  // ข้อมูลหน้านี้ถูกแก้จากที่อื่นได้ตลอด: หน้าจัดการแข่งจับคู่ใหม่ โปรไฟล์ทีมแก้ชื่อ
+  // หรือคนคุมอีกคนเปิดอีกจออยู่ เดิมหน้านี้อ่านครั้งเดียวตอนเปิดแล้วค้างอยู่อย่างนั้น
+  //
+  // กฎเดียวที่ห้ามพลาด: ห้ามวาดทับส่วนที่กำลังถูกกรอก
+  // ฟอร์มรายละเอียดกับตัวแก้ทีมมีคนพิมพ์ค้างไว้ได้ ถ้าวาดใหม่ทับ ที่พิมพ์หายหมด
+  onDataChange((change) => {
+    const mine = !change.tournamentId || change.tournamentId === tournamentId;
+
+    if (change.topic === 'matches' && mine) loadMatchSummary();
+
+    if ((change.topic === 'roster' && mine) || change.topic === 'teams') {
+      deferWhileEditing(document.getElementById('teamsFold'), () => {
+        reloadTeams().then(refreshRegistry).catch(() => { /* สัญญาณรอบหน้าจะพามาเอง */ });
+      });
+    }
+
+    if (change.topic === 'tournaments' && mine) {
+      deferWhileEditing(document.getElementById('detailSection'), () => {
+        reloadTeams().catch(() => { /* สัญญาณรอบหน้าจะพามาเอง */ });
+      });
+    }
   });
 
   socket.on('connect_error', (error) => showToast(error.message || 'Connection error', 'red'));

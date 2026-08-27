@@ -9,7 +9,7 @@
 // เกมที่เล่นไปแล้วเก็บสำเนาแช่แข็งของทีม ณ ตอนนั้นไว้ต่างหาก (แผน §4)
 // ประวัติจึงยังบอกว่า "ใครลงเล่นจริง" ไม่ใช่ "ตอนนี้ทีมมีใคร"
 
-const { socket, fetchJson, withToken, showToast } = window.RovClient;
+const { socket, fetchJson, withToken, showToast, onDataChange, deferWhileEditing } = window.RovClient;
 const { badge, buildPlayerRows, logoImage, sendLogo, hiddenFilePicker, on } = window.RovTeamUI;
 
 // /teams/t3a1b2c3  ->  t3a1b2c3
@@ -311,6 +311,18 @@ function boot() {
   });
   on('uploadLogoBtn', 'click', () => logoPicker.click());
   on('clearLogoBtn', 'click', clearLogo);
+
+  // โปรไฟล์ทีมเปลี่ยนได้จากหน้าทัวร์นาเมนต์ (แก้ทีมแบบเร็ว) และประวัติเปลี่ยนทุกครั้งที่มีผลใหม่
+  //
+  // load() วาดฟอร์มผู้เล่นใหม่ทั้งชุด ถ้ามีคนกำลังกรอกอยู่จะหายทันที
+  // จึงข้ามไปเลยเมื่อมีคนพิมพ์ค้าง แล้วรอสัญญาณรอบหน้า
+  onDataChange((change) => {
+    const mine = !change.teamId || change.teamId === teamId;
+    const relevant = (change.topic === 'teams' && mine)
+      || change.topic === 'matches' || change.topic === 'roster';
+    if (!relevant) return;
+    deferWhileEditing(document.getElementById('detailSection'), reload);
+  });
 
   socket.on('connect_error', (error) => showToast(error.message || 'Connection error', 'red'));
 

@@ -14,7 +14,7 @@
 // สายแพ้กับรอบชิงแบบต้องชนะสองครั้งเรนเดอร์ได้แล้ว และเคยเห็นด้วยตาจริง
 // หัวข้อเรียงตามเส้นทางของทีมเสมอ: สายชนะ -> กลุ่ม -> สายแพ้ -> รอบชิง
 
-const { socket, fetchJson, withToken, showToast } = window.RovClient;
+const { socket, fetchJson, withToken, showToast, onDataChange, deferWhileEditing } = window.RovClient;
 const { badge, on } = window.RovTeamUI;
 
 const parts = window.location.pathname.split('/').filter(Boolean);
@@ -396,6 +396,17 @@ async function reload() {
     showToast(error.message || 'Could not reload the bracket', 'red');
   }
 }
+
+// สายการแข่งเปลี่ยนได้จากหน้าอื่น และ "คู่ที่ออกอากาศ" ก็เปลี่ยนจากหน้า control ได้
+//
+// ห้ามวาดสายใหม่ตอนมีคนกำลังพิมพ์คะแนนอยู่ ช่องคะแนนอยู่ในสายที่กำลังจะถูกวาดทับ
+// ตัวเลขที่พิมพ์ค้างไว้จะหายกลางคัน ซึ่งตอนคุมงานจริงคือเรื่องที่ยอมไม่ได้
+onDataChange((change) => {
+  const mine = !change.tournamentId || change.tournamentId === tournamentId;
+  if (!mine && change.topic !== 'teams') return;
+  if (!['matches', 'roster', 'teams', 'live'].includes(change.topic)) return;
+  deferWhileEditing(document.getElementById('bracketScroll'), reload);
+});
 
 socket.on('connect_error', (error) => showToast(error.message || 'Connection error', 'red'));
 

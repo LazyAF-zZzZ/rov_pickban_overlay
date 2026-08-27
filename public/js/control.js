@@ -1,4 +1,4 @@
-const { controlToken, socket, withToken, fetchJson, showToast } = window.RovClient;
+const { controlToken, socket, withToken, fetchJson, showToast, onDataChange } = window.RovClient;
 // ชื่อเดิมในไฟล์นี้ ใช้ตัวเดียวกับ absoluteUrl ของ app-client
 const overlayUrl = window.RovClient.absoluteUrl;
 
@@ -1119,3 +1119,11 @@ async function setGameWinner(winner) {
 }
 
 renderLiveBar();
+
+// คู่ที่ออกอากาศเปลี่ยนได้จากหน้าจัดการแข่ง ไม่ใช่จากหน้านี้ที่เดียว
+// แถบ ON AIR เคยอ่านค่าครั้งเดียวตอนเปิดหน้า เปลี่ยนคู่จากอีกจอแล้วที่นี่ยังโชว์คู่เก่า
+onDataChange((change) => {
+  if (change.topic === 'live' || change.topic === 'games' || change.topic === 'matches') {
+    renderLiveBar();
+  }
+});

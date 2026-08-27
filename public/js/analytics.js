@@ -11,7 +11,7 @@
 // การอัปเดตสด: เข้าห้อง 'analytics' แล้วรอสัญญาณ analyticsChanged
 // สัญญาณไม่มีข้อมูลติดมา เพราะแต่ละหน้ากรองคนละขอบเขต ตัวเลขชุดเดียวใช้ร่วมกันไม่ได้
 
-const { socket, fetchJson, showToast } = window.RovClient;
+const { socket, fetchJson, showToast, onDataChange } = window.RovClient;
 const { badge, on } = window.RovTeamUI;
 
 let heroes = [];
@@ -296,11 +296,13 @@ function boot() {
     renderLive();
   });
 
-  // เข้าห้องเพื่อรับสัญญาณว่าตัวเลขสะสมเปลี่ยน (ดราฟต์ล็อก หรือมีการบันทึกผู้ชนะ)
-  // ต้องเข้าใหม่ทุกครั้งที่ต่อใหม่ ห้องไม่ได้ตามมาเองหลัง reconnect
-  socket.on('connect', () => socket.emit('analytics:join'));
-  if (socket.connected) socket.emit('analytics:join');
-  socket.on('analyticsChanged', reload);
+  // ตัวเลขสะสมขยับตอนดราฟต์ล็อกหรือมีการบันทึกผู้ชนะ (หัวข้อ games)
+  // ส่วนผลของแมตช์เปลี่ยนขอบเขต "เกมของทัวร์นาเมนต์นี้" ด้วย จึงต้องดึงใหม่เหมือนกัน
+  // ชื่อทีมกับชื่อทัวร์นาเมนต์เปลี่ยน กระทบแค่ dropdown ไม่ต้องคำนวณสถิติใหม่
+  onDataChange((change) => {
+    if (change.topic === 'games' || change.topic === 'matches') reload();
+    if (change.topic === 'teams' || change.topic === 'tournaments') loadScopeOptions();
+  });
   socket.on('connect_error', (error) => showToast(error.message || 'Connection error', 'red'));
 
   document.getElementById('foot').textContent =

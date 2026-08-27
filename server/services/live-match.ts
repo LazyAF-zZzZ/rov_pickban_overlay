@@ -12,7 +12,8 @@ import { deepClone } from '../lib/json';
 import { defaultState, sanitizeState } from '../domain/match';
 import type { GameState } from '../domain/match';
 import { carryOverSettings } from '../domain/settings';
-import { getState, setState, emitState, subscribe, emitToRoom } from '../store/live-state';
+import { getState, setState, emitState, subscribe } from '../store/live-state';
+import { notifyData } from './sync';
 import { stopDraftTimer, syncSecondsFromState } from './draft-engine';
 import { getStores } from '../store/index';
 import type { GameSlot } from '../store/games';
@@ -146,23 +147,22 @@ export function goLive(matchId: string): GoLiveResult {
   liveGameLocked = game.draftLocked;
   emitState();
 
+  // หน้าอื่นที่เปิดค้างอยู่ต้องรู้ว่าตอนนี้คู่ไหนขึ้นจอ
+  notifyData({ topic: 'live', tournamentId: match.tournamentId });
+
   return { live: describeLive() };
 }
 
 export function clearLive(): LiveInfo {
   getStores().liveMatch.clear();
+  notifyData({ topic: 'live' });
   return describeLive();
 }
 
-// ห้องของหน้าสถิติ ประกาศไว้ที่เดียวเพื่อไม่ให้ชื่อห้องพิมพ์ผิดคนละแบบสองที่
-export const ANALYTICS_ROOM = 'analytics';
-
-// บอกหน้าสถิติว่าตัวเลขที่ล็อกแล้วเปลี่ยนไป ให้ไปดึงมาใหม่
-//
-// ส่งแค่สัญญาณ ไม่ส่งตัวเลขไปด้วย เพราะแต่ละหน้าอาจกรองคนละขอบเขต
-// (ทั้งหมด / เฉพาะทัวร์นาเมนต์ / เฉพาะทีม) ตัวเลขชุดเดียวจึงใช้ร่วมกันไม่ได้
+// ตัวเลขสถิติขยับได้สองจังหวะเท่านั้น: ดราฟต์ล็อก และบันทึกผู้ชนะของเกม
+// ทั้งสองอย่างคือหัวข้อ 'games' ในระบบสัญญาณกลาง (services/sync.ts)
 export function notifyAnalytics(): void {
-  emitToRoom(ANALYTICS_ROOM, 'analyticsChanged');
+  notifyData({ topic: 'games' });
 }
 
 // เกาะกับ state กลาง แล้วมิเรอร์ดราฟต์ลงเกมที่ผูกไว้ทุกครั้งที่มีการเปลี่ยน

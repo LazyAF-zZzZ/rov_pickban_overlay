@@ -13,6 +13,7 @@ import { FORMATS, BEST_OF_OPTIONS, STATUSES, MAX_TEAMS } from '../domain/tournam
 import { requireControl } from './auth';
 import { goLive, clearLive, describeLive, notifyAnalytics } from '../services/live-match';
 import { toHeroStats, summarise } from '../domain/analytics';
+import { notifyData } from '../services/sync';
 
 const NOT_FOUND = /not found/i;
 
@@ -45,6 +46,7 @@ export function tournamentRoutes(): Router {
       res.status(400).json({ error: result.error });
       return;
     }
+    notifyData({ topic: 'tournaments', tournamentId: result.tournament.id });
     res.json({ ok: true, tournament: result.tournament });
   });
 
@@ -64,6 +66,7 @@ export function tournamentRoutes(): Router {
       res.status(NOT_FOUND.test(result.error) ? 404 : 400).json({ error: result.error });
       return;
     }
+    notifyData({ topic: 'tournaments', tournamentId: req.params.id });
     res.json({ ok: true, tournament: result.tournament });
   });
 
@@ -76,6 +79,7 @@ export function tournamentRoutes(): Router {
       res.status(404).json({ error: result.error });
       return;
     }
+    notifyData({ topic: 'tournaments', tournamentId: req.params.id });
     res.json({ ok: true, tournament: result.tournament });
   });
 
@@ -85,6 +89,7 @@ export function tournamentRoutes(): Router {
       res.status(404).json({ error: result.error });
       return;
     }
+    notifyData({ topic: 'tournaments', tournamentId: req.params.id });
     res.json({ ok: true });
   });
 
@@ -113,6 +118,7 @@ export function tournamentRoutes(): Router {
       res.status(status).json({ error: result.error, limit: result.limit });
       return;
     }
+    notifyData({ topic: 'roster', tournamentId: req.params.id });
     res.json({
       ok: true,
       teamCount: result.teamCount,
@@ -128,6 +134,7 @@ export function tournamentRoutes(): Router {
       res.status(404).json({ error: result.error });
       return;
     }
+    notifyData({ topic: 'roster', tournamentId: req.params.id });
     res.json({
       ok: true,
       teamCount: result.teamCount,
@@ -158,6 +165,7 @@ export function tournamentRoutes(): Router {
       res.status(NOT_FOUND.test(result.error) ? 404 : 400).json({ error: result.error });
       return;
     }
+    notifyData({ topic: 'matches', tournamentId: req.params.id });
     res.json({ ok: true, matches: result.matches });
   });
 
@@ -168,6 +176,7 @@ export function tournamentRoutes(): Router {
       return;
     }
     matches.clear(req.params.id);
+    notifyData({ topic: 'matches', tournamentId: req.params.id });
     res.json({ ok: true, matches: [] });
   });
 
@@ -252,6 +261,7 @@ export function tournamentRoutes(): Router {
       res.status(NOT_FOUND.test(result.error) ? 404 : 400).json({ error: result.error });
       return;
     }
+    notifyData({ topic: 'matches', tournamentId: result.match.tournamentId });
     res.json({ ok: true, match: result.match, matches: matches.list(result.match.tournamentId) });
   });
 
@@ -263,6 +273,7 @@ export function tournamentRoutes(): Router {
       res.status(404).json({ error: result.error });
       return;
     }
+    notifyData({ topic: 'roster', tournamentId: req.params.id });
     res.json({ ok: true, teams: tournaments.teams(req.params.id) });
   });
 

@@ -82,3 +82,15 @@ interface HTMLElement {
   /** handler ที่ผูกไว้กับช่องกรอกฮีโร่ (control.js) */
   _onCommit?: (...args: any[]) => void;
 }
+
+// ส่วนของ RovClient ที่ใช้ทำ real-time sync
+interface RovDataChange {
+  topic: 'teams' | 'tournaments' | 'roster' | 'matches' | 'games' | 'live';
+  tournamentId?: string | null;
+  teamId?: string | null;
+}
+interface RovClientApi {
+  onDataChange(handler: (change: RovDataChange) => void): void;
+  isEditingWithin(root: Element | null): boolean;
+  deferWhileEditing(root: Element | null, run: () => void): void;
+}
