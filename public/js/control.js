@@ -145,8 +145,10 @@ function renderTeamLogo(team, logo) {
   }
   preview.textContent = '';
   preview.classList.add('filled');
+  // ชื่อไฟล์มาจาก state เหมือนฝั่ง overlay ไม่ได้เดาจากฝั่งน้ำเงิน/แดง
+  const file = logo?.src || LOGO_FILES[team];
   preview.style.backgroundImage =
-    `url("images/team-logos/${LOGO_FILES[team]}.${ext}?v=${version}")`;
+    `url("images/team-logos/${file}.${ext}?v=${version}")`;
 }
 
 async function copyOverlayUrl(path) {

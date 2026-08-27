@@ -99,7 +99,14 @@ function renderTeamLogo(el, team, logo) {
         return;
     }
 
-    const stamp = `${version}.${ext}`;
+    // ชื่อไฟล์มาจาก state ไม่ได้เดาจากฝั่ง
+    // state บอกเองว่าภาพของทีมนี้อยู่ไฟล์ไหน สลับฝั่งแล้วภาพจึงสลับตาม
+    // ไม่มี src (state.json รุ่นก่อน) ก็ถอยไปใช้ชื่อตามฝั่งเหมือนเดิม
+    const file = logo?.src || LOGO_FILES[team];
+
+    // src ต้องอยู่ในลายเซ็นด้วย ไม่งั้นสลับฝั่งที่ v กับ ext บังเอิญเท่ากัน
+    // จะถูกมองว่า "ไม่มีอะไรเปลี่ยน" แล้วภาพเก่าค้างอยู่
+    const stamp = `${version}.${ext}.${file}`;
     if (el.dataset.version === stamp) return;
     el.dataset.version = stamp;
 
@@ -111,7 +118,7 @@ function renderTeamLogo(el, team, logo) {
         el.hidden = true;
         el.dataset.version = '';
     };
-    el.src = `images/team-logos/${LOGO_FILES[team]}.${ext}?v=${version}`;
+    el.src = `images/team-logos/${file}.${ext}?v=${version}`;
     el.hidden = false;
 }
 

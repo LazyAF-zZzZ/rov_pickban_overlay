@@ -114,13 +114,16 @@ export function goLive(matchId: string): GoLiveResult {
     teamBlue: {
       ...deepClone(defaultState.teamBlue),
       name: blue.name,
-      logo: blue.logo,
+      // โลโก้ของทีมในทะเบียนอยู่ไฟล์ <teamId>.<ext> ไม่ใช่ blue-team.<ext>
+      // ต้องบอก src ไปด้วย ไม่งั้น overlay จะไปเปิดไฟล์ของช่องน้ำเงินที่ค้างอยู่
+      // ซึ่งเป็นภาพของทีมอื่นที่เคยอัปโหลดไว้ ไม่ใช่ของทีมที่กำลังแข่ง
+      logo: { ...blue.logo, src: blue.id },
       players: blue.players.map((p, i) => p.name || `Player ${i + 1}`)
     },
     teamRed: {
       ...deepClone(defaultState.teamRed),
       name: red.name,
-      logo: red.logo,
+      logo: { ...red.logo, src: red.id },
       players: red.players.map((p, i) => p.name || `Player ${i + 1}`)
     },
     // คะแนนซีรีส์ ไม่ใช่คะแนนในเกม overlay จะได้โชว์สถานะซีรีส์ถูก

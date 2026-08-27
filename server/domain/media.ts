@@ -42,6 +42,18 @@ export type ImageExt = 'png' | 'jpg' | 'webp';
 export interface Logo {
   v: number;
   ext: ImageExt | '';
+  // ชื่อไฟล์ (ไม่รวมนามสกุล) ที่เก็บภาพนี้ไว้
+  //
+  // เดิมไม่มีฟิลด์นี้ ผู้เล่นหน้า overlay จึงเดาชื่อไฟล์จาก "ฝั่ง" แทน
+  // (ฝั่งน้ำเงิน = blue-team เสมอ) ซึ่งพังสองแบบ:
+  //   1. สลับฝั่ง แล้วข้อมูลใน state สลับ แต่ไฟล์ไม่สลับ ภาพจึงไม่เปลี่ยน
+  //   2. เอาแมตช์ของทัวร์นาเมนต์ขึ้นจอ state ได้ v/ext ของทีมในทะเบียนมา
+  //      แต่ overlay ยังไปเปิด blue-team.<ext> ซึ่งเป็นภาพของใครก็ไม่รู้ที่ค้างอยู่
+  //
+  // มีค่าได้สองแบบ: ชื่อช่องของแมตช์ ('blue-team' / 'red-team')
+  // หรือ id ของทีมในทะเบียน ทั้งสองแบบเป็นชื่อไฟล์ที่เซิร์ฟเวอร์ออกให้เอง
+  // ไม่ใช่ข้อความที่ผู้ใช้พิมพ์ และถูกตรวจด้วย isLogoSource ก่อนใช้เสมอ
+  src?: string;
 }
 
 export interface Skin {
@@ -116,6 +128,12 @@ export function isTeamLogoId(value: unknown): value is string {
   return isSafeMediaId(value) && !RESERVED_LOGO_NAMES.has(value);
 }
 
+// src ที่รับได้: ชื่อช่องของแมตช์ หรือ id ทีมที่ปลอดภัยพอจะเป็นชื่อไฟล์
+export function isLogoSource(value: unknown): value is string {
+  return typeof value === 'string'
+    && (RESERVED_LOGO_NAMES.has(value) || isSafeMediaId(value));
+}
+
 export function teamLogoFilePath(teamId: string, ext: ImageExt): string {
   if (!isTeamLogoId(teamId)) throw new Error(`Unsafe team logo id: ${teamId}`);
   return path.join(LOGO_DIR, `${teamId}.${ext}`);
@@ -130,11 +148,18 @@ export function removeTeamLogoFiles(teamId: string): void {
 
 // นามสกุลต้องเป็นค่าที่รู้จักเท่านั้น เพราะถูกเอาไปต่อเป็นชื่อไฟล์
 export function sanitizeLogo(value: unknown): Logo {
-  const source = (value && typeof value === 'object' ? value : {}) as { v?: unknown; ext?: unknown };
+  const source = (value && typeof value === 'object' ? value : {}) as {
+    v?: unknown; ext?: unknown; src?: unknown;
+  };
   const v = Number(source.v);
   const ext = IMAGE_EXTS.includes(source.ext as ImageExt) ? (source.ext as ImageExt) : '';
   if (!Number.isFinite(v) || v <= 0 || !ext) return { v: 0, ext: '' };
-  return { v: Math.trunc(v), ext };
+
+  // ไม่มี src ก็ปล่อยว่างไว้ได้ ฝั่งหน้าเว็บจะถอยไปใช้ชื่อตามฝั่งเหมือนเดิม
+  // state.json ของเวอร์ชันก่อนหน้าจึงยังใช้งานได้โดยไม่ต้องแปลงอะไร
+  const logo: Logo = { v: Math.trunc(v), ext };
+  if (isLogoSource(source.src)) logo.src = source.src;
+  return logo;
 }
 
 export function sanitizeSkin(value: unknown): Skin {

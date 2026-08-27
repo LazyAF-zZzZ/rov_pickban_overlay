@@ -13,6 +13,7 @@ import {
   LOGO_MAX_BYTES,
   isSkinSlot,
   isLogoSlot,
+  LOGO_SLOTS,
   skinFilePath,
   logoFilePath,
   removeSkinFiles,
@@ -92,7 +93,9 @@ export function mediaRoutes(): Router {
     }
 
     const state = getState();
-    state[team].logo = { v: Date.now(), ext: checked.ext };
+    // บอกไปด้วยว่าภาพอยู่ไฟล์ไหน ไม่ปล่อยให้หน้าเว็บเดาจากฝั่ง
+    // สลับฝั่งเมื่อไหร่ ค่านี้จะตามทีมไป ภาพจึงสลับตามจริง
+    state[team].logo = { v: Date.now(), ext: checked.ext, src: LOGO_SLOTS[team] };
     emitState();
     res.json({
       ok: true, team, ext: checked.ext, bytes: checked.body.length, logo: state[team].logo

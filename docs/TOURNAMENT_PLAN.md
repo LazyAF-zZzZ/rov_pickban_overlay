@@ -33,7 +33,7 @@ and **not yet merged or pushed**.
 | `23bd837` | Phase 8 — `/analytics`, per-game winner capture, live room |
 | `23bd837` | Phase 7 — `/overlay-teams` team list with staggered slide-in |
 
-Current state: **0 type errors under `strict`, 155 tests passing.** Creating a
+Current state: **0 type errors under `strict`, 159 tests passing.** Creating a
 tournament, adding a team with its players in one form, uploading logos,
 drawing single/double elimination, round robin and group brackets, recording
 Bo3/Bo5 results, opening a match in the control panel and having its draft
@@ -271,6 +271,24 @@ The reason for both: the registry is the team *as it is today*; the snapshot is
 *who actually played*. Without the snapshot, editing a roster next season
 silently rewrites last season's match pages and corrupts the pick/ban statistics
 that depend on them.
+
+**A logo names its own file.** `state.*.logo` is `{ v, ext, src }`, where `src`
+is either a match slot (`blue-team` / `red-team`) or a registry team id.
+
+It used to carry only `{ v, ext }`, and the pages derived the filename from the
+**side** — blue always meant `blue-team.<ext>`. That was wrong twice over.
+Switching sides swapped the metadata but not the files, so the picture never
+changed. Worse, putting a tournament match on air copied the registry team's
+`{ v, ext }` into state while the overlay still fetched `blue-team.<ext>` — so a
+leftover slot upload was shown as the competing team's logo, live.
+
+Nothing renames files. `src` travels with the team object, so switching sides is
+still a pure state swap, undo keeps working, and no filesystem work happens
+during a broadcast action. `isLogoSource` accepts only a reserved slot name or a
+value passing `isSafeMediaId`, so the field can never become a path.
+
+Logos saved before the field existed have no `src` and fall back to the old
+side-based name, so existing `state.json` files keep working untouched.
 
 Team ids are generated server-side (`server/domain/ids.ts`) and validated with
 `isSafeMediaId` before being used as a filename. Logos live at
@@ -602,6 +620,13 @@ Each of these cost real debugging time. They are also in `CLAUDE.md`.
   top of the file — nothing renders, no handler binds, and the console error
   points at a line that looks fine. `team-api.test.ts` asserts the tag is
   present *and* ordered first on all three pages that need it.
+- **A file named after a slot cannot follow the thing that moves.** Team logos
+  were stored as `blue-team.<ext>` / `red-team.<ext>`, so the filename encoded
+  *which side of the screen*, while the metadata in state belonged to *a team*.
+  Every operation that moved a team between sides — switching, or going live
+  with a tournament match — broke the link silently and showed the wrong
+  picture. Store the identity in state and let the render follow it; do not
+  rename files to keep a positional name true.
 - **Focus events do not fire when the window is not focused.** `focusout`,
   `blur`, even a direct listener on the element: all silent while
   `document.hasFocus()` is false, though `document.activeElement` still moves.
