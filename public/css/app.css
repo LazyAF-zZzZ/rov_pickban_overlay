@@ -589,18 +589,6 @@ body {
 .live-bar .muted { color: #64748b; font-weight: 600; letter-spacing: 0.4px; }
 .live-bar a { margin-left: auto; }
 
-/* ปุ่มบันทึกผู้ชนะของเกม อยู่บนแถบ ON AIR ของหน้า control
- * สีตรงกับฝั่งที่มันหมายถึง คนคุมงานจะได้ไม่ต้องอ่านตัวหนังสือตอนรีบ */
-.lb-winner { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.lb-winner .tlink { font-size: 11px; padding: 3px 9px; }
-.lb-blue { color: #7dd3fc; border-color: rgba(56, 189, 248, 0.45); }
-.lb-blue:hover { color: #e0f2fe; border-color: #38bdf8; }
-.lb-red { color: #fca5a5; border-color: rgba(248, 113, 113, 0.45); }
-.lb-red:hover { color: #fee2e2; border-color: #f87171; }
-/* ตัวที่บันทึกไว้แล้ว ต้องแยกออกจากตัวที่ยังไม่ได้กดในแวบเดียว */
-.lb-blue.chosen { background: rgba(56, 189, 248, 0.22); color: #e0f2fe; border-color: #38bdf8; }
-.lb-red.chosen { background: rgba(248, 113, 113, 0.22); color: #fee2e2; border-color: #f87171; }
-
 /* ทะเบียนทีมและโปรไฟล์ทีม (Phase 6) ------------------------------- */
 
 /* ลิงก์ที่อยู่ในเนื้อหา ไม่ใช่ปุ่ม .tlink

@@ -430,8 +430,16 @@ Lowering the score has to clear, not just stop. Reopening that match reuses the
 same game number, so a stale winner would end up attached to a freshly drafted
 game.
 
-The BLUE/RED buttons remain as the override, for the ambiguous case and for
-correcting a bad guess. `PUT /api/games/:gameId/winner` still backs them.
+**The ON AIR bar is now just the words "ON AIR".** It used to also carry the
+tournament name, round, game number, "draft is being recorded", the winner
+buttons and a link back to the tournament — a lot of reading on a page that has
+to be scanned at a glance mid-draft.
+
+The override buttons went with it. `PUT /api/games/:gameId/winner` still exists
+and still works, but nothing in the app calls it, so the ambiguous case (both
+sides gaining at once) can no longer be corrected without hitting the API by
+hand. If that turns up in practice, the natural home for the control is beside
+the score boxes in the match session, not back on the Control Panel.
 
 A match scored without ever going on air has no game record, so there is nothing
 to attribute — and none is invented. Any game played before capture existed has
@@ -632,6 +640,11 @@ Each of these cost real debugging time. They are also in `CLAUDE.md`.
   `document.hasFocus()` is false, though `document.activeElement` still moves.
   Anything that waits for the user to "finish editing" must poll instead, or it
   waits forever the moment they alt-tab to OBS.
+- **Cutting a range between two markers hits the first closing marker, not
+  yours.** Removing the winner controls from `control.js` by slicing from a
+  comment to the next `renderLiveBar();` cut to the call *inside*
+  `setGameWinner`, leaving an orphan `} catch`. `npm run check` caught it
+  because it parses every file — which is exactly why that check exists.
 - **`String.replace` swaps the first match, which is rarely the one you meant.**
   A codemod anchored on `renderLiveBar();` landed the real-time subscription
   inside `setGameWinner` instead of at the end of `control.js`. It parsed, it
