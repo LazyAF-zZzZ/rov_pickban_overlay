@@ -11,6 +11,7 @@ import { seriesWinner } from '../domain/bracket';
 import type { PlannedMatch, Rng } from '../domain/bracket';
 import { generateMatches, shuffle } from '../domain/bracket';
 import type { TournamentStore } from './tournaments';
+import type { GameStore } from './games';
 
 export type MatchStatus = 'pending' | 'live' | 'complete';
 
@@ -87,7 +88,14 @@ export interface MatchStore {
   setResult(id: string, scoreA: unknown, scoreB: unknown): MatchResult;
 }
 
-export function createMatchStore(db: DatabaseSync, tournaments: TournamentStore): MatchStore {
+// games เป็นพารามิเตอร์บังคับ ไม่ใช่ตัวเลือก
+// สำเนาแช่แข็งคือสิ่งเดียวที่กู้ชื่อคู่แข่งที่ถูกลบไปแล้วได้
+// ถ้าใส่หรือไม่ใส่ก็ได้ วันหนึ่งจะมีคนสร้าง store โดยไม่ใส่ แล้วช่องโหว่เดิมก็กลับมาเงียบๆ
+export function createMatchStore(
+  db: DatabaseSync,
+  tournaments: TournamentStore,
+  games: GameStore
+): MatchStore {
   const q = {
     insert: db.prepare(
       `INSERT INTO matches
@@ -114,6 +122,18 @@ export function createMatchStore(db: DatabaseSync, tournaments: TournamentStore)
 
   const findRow = (id: string) => q.byId.get(id) as MatchRow | undefined;
 
+  // จองสำเนาแช่แข็งของคู่นี้ทันทีที่รู้ครบว่าใครเจอใคร
+  //
+  // เรียกทุกจุดที่ช่องทีมของแมตช์เปลี่ยน: ตอนสร้างสาย ตอนดันผู้ชนะเข้ารอบ
+  // และตอนบันทึกผลอีกครั้ง จุดสุดท้ายมีไว้ให้สายที่สร้างไว้ก่อนหน้านี้ได้สำเนาย้อนหลังด้วย
+  //
+  // บายไม่ต้องจอง ไม่มีใครลงเล่น และ §6 ของแผนถือว่าบายไม่นับเป็นนัด
+  function freezePairing(row: MatchRow | undefined): void {
+    if (!row || row.is_bye === 1) return;
+    if (!row.team_a_id || !row.team_b_id) return;
+    games.freeze(row.id, row.team_a_id, row.team_b_id);
+  }
+
   // ส่งทีมไปยังคู่ปลายทางที่วางไว้ตอนสร้างสาย
   // ใช้ทั้งกับผู้ชนะ และกับผู้แพ้ที่ตกลงไปสายแพ้ในแบบแพ้สองครั้งคัดออก
   //
@@ -131,6 +151,9 @@ export function createMatchStore(db: DatabaseSync, tournaments: TournamentStore)
     if (!next) return;
     if (dest.side === 0) q.setSide.run(teamId, next.id);
     else q.setSideB.run(teamId, next.id);
+
+    // อ่านแถวใหม่ ไม่ใช้ next ที่อ่านมาก่อนเขียน ค่าในนั้นยังเป็นของเก่า
+    freezePairing(findRow(next.id));
   }
 
   function advance(match: Match, winnerId: string): void {
@@ -224,6 +247,10 @@ export function createMatchStore(db: DatabaseSync, tournaments: TournamentStore)
         .filter((m) => m.isBye && m.winnerId)
         .forEach((m) => advance(m, m.winnerId as string));
 
+      // จองสำเนาของทุกคู่ที่รู้ทั้งสองฝั่งแล้ว ทำหลังดันบายเข้ารอบ
+      // เพราะคู่รอบสองที่ได้ทีมจากบายทั้งสองข้างก็ครบตั้งแต่ตอนนี้เหมือนกัน
+      (q.byTournament.all(tournamentId) as unknown as MatchRow[]).forEach(freezePairing);
+
       return { matches: store.list(tournamentId) };
     },
 
@@ -236,6 +263,10 @@ export function createMatchStore(db: DatabaseSync, tournaments: TournamentStore)
       if (!match.teamAId || !match.teamBId) {
         return { error: 'Both teams must be known before recording a result' };
       }
+
+      // สายที่สร้างไว้ก่อนฟีเจอร์นี้จะยังไม่มีสำเนา จองให้ตรงนี้ก่อนบันทึกผล
+      // เป็นจังหวะสุดท้ายที่ยังอ่านชื่อจากทะเบียนได้ครบทั้งสองฝั่ง
+      freezePairing(row);
 
       const need = Math.floor(match.bestOf / 2) + 1;
       const a = Math.max(0, Math.min(need, Math.trunc(Number(scoreA)) || 0));

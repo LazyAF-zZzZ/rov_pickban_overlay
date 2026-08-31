@@ -51,8 +51,9 @@ function syncGameWinners(before: Match, after: Match): boolean {
   let touched = false;
   for (let gameNo = playedBefore + 1; gameNo <= playedNow; gameNo += 1) {
     const game = byNumber.get(gameNo);
-    // ไม่มีเกมนี้ = แมตช์นี้ไม่เคยถูกเอาขึ้นจอ จึงไม่มีดราฟต์ให้ผูกผลด้วย
-    // ไม่สร้างแถวเปล่าขึ้นมา เพราะเกมที่ไม่มีดราฟต์ไม่มีผลต่อสถิติอยู่แล้ว
+    // เกมที่ 1 มีอยู่แล้วเสมอ การจับคู่จองสำเนาแช่แข็งไว้ให้ (ดู games.freeze)
+    // เกมที่ 2 ขึ้นไปมีเฉพาะที่เคยถูกเอาขึ้นจอจริง ไม่มีก็ข้ามไป ไม่สร้างแถวเปล่าตามหลัง
+    // เพราะเกมที่ไม่มีดราฟต์ไม่มีผลต่อสถิติอยู่แล้ว (analytics นับเฉพาะ draft_locked = 1)
     if (!game) continue;
     games.setWinner(game.id, winner);
     touched = true;

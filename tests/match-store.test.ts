@@ -10,6 +10,7 @@ import { openDatabase } from '../server/store/db';
 import { createTeamStore } from '../server/store/teams';
 import { createTournamentStore } from '../server/store/tournaments';
 import { createMatchStore } from '../server/store/matches';
+import { createGameStore } from '../server/store/games';
 import type { Match } from '../server/store/matches';
 import { must } from './helpers';
 
@@ -17,7 +18,8 @@ function stores(format = 'single_elim', bestOf = 3, teamCount = 4) {
   const db = openDatabase(':memory:');
   const teams = createTeamStore(db);
   const tournaments = createTournamentStore(db, teams);
-  const matches = createMatchStore(db, tournaments);
+  const games = createGameStore(db);
+  const matches = createMatchStore(db, tournaments, games);
 
   const tournament = must(tournaments.create({ name: 'Cup', format, bestOf }).tournament);
   const ids: string[] = [];

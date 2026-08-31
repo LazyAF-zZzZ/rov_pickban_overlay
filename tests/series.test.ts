@@ -83,10 +83,19 @@ test('both sides gaining at once is left alone rather than guessed', () => {
   assert.deepStrictEqual(winners(match.id), [null, null, null], 'no invented winners');
 });
 
-test('a game that never went on air has nothing to attribute, and none is invented', () => {
-  const { match } = setup(0);   // ไม่เคยเปิดแมตช์นี้ขึ้นจอเลย
+// แมตช์ที่ไม่เคยขึ้นจอมีแถวเกมที่ 1 อยู่แล้ว เพราะการจับคู่จองสำเนาแช่แข็งไว้ตั้งแต่ตอนนั้น
+// ผู้ชนะรายเกมจึงผูกได้ตามปกติ แต่ต้องไม่มีดราฟต์งอกขึ้นมาเอง และไม่มีเกมที่ 2 ที่ยังไม่ได้เล่น
+test('a match that never went on air still has its pairing, but no invented draft', () => {
+  const { match, blue, red } = setup(0);   // ไม่เคยเปิดแมตช์นี้ขึ้นจอเลย
   recordSeriesResult(match.id, 1, 0);
-  assert.deepStrictEqual(getStores().games.forMatch(match.id), [], 'no empty game rows created');
+
+  const played = getStores().games.forMatch(match.id);
+  assert.strictEqual(played.length, 1, 'only the game the score says was played');
+  assert.strictEqual(must(played[0]).gameNo, 1);
+  assert.strictEqual(must(played[0]).winner, 'blue');
+  assert.deepStrictEqual(must(played[0]).slots, [], 'no draft is invented for it');
+  assert.strictEqual(must(played[0]).blueName, blue.name, 'the pairing was frozen at the draw');
+  assert.strictEqual(must(played[0]).redName, red.name);
 });
 
 // ---- ถอยคะแนนกลับ ----

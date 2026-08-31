@@ -87,6 +87,18 @@ still returns success while orphaned matches and drafts stay behind and keep fee
 statistics. `remove()` counts them before deleting, because after the delete every count is
 zero, and the API hands those numbers back for the UI to report.
 
+**A match's team snapshot is frozen at the draw, not when it goes on air.**
+`games.freeze()` writes game 1 as soon as both teams of a match are known, and
+`matches.ts` calls it from every place a team slot changes — drawing the bracket,
+advancing a winner, and recording a result. Deleting a team sets `matches.team_b_id`
+to NULL, so that frozen `blue_name`/`red_name` is the only thing left that can say who
+played; without it, a match scored straight into the bracket loses its opponent's name
+for good. `freeze()` rewrites an existing game 1 only while it is untouched — no draft
+slots and no winner — because correcting an earlier round changes who advances, but a
+game with a draft on it is one somebody played and renaming its sides falsifies a record.
+The rows it creates are empty and `draft_locked = 0`; analytics counts only
+`draft_locked = 1`, so they move no statistic.
+
 **Esc goes back a page, and `app-client.js` owns that binding.** Its `window`
 keydown listener runs after everything else on the page, so a page that needs Esc for
 its own thing must call `preventDefault()` or `stopPropagation()` — both confirm

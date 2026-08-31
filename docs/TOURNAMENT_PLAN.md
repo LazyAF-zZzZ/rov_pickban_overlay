@@ -43,7 +43,7 @@ committed, one commit per numbered item, and the table below carries the ids.
 | `e4c363b` | The operator's own data leaves the repository |
 | `fa2655c` | Bulk team delete |
 
-Current state: **0 type errors under `strict`, 177 tests passing.** Creating a
+Current state: **0 type errors under `strict`, 180 tests passing.** Creating a
 tournament, adding a team with its players in one form, uploading logos,
 drawing single/double elimination, round robin and group brackets, recording
 Bo3/Bo5 results, opening a match in the control panel and having its draft
@@ -454,10 +454,24 @@ Without the snapshot, a deleted team would turn every match it ever played into
 The fallback matches on **team id, not on side**, so it does not depend on
 `goLive` always putting side A on blue.
 
-Its limit, worth knowing: the snapshot is written when a match goes **on air**,
-not when the bracket is drawn. A match whose score was typed in without ever
-opening it in the control panel has no game record, so a later deletion of the
-opponent leaves that row with no name to recover.
+**The snapshot is taken at the draw, not at kick-off.** `games.freeze()` writes
+game 1 of a match the moment both its teams are known — when the bracket is
+drawn, and again when a winner is pushed into the next round. It used to be
+written only by `goLive()`, which meant a match whose score was typed straight
+into the bracket had no game record at all, and a later deletion of the opponent
+left that row with no name to recover. That was the last way to lose a result
+permanently.
+
+`freeze()` will rewrite an existing game 1 — its ids and its names — but only
+while that game is **untouched**: no draft slots, no winner. Both halves matter.
+Rewriting is needed because correcting an earlier round changes who advances, so
+a pairing frozen for the next round can become one that never happened. Refusing
+to rewrite a touched game is needed because a game with a draft on it is a game
+somebody played, and renaming its sides is falsifying a record.
+
+The rows it creates are empty: no slots, `draft_locked = 0`. Analytics counts
+only `draft_locked = 1`, so they change no statistic. What they carry is the
+pairing, which is the part that cannot be reconstructed later.
 
 ---
 
@@ -672,7 +686,6 @@ pattern already in `public/js/overlay.js`.
   `sanitizeState` whitelist) once it has been used on a real broadcast.
 
 - **A relative asset path on a nested page breaks silently** — see §9. `/tournament/:id`, `/tournament/:id/bracket` and now `/teams/:id` are all affected. Any new nested page must use absolute `/js/` and `/css/` paths; tests cover the tournament and team pages.
-- **A match played without going on air has no team snapshot.** Scores can be typed straight into the tournament page, which never creates a game record. If an opponent is deleted later, that row loses its name for good — see §4. Creating the snapshot at draw time would close the gap.
 - **`public/js/` is now type-checked, though still `.js`.** `npm run typecheck:web`
   runs `tsc --checkJs` over every browser script, with `types/web.d.ts` declaring
   the shared contract (`window.RovClient`, `window.RovTeamUI`, `window.HotkeyUtils`,
@@ -913,6 +926,11 @@ Each of these cost real debugging time. They are also in `CLAUDE.md`.
   which is why cancelling a box does not also leave the page. Typing fields are
   skipped by `event.target`, not `document.activeElement`: the hero box blurs
   itself on Esc, so by the time the shared listener runs the focus is gone.
+- **An empty game row is not a played game, and the difference is one column.**
+  Freezing the pairing at the draw creates a `games` row for every match, played or
+  not. That is safe only because `analytics` divides by `COUNT(*) WHERE draft_locked = 1`,
+  not by `COUNT(*)`. Anything that later counts games must use the same filter, or
+  every hero's rate falls by however many matches happen to be scheduled.
 - **`history.length` counts the blank page a new browser tab starts on.** Going
   back from a page opened straight into a fresh tab lands on `about:blank`, not
   in the app. `goBack()` also requires a same-origin `document.referrer`, and

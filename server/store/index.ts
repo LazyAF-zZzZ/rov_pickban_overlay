@@ -42,12 +42,14 @@ export function getStores(): Stores {
     const db = getDatabase();
     const teams = createTeamStore(db);
     const tournaments = createTournamentStore(db, teams);
+    // games ถูกสร้างก่อน matches เพราะ matches ใช้มันจองสำเนาแช่แข็งของแต่ละคู่
+    const games = createGameStore(db);
     stores = {
       db,
       teams,
       tournaments,
-      matches: createMatchStore(db, tournaments),
-      games: createGameStore(db),
+      matches: createMatchStore(db, tournaments, games),
+      games,
       liveMatch: createLiveMatchStore(db),
       history: createHistoryStore(db),
       analytics: createAnalyticsStore(db)

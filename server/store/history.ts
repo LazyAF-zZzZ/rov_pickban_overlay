@@ -195,13 +195,21 @@ export function createHistoryStore(db: DatabaseSync): HistoryStore {
     const status = row.status as MatchStatus;
 
     // ช่องว่างมีสองความหมาย ต้องแยกให้ออก
-    // คู่ที่ยังไม่จบ = ยังไม่รู้ว่าจะเจอใคร
-    // คู่ที่จบไปแล้วแต่ช่องว่าง = เคยเจอใครสักคน แล้วคนนั้นถูกลบทีหลัง
+    // ไม่มีสำเนาแช่แข็ง = ยังไม่รู้ว่าจะเจอใคร (คู่ในรอบถัดไปที่ยังไม่มีใครขึ้นมา)
+    // มีสำเนา = เคยรู้แล้วว่าเจอใคร แล้วทีมนั้นถูกลบออกจากทะเบียนทีหลัง
+    //
+    // เดิมตรงนี้เช็ค status === 'complete' ด้วย เพราะสำเนาถูกเขียนตอนเอาขึ้นจอที่เดียว
+    // คู่ที่ยังไม่จบจึงมักไม่มีสำเนาให้ถอยไปอ่านอยู่แล้ว
+    // ตอนนี้สำเนาถูกจองตั้งแต่จับคู่ (ดู games.freeze) การมีอยู่ของมันบอกได้เอง
+    // ว่าช่องว่างนี้เป็นแบบไหน จึงไม่ต้องเดาจากสถานะของแมตช์อีก
     let opponentName = registryName;
     let opponentGone = false;
-    if (!opponentId && !isBye && status === 'complete') {
-      opponentName = frozenOpponentName(row.id, teamId);
-      opponentGone = true;
+    if (!opponentId && !isBye) {
+      const frozen = frozenOpponentName(row.id, teamId);
+      if (frozen) {
+        opponentName = frozen;
+        opponentGone = true;
+      }
     }
 
     const outcome: MatchOutcome = isBye

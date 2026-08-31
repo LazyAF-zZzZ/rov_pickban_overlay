@@ -190,8 +190,8 @@ test('a deleted opponent still shows the name frozen on the game record', () => 
 
   const match = must(matches.list(id)[0]);
 
-  // ต้องเอาขึ้นจอก่อน เพราะสำเนาแช่แข็งของทีมถูกเขียนตอนสร้างเกม
-  // ไม่ใช่ตอนจับสาย นัดที่ไม่เคยขึ้นจอจึงไม่มีชื่อให้กู้
+  // เอาขึ้นจอด้วย เส้นทางนี้ต้องยังทำงานเหมือนเดิม
+  // (นัดที่ไม่เคยขึ้นจอมีเทสต์ของตัวเองอยู่ถัดลงไป)
   const onAir = live.goLive(match.id);
   assert.ok(onAir.live, onAir.error ?? 'goLive failed');
 
@@ -209,6 +209,81 @@ test('a deleted opponent still shows the name frozen on the game record', () => 
   assert.strictEqual(row.opponentName, 'Ghost Squad', 'the name survives on the game record');
   assert.strictEqual(row.outcome, 'win', 'and the result still stands');
   assert.strictEqual(record.won, 1);
+});
+
+// ช่องโหว่เดิมของ §8: คะแนนกรอกลงในสายได้โดยไม่ต้องเปิดแมตช์ขึ้นจอเลย
+// เมื่อสำเนาแช่แข็งถูกเขียนตอนขึ้นจอที่เดียว นัดแบบนั้นจึงไม่มีแถวเกม
+// พอลบคู่แข่งทีหลังก็ไม่มีชื่อให้ถอยไปอ่าน แถวนั้นกลายเป็น "ไม่เคยมีคู่แข่ง" ถาวร
+// ตอนนี้การจับคู่เป็นตัวจองสำเนา นัดที่ไม่เคยขึ้นจอจึงกู้ชื่อได้เหมือนกัน
+test('a match scored without ever going on air still remembers who played it', () => {
+  const { teams, matches, history } = getStores();
+  const [survivor, ghost] = makeTeams(['Paper Only', 'Vanished FC']);
+  const { id } = cup('Paper cup', [must(survivor), must(ghost)]);
+
+  const match = must(matches.list(id)[0]);
+  decide(match, must(survivor).id, 2, 0);   // ไม่มี goLive ที่ไหนเลย
+
+  assert.ok(teams.remove(must(ghost).id).ok);
+
+  const row = must(history.forTeam(must(survivor).id).matches
+    .find((m) => m.matchId === match.id));
+
+  assert.strictEqual(row.opponentId, null, 'the id went with the team');
+  assert.strictEqual(row.opponentGone, true);
+  assert.strictEqual(row.opponentName, 'Vanished FC', 'the frozen name is still there');
+  assert.strictEqual(row.outcome, 'win');
+});
+
+// นัดที่ยังไม่ได้เล่นก็ต้องกู้ได้ ไม่ใช่เฉพาะนัดที่จบแล้ว
+// ทีมถูกลบกลางทัวร์นาเมนต์เกิดขึ้นจริง และแถวนั้นควรบอกว่า "เคยจะเจอใคร"
+// ไม่ใช่กลายเป็นช่องว่างที่อ่านได้ว่า "ยังไม่รู้ว่าจะเจอใคร"
+test('an opponent deleted before the match was played is still named, not blanked', () => {
+  const { teams, matches, history } = getStores();
+  const [waiting, quitter] = makeTeams(['Still Waiting', 'Withdrew United']);
+  const { id } = cup('Withdrawal cup', [must(waiting), must(quitter)]);
+
+  const match = must(matches.list(id)[0]);
+  assert.ok(teams.remove(must(quitter).id).ok);
+
+  const row = must(history.forTeam(must(waiting).id).matches
+    .find((m) => m.matchId === match.id));
+
+  assert.strictEqual(row.opponentId, null);
+  assert.strictEqual(row.opponentGone, true, 'gone, not undecided');
+  assert.strictEqual(row.opponentName, 'Withdrew United');
+  assert.strictEqual(row.outcome, null, 'and it was never played');
+});
+
+// แก้ผลรอบก่อนหน้าใหม่ ทีมที่เข้ารอบก็เปลี่ยน สำเนาที่จองไว้ต้องเปลี่ยนตาม
+// ไม่งั้นรอบถัดไปจะจำคู่ที่ไม่เคยเกิดขึ้นจริงไว้ แล้วเอาไปตอบตอนมีทีมถูกลบ
+test('reversing an earlier result reseats the pairing frozen for the next round', () => {
+  const { matches, games } = getStores();
+  const { id } = cup('Reseat cup', makeTeams(['Re A', 'Re B', 'Re C', 'Re D']));
+
+  const round1 = matches.list(id).filter((m) => m.round === 1);
+  const first = must(round1[0]);
+  const other = must(round1[1]);
+  const sideA = must(first.teamAId);
+  const sideB = must(first.teamBId);
+
+  decide(first, sideA, 2, 0);
+  decide(other, must(other.teamAId), 2, 0);
+
+  const finalId = must(matches.list(id).find((m) => m.round === 2)).id;
+  const before = must(games.forMatch(finalId)[0]);
+  assert.ok(
+    [before.blueTeamId, before.redTeamId].includes(sideA),
+    'the winner of the first match is seated in the final'
+  );
+
+  // กลับผลคู่แรก อีกทีมเข้ารอบแทน
+  decide(first, sideB, 2, 0);
+
+  const after = must(games.forMatch(finalId)[0]);
+  const seated = [after.blueTeamId, after.redTeamId];
+  assert.strictEqual(after.id, before.id, 'the same row, rewritten rather than duplicated');
+  assert.ok(seated.includes(sideB), 'and it names who actually advanced');
+  assert.ok(!seated.includes(sideA), 'the team that no longer advances is not left behind');
 });
 
 test('summaries cover every team in one call', () => {

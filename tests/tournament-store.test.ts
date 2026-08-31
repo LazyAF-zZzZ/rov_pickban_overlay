@@ -202,8 +202,8 @@ test('deleting a tournament leaves the team registry intact', () => {
 // แต่แมตช์กับดราฟต์ยังนอนอยู่ในไฟล์ และไปโผล่ในสถิติที่นับข้ามทัวร์นาเมนต์
 test('deleting a tournament takes its bracket and every recorded draft with it', () => {
   const { db, teams, tournaments } = freshStores();
-  const matches = createMatchStore(db, tournaments);
   const games = createGameStore(db);
+  const matches = createMatchStore(db, tournaments, games);
 
   const tournament = makeTournament(tournaments, { name: 'Cup', format: 'single_elim', bestOf: 3 });
   const roster = makeTeams(teams, 4);
@@ -223,10 +223,12 @@ test('deleting a tournament takes its bracket and every recorded draft with it',
   const count = (sql: string): number => (db.prepare(sql).get() as { n: number }).n;
   assert.ok(count('SELECT COUNT(*) AS n FROM game_slots') > 0, 'the draft was recorded first');
 
+  // สองเกม ไม่ใช่หนึ่ง: การจับคู่จองสำเนาแช่แข็งให้คู่รอบแรกทั้งสองคู่ตั้งแต่ตอนสร้างสาย
+  // (ดู games.freeze) แถวที่ ensure() ข้างบนขอมาคือแถวเดิมของคู่แรก ไม่ได้เพิ่มใบใหม่
   const result = tournaments.remove(tournament.id);
   assert.deepStrictEqual(
     result.removed,
-    { teams: 4, matches: drawn.length, games: 1 },
+    { teams: 4, matches: drawn.length, games: 2 },
     'the delete reports what it destroyed'
   );
 

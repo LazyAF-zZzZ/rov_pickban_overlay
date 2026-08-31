@@ -67,6 +67,7 @@ export interface GameStore {
     blueTeamId: string | null; redTeamId: string | null;
     blueName: string; redName: string;
   }): Game;
+  freeze(matchId: string, teamAId: string, teamBId: string): Game | null;
   captureDraft(gameId: string, state: GameState): Game | null;
   setWinner(gameId: string, winner: 'blue' | 'red' | null): Game | null;
 }
@@ -85,7 +86,17 @@ export function createGameStore(db: DatabaseSync): GameStore {
     clearSlots: db.prepare('DELETE FROM game_slots WHERE game_id = ?'),
     insertSlot: db.prepare('INSERT INTO game_slots (game_id, side, kind, idx, hero) VALUES (?, ?, ?, ?, ?)'),
     setLocked: db.prepare('UPDATE games SET draft_locked = ?, updated_at = ? WHERE id = ?'),
-    setWinner: db.prepare('UPDATE games SET winner = ?, updated_at = ? WHERE id = ?')
+    setWinner: db.prepare('UPDATE games SET winner = ?, updated_at = ? WHERE id = ?'),
+
+    // freeze() ต้องอ่านชื่อทีมเอง ไฟล์นี้จึงแตะตาราง teams ตรงๆ หนึ่งที่
+    // ทางเลือกคือให้คนเรียกส่งชื่อมาด้วย แต่คนเรียกคือ matches.ts ซึ่งก็ต้องไปอ่านเองอยู่ดี
+    // แล้วจะมีสองที่ที่รู้ว่า "สำเนาแช่แข็งประกอบด้วยอะไร" ซึ่งเป็นของไฟล์นี้
+    teamName: db.prepare('SELECT name FROM teams WHERE id = ?'),
+    countSlots: db.prepare('SELECT COUNT(*) AS n FROM game_slots WHERE game_id = ?'),
+    reseat: db.prepare(
+      `UPDATE games SET blue_team_id = ?, red_team_id = ?, blue_name = ?, red_name = ?,
+                        updated_at = ? WHERE id = ?`
+    )
   };
 
   function hydrate(row: GameRow): Game {
@@ -134,6 +145,44 @@ export function createGameStore(db: DatabaseSync): GameStore {
         now, now
       );
       return hydrate(q.byId.get(id) as unknown as GameRow);
+    },
+
+    // จองสำเนาแช่แข็งไว้ตั้งแต่รู้ว่าใครเจอใคร ไม่ต้องรอให้แมตช์ขึ้นจอ
+    //
+    // เดิมสำเนาถูกเขียนตอน goLive() ที่เดียว คู่ที่กรอกคะแนนใส่ในสายโดยไม่เคยเปิดขึ้นจอ
+    // จึงไม่มีแถว games เลยสักแถว พอลบทีมคู่แข่งออกจากทะเบียนทีหลัง
+    // matches.team_b_id กลายเป็น NULL (ON DELETE SET NULL) แล้วไม่เหลือชื่อให้ถอยไปอ่าน
+    // ประวัติของอีกทีมจะเหลือแค่ "ไม่รู้ว่าเจอใคร" ตลอดไป กู้ไม่ได้อีกเลย
+    //
+    // อัปเดตชื่อและคู่ให้ใหม่ได้ ตราบใดที่เกมนั้นยัง "ไม่ถูกแตะ" คือไม่มีดราฟต์และไม่มีผู้ชนะ
+    // จำเป็นเพราะแก้คะแนนรอบก่อนหน้าใหม่ ทีมที่เข้ารอบก็เปลี่ยน คู่ที่จองไว้จะกลายเป็นของผิด
+    // แต่พอมีดราฟต์แล้วห้ามแตะ นั่นคือเกมที่เล่นไปจริง การเขียนทับชื่อคือการปลอมข้อมูล
+    freeze(matchId, teamAId, teamBId) {
+      const blue = q.teamName.get(teamAId) as { name: string } | undefined;
+      const red = q.teamName.get(teamBId) as { name: string } | undefined;
+      if (!blue || !red) return null;
+
+      const existing = q.byMatchNo.get(matchId, 1) as GameRow | undefined;
+      if (!existing) {
+        return store.ensure(matchId, 1, {
+          blueTeamId: teamAId, redTeamId: teamBId,
+          blueName: blue.name, redName: red.name
+        });
+      }
+
+      const same = existing.blue_team_id === teamAId
+        && existing.red_team_id === teamBId
+        && existing.blue_name === blue.name
+        && existing.red_name === red.name;
+      if (same) return hydrate(existing);
+
+      const untouched = existing.winner === null
+        && existing.draft_locked !== 1
+        && (q.countSlots.get(existing.id) as { n: number }).n === 0;
+      if (!untouched) return hydrate(existing);
+
+      q.reseat.run(teamAId, teamBId, blue.name, red.name, Date.now(), existing.id);
+      return store.get(existing.id);
     },
 
     // เขียนทับช่องทั้งหมดของเกมนี้ด้วยสิ่งที่อยู่บนจอตอนนี้

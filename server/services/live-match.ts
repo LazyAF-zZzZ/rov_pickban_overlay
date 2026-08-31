@@ -102,6 +102,11 @@ export function goLive(matchId: string): GoLiveResult {
 
   const gameNo = nextGameNo(match.scoreA, match.scoreB);
 
+  // สำเนาถูกจองไว้ตั้งแต่ตอนจับคู่แล้ว ตรงนี้แค่ปัดชื่อให้เป็นปัจจุบัน
+  // เผื่อทีมถูกเปลี่ยนชื่อหลังจับคู่แต่ก่อนได้ลงเล่น
+  // freeze() ไม่แตะเกมที่มีดราฟต์หรือมีผู้ชนะแล้ว ของที่เล่นไปจริงจึงไม่ถูกเขียนทับ
+  games.freeze(matchId, match.teamAId, match.teamBId);
+
   // สำเนาแช่แข็ง เก็บชื่อ ณ ตอนนี้ ไม่ใช่แค่ id
   const game = games.ensure(matchId, gameNo, {
     blueTeamId: blue.id,
