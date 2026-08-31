@@ -316,7 +316,7 @@ function boot() {
     boot();
   } catch (error) {
     console.error('analytics.js boot failed', error);
-    showToast('Some controls on this page failed to start - try a hard reload', 'red');
+    showToast(t('Some controls on this page failed to start - try a hard reload'), 'red');
   }
 
   try {

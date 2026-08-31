@@ -121,7 +121,7 @@ function toggleCreate(show) {
 async function createTournament() {
   const name = /** @type {HTMLInputElement} */ (document.getElementById('fName')).value.trim();
   if (!name) {
-    showToast('Tournament name is required', 'red');
+    showToast(t('Tournament name is required'), 'red');
     /** @type {HTMLInputElement} */ (document.getElementById('fName')).focus();
     return;
   }
@@ -166,7 +166,7 @@ function deleteButton(tournament) {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'tcard-del';
-  btn.textContent = 'DELETE';
+  btn.textContent = t('DELETE');
   btn.title = `Delete ${tournament.name} and everything recorded under it`;
 
   btn.addEventListener('click', async () => {
@@ -249,8 +249,8 @@ async function renderList() {
 function renderFoot() {
   document.getElementById('foot').textContent =
     'Open a tournament to edit its details and copy the OBS browser source URLs. ' +
-    'The Control Panel, Presets and Design pages still work on their own for a ' +
-    'quick match that is not part of any tournament.';
+    'The Control Panel works on its own for a quick match that is not part of any ' +
+    'tournament: pick both teams straight from the registry there.';
 }
 
 // BOOT ---------------------------------------------------------------

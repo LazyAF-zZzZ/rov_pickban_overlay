@@ -365,7 +365,7 @@ async function clearMatches() {
   try {
     await fetchJson(`/api/tournaments/${encodeURIComponent(tournamentId)}/matches`, { method: 'DELETE' });
     apply([]);
-    showToast('Bracket cleared', 'blue');
+    showToast(t('Bracket cleared'), 'blue');
   } catch (error) {
     showToast(error.message || 'Could not clear the bracket', 'red');
   }
@@ -416,13 +416,13 @@ socket.on('connect_error', (error) => showToast(error.message || 'Connection err
   on('clearMatchesBtn', 'click', clearMatches);
 
   if (!tournamentId) {
-    document.getElementById('headName').textContent = 'Tournament not found';
+    document.getElementById('headName').textContent = t('Tournament not found');
     return;
   }
   try {
     await load();
   } catch (error) {
-    document.getElementById('headName').textContent = 'Could not load this match session';
+    document.getElementById('headName').textContent = t('Could not load this match session');
     showToast(error.message || 'Could not load the bracket', 'red');
   }
 })();

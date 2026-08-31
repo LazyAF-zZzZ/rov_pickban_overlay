@@ -54,9 +54,9 @@
     }
 
     const sure = await confirmBox({
-      title: 'Delete tournament',
+      title: t('Delete tournament'),
       body,
-      confirmLabel: 'DELETE FOREVER',
+      confirmLabel: t('DELETE FOREVER'),
       danger: true
     });
     if (!sure) return false;

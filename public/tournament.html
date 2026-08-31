@@ -14,13 +14,13 @@
 <div class="topbar">
   <div class="logo">ROV <span>|</span> OVERLAY TOOL</div>
   <nav class="topnav" aria-label="Pages">
-    <a class="tlink" href="/">HOME</a>
-    <a class="tlink" href="/teams">TEAMS</a>
-    <a class="tlink" href="/analytics">ANALYTICS</a>
-    <a class="tlink" href="/control">CONTROL</a>
-    <a class="tlink" href="/design">DESIGN</a>
-    <a class="tlink" href="/hotkeys">HOTKEYS</a>
-    <a class="tlink" href="/guide">GUIDE</a>
+    <a class="tlink" href="/" data-i18n>HOME</a>
+    <a class="tlink" href="/teams" data-i18n>TEAMS</a>
+    <a class="tlink" href="/analytics" data-i18n>ANALYTICS</a>
+    <a class="tlink" href="/control" data-i18n>CONTROL</a>
+    <a class="tlink" href="/design" data-i18n>DESIGN</a>
+    <a class="tlink" href="/hotkeys" data-i18n>HOTKEYS</a>
+    <a class="tlink" href="/guide" data-i18n>GUIDE</a>
   </nav>
 </div>
 
@@ -28,7 +28,7 @@
 
   <div class="section">
     <div class="section-head">
-      <a class="tlink" data-esc-back href="/">&larr; ALL TOURNAMENTS</a>
+      <a class="tlink" data-esc-back href="/" data-i18n>&larr; ALL TOURNAMENTS</a>
       <div class="spacer"></div>
       <div class="status-tags" id="headBadges"></div>
     </div>
@@ -37,25 +37,25 @@
 
   <div class="section" id="detailSection" hidden>
     <div class="section-head">
-      <div class="section-title">Tournament details</div>
+      <div class="section-title" data-i18n>Tournament details</div>
     </div>
     <div class="panel">
       <div class="frow">
         <div class="fld">
-          <label for="fName">Name</label>
+          <label for="fName" data-i18n>Name</label>
           <input id="fName" type="text" maxlength="60" autocomplete="off">
         </div>
         <div class="fld">
-          <label for="fFormat">Format</label>
+          <label for="fFormat" data-i18n>Format</label>
           <select id="fFormat"></select>
           <span class="hint" id="formatHint"></span>
         </div>
         <div class="fld">
-          <label for="fBestOf">Series length</label>
+          <label for="fBestOf" data-i18n>Series length</label>
           <select id="fBestOf"></select>
         </div>
         <div class="fld">
-          <label for="fStatus">Status</label>
+          <label for="fStatus" data-i18n>Status</label>
           <select id="fStatus">
             <option value="active">Active</option>
             <option value="finished">Finished</option>
@@ -64,25 +64,25 @@
       </div>
       <div class="frow">
         <div class="fld wide">
-          <label for="fNote">Note</label>
+          <label for="fNote" data-i18n>Note</label>
           <textarea id="fNote" maxlength="500"></textarea>
         </div>
       </div>
       <div class="frow">
-        <button type="button" class="tlink primary" id="saveBtn">SAVE CHANGES</button>
-        <button type="button" class="tlink" id="revertBtn">REVERT</button>
+        <button type="button" class="tlink primary" id="saveBtn" data-i18n>SAVE CHANGES</button>
+        <button type="button" class="tlink" id="revertBtn" data-i18n>REVERT</button>
         <div class="spacer"></div>
-        <button type="button" class="tlink danger" id="deleteBtn">DELETE TOURNAMENT</button>
+        <button type="button" class="tlink danger" id="deleteBtn" data-i18n>DELETE TOURNAMENT</button>
       </div>
     </div>
   </div>
 
   <div class="section" id="teamsSection" hidden>
     <div class="section-head">
-      <div class="section-title">Teams</div>
+      <div class="section-title" data-i18n>Teams</div>
       <div class="status-tags" id="teamBadges"></div>
       <div class="spacer"></div>
-      <button type="button" class="tlink primary" id="addTeamBtn">+ ADD TEAM</button>
+      <button type="button" class="tlink primary" id="addTeamBtn" data-i18n>+ ADD TEAM</button>
       <!-- พับหัวข้อทีมเก็บได้ ทัวร์นาเมนต์ 128 ทีมทำให้ส่วนอื่นของหน้าหล่นไปอยู่ใต้สุด
            สถานะถูกจำไว้ใน localStorage คนที่จัดทีมเสร็จแล้วจะได้ไม่ต้องพับใหม่ทุกครั้ง -->
       <button type="button" class="tlink fold" id="teamsToggle"
@@ -94,29 +94,29 @@
     <div class="panel" id="addPanel" hidden>
       <div class="frow">
         <div class="fld">
-          <label for="pickTeam">Add a team already in the registry</label>
+          <label for="pickTeam" data-i18n>Add a team already in the registry</label>
           <select id="pickTeam"></select>
         </div>
         <div class="fld" style="flex:0 0 auto;justify-content:flex-end;">
-          <button type="button" class="tlink primary" id="addExistingBtn">ADD TO TOURNAMENT</button>
+          <button type="button" class="tlink primary" id="addExistingBtn" data-i18n>ADD TO TOURNAMENT</button>
         </div>
       </div>
       <!-- สร้างทีมใหม่พร้อมผู้เล่นในฟอร์มเดียว
            เดิมต้องสร้างทีมเปล่าก่อนแล้วค่อยกด EDIT เพื่อใส่ผู้เล่น
            ซึ่งเป็นสองขั้นตอนทั้งที่คนกรอกมีข้อมูลครบอยู่ในมือแล้ว -->
       <div style="border-top:1px solid var(--border);padding-top:14px;">
-        <div class="section-title" style="margin-bottom:10px;">…or create a new team</div>
+        <div class="section-title" style="margin-bottom:10px;" data-i18n>…or create a new team</div>
         <div class="frow">
           <div class="fld">
-            <label for="newTeamName">Team name</label>
-            <input id="newTeamName" type="text" maxlength="24" placeholder="Flash Wolves" autocomplete="off">
+            <label for="newTeamName" data-i18n>Team name</label>
+            <input id="newTeamName" type="text" maxlength="24" placeholder="Flash Wolves" autocomplete="off" data-i18n-placeholder>
           </div>
           <div class="fld" style="flex:0 0 130px;">
-            <label for="newTeamTag">Tag</label>
-            <input id="newTeamTag" type="text" maxlength="6" placeholder="FW" autocomplete="off">
+            <label for="newTeamTag" data-i18n>Tag</label>
+            <input id="newTeamTag" type="text" maxlength="6" placeholder="FW" autocomplete="off" data-i18n-placeholder>
           </div>
           <div class="fld" style="flex:0 0 auto;justify-content:flex-end;">
-            <button type="button" class="tlink" id="newTeamLogoBtn">CHOOSE LOGO</button>
+            <button type="button" class="tlink" id="newTeamLogoBtn" data-i18n>CHOOSE LOGO</button>
           </div>
         </div>
 
@@ -124,10 +124,10 @@
         <div id="newTeamPlayers"></div>
 
         <div class="frow" style="margin-top:12px;">
-          <button type="button" class="tlink primary" id="createTeamBtn">CREATE &amp; ADD</button>
-          <button type="button" class="tlink" id="clearNewTeamBtn">CLEAR FORM</button>
+          <button type="button" class="tlink primary" id="createTeamBtn" data-i18n>CREATE &amp; ADD</button>
+          <button type="button" class="tlink" id="clearNewTeamBtn" data-i18n>CLEAR FORM</button>
           <div class="spacer" style="margin-left:auto;"></div>
-          <button type="button" class="tlink" id="closeAddBtn">CLOSE</button>
+          <button type="button" class="tlink" id="closeAddBtn" data-i18n>CLOSE</button>
         </div>
       </div>
     </div>
@@ -142,17 +142,17 @@
        ตรงนี้จึงมีแค่ทางเข้ากับตัวเลขบอกความคืบหน้า ไม่มีตัวควบคุมการแข่งแล้ว -->
   <div class="section" id="matchesSection" hidden>
     <div class="section-head">
-      <div class="section-title">Match session</div>
+      <div class="section-title" data-i18n>Match session</div>
       <div class="status-tags" id="matchBadges"></div>
       <div class="spacer"></div>
-      <a class="tlink primary" id="bracketLink" href="#">OPEN MATCH SESSION</a>
+      <a class="tlink primary" id="bracketLink" href="#" data-i18n>OPEN MATCH SESSION</a>
     </div>
     <div id="matchesBody"></div>
   </div>
 
   <div class="section" id="obsSection" hidden>
     <div class="section-head">
-      <div class="section-title">OBS browser sources</div>
+      <div class="section-title" data-i18n>OBS browser sources</div>
     </div>
     <div id="sources"></div>
   </div>
@@ -163,6 +163,7 @@
 
 <div class="toast" id="toast_el"></div>
 
+<script src="/js/lib/i18n.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/lib/app-client.js"></script>
 <script src="/js/lib/team-ui.js"></script>

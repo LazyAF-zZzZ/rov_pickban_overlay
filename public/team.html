@@ -15,13 +15,13 @@
 <div class="topbar">
   <div class="logo">ROV <span>|</span> OVERLAY TOOL</div>
   <nav class="topnav" aria-label="Pages">
-    <a class="tlink" href="/">HOME</a>
-    <a class="tlink active" href="/teams" aria-current="page">TEAMS</a>
-    <a class="tlink" href="/analytics">ANALYTICS</a>
-    <a class="tlink" href="/control">CONTROL</a>
-    <a class="tlink" href="/design">DESIGN</a>
-    <a class="tlink" href="/hotkeys">HOTKEYS</a>
-    <a class="tlink" href="/guide">GUIDE</a>
+    <a class="tlink" href="/" data-i18n>HOME</a>
+    <a class="tlink active" href="/teams" aria-current="page" data-i18n>TEAMS</a>
+    <a class="tlink" href="/analytics" data-i18n>ANALYTICS</a>
+    <a class="tlink" href="/control" data-i18n>CONTROL</a>
+    <a class="tlink" href="/design" data-i18n>DESIGN</a>
+    <a class="tlink" href="/hotkeys" data-i18n>HOTKEYS</a>
+    <a class="tlink" href="/guide" data-i18n>GUIDE</a>
   </nav>
 </div>
 
@@ -29,7 +29,7 @@
 
   <div class="section">
     <div class="section-head">
-      <a class="tlink" data-esc-back href="/teams">&larr; ALL TEAMS</a>
+      <a class="tlink" data-esc-back href="/teams" data-i18n>&larr; ALL TEAMS</a>
       <div class="spacer"></div>
       <div class="status-tags" id="headBadges"></div>
     </div>
@@ -38,16 +38,16 @@
 
   <div class="section" id="detailSection" hidden>
     <div class="section-head">
-      <div class="section-title">Team details</div>
+      <div class="section-title" data-i18n>Team details</div>
     </div>
     <div class="panel">
       <div class="frow">
         <div class="fld">
-          <label for="fName">Team name</label>
+          <label for="fName" data-i18n>Team name</label>
           <input id="fName" type="text" maxlength="24" autocomplete="off">
         </div>
         <div class="fld" style="flex:0 0 130px;">
-          <label for="fTag">Tag</label>
+          <label for="fTag" data-i18n>Tag</label>
           <input id="fTag" type="text" maxlength="6" autocomplete="off">
         </div>
       </div>
@@ -56,30 +56,30 @@
       <div id="playerRows"></div>
 
       <div class="frow" style="margin-top:12px;align-items:center;">
-        <button type="button" class="tlink" id="uploadLogoBtn">UPLOAD LOGO</button>
-        <button type="button" class="tlink" id="clearLogoBtn">CLEAR LOGO</button>
+        <button type="button" class="tlink" id="uploadLogoBtn" data-i18n>UPLOAD LOGO</button>
+        <button type="button" class="tlink" id="clearLogoBtn" data-i18n>CLEAR LOGO</button>
         <span class="hint">PNG, JPG or WEBP, up to 4 MB</span>
       </div>
 
       <div class="frow" style="margin-bottom:0;">
-        <button type="button" class="tlink primary" id="saveBtn">SAVE CHANGES</button>
-        <button type="button" class="tlink" id="revertBtn">REVERT</button>
+        <button type="button" class="tlink primary" id="saveBtn" data-i18n>SAVE CHANGES</button>
+        <button type="button" class="tlink" id="revertBtn" data-i18n>REVERT</button>
         <div class="spacer" style="margin-left:auto;"></div>
-        <button type="button" class="tlink danger" id="deleteBtn">DELETE TEAM</button>
+        <button type="button" class="tlink danger" id="deleteBtn" data-i18n>DELETE TEAM</button>
       </div>
     </div>
   </div>
 
   <div class="section" id="tournamentsSection" hidden>
     <div class="section-head">
-      <div class="section-title">Tournaments</div>
+      <div class="section-title" data-i18n>Tournaments</div>
     </div>
     <div id="tournamentsBody"></div>
   </div>
 
   <div class="section" id="historySection" hidden>
     <div class="section-head">
-      <div class="section-title">Match history</div>
+      <div class="section-title" data-i18n>Match history</div>
       <div class="spacer"></div>
       <span class="bracket-hint" id="historyHint"></span>
     </div>
@@ -92,6 +92,7 @@
 
 <div class="toast" id="toast_el"></div>
 
+<script src="/js/lib/i18n.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/lib/app-client.js"></script>
 <script src="/js/lib/team-ui.js"></script>

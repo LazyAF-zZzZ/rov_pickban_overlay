@@ -36,8 +36,8 @@ const SKIN_FILES = {
 };
 const EXTS = ['png', 'jpg', 'webp'];
 
-socket.on('connect', () => showToast('Connected', 'green'));
-socket.on('disconnect', () => showToast('Disconnected', 'red'));
+socket.on('connect', () => showToast(t('Connected'), 'green'));
+socket.on('disconnect', () => showToast(t('Disconnected'), 'red'));
 socket.on('controlError', (error) => showToast(error.message || 'Control blocked', 'red'));
 socket.on('stateUpdate', (state) => {
   renderSkin(state && state.skin);
@@ -101,13 +101,13 @@ function buildDesignGrid() {
     const upload = document.createElement('button');
     upload.className = 'tlink';
     upload.type = 'button';
-    upload.textContent = 'UPLOAD';
+    upload.textContent = t('UPLOAD');
     upload.addEventListener('click', () => file.click());
 
     const clear = document.createElement('button');
     clear.className = 'tlink danger';
     clear.type = 'button';
-    clear.textContent = 'CLEAR';
+    clear.textContent = t('CLEAR');
     clear.addEventListener('click', () => clearSkin(key));
 
     const actions = document.createElement('div');
@@ -121,7 +121,7 @@ function buildDesignGrid() {
 
 async function uploadSkin(slot, file) {
   if (file.size > 8 * 1024 * 1024) {
-    showToast('ไฟล์ใหญ่เกิน 8 MB', 'red');
+    showToast(t('File must be under 8 MB'), 'red');
     return;
   }
   try {
@@ -339,7 +339,7 @@ function renderTheme(next) {
 
 document.getElementById('themeReset')?.addEventListener('click', () => {
   socket.emit('resetTheme');
-  showToast('Theme reset to original', 'blue');
+  showToast(t('Theme reset to original'), 'blue');
 });
 
 // LIVE PREVIEW --------------------------------------------------------
@@ -377,7 +377,7 @@ function loadPreview(size) {
 
 document.getElementById('tpReload')?.addEventListener('click', () => {
   loadPreview(previewSize || '1080');
-  showToast('Preview reloaded', 'blue');
+  showToast(t('Preview reloaded'), 'blue');
 });
 
 document.querySelectorAll('.tp-bd').forEach((/** @type {HTMLElement} */ btn) => {

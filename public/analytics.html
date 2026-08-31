@@ -13,13 +13,13 @@
 <div class="topbar">
   <div class="logo">ROV <span>|</span> OVERLAY TOOL</div>
   <nav class="topnav" aria-label="Pages">
-    <a class="tlink" href="/">HOME</a>
-    <a class="tlink" href="/teams">TEAMS</a>
-    <a class="tlink active" href="/analytics" aria-current="page">ANALYTICS</a>
-    <a class="tlink" href="/control">CONTROL</a>
-    <a class="tlink" href="/design">DESIGN</a>
-    <a class="tlink" href="/hotkeys">HOTKEYS</a>
-    <a class="tlink" href="/guide">GUIDE</a>
+    <a class="tlink" href="/" data-i18n>HOME</a>
+    <a class="tlink" href="/teams" data-i18n>TEAMS</a>
+    <a class="tlink active" href="/analytics" aria-current="page" data-i18n>ANALYTICS</a>
+    <a class="tlink" href="/control" data-i18n>CONTROL</a>
+    <a class="tlink" href="/design" data-i18n>DESIGN</a>
+    <a class="tlink" href="/hotkeys" data-i18n>HOTKEYS</a>
+    <a class="tlink" href="/guide" data-i18n>GUIDE</a>
   </nav>
 </div>
 
@@ -27,23 +27,23 @@
 
   <div class="section">
     <div class="section-head">
-      <div class="section-title">Pick &amp; ban analytics</div>
+      <div class="section-title" data-i18n>Pick &amp; ban analytics</div>
       <div class="status-tags" id="summaryBadges"></div>
       <div class="spacer"></div>
-      <input id="searchBox" type="search" placeholder="Find a hero" autocomplete="off" class="hero-search">
+      <input id="searchBox" type="search" placeholder="Find a hero" autocomplete="off" class="hero-search" data-i18n-placeholder>
     </div>
 
     <div class="frow">
       <div class="fld">
-        <label for="fTournament">Tournament</label>
+        <label for="fTournament" data-i18n>Tournament</label>
         <select id="fTournament"></select>
       </div>
       <div class="fld">
-        <label for="fTeam">Team</label>
+        <label for="fTeam" data-i18n>Team</label>
         <select id="fTeam"></select>
       </div>
       <div class="fld" style="flex:0 0 auto;justify-content:flex-end;">
-        <button type="button" class="tlink" id="resetScopeBtn">ALL GAMES</button>
+        <button type="button" class="tlink" id="resetScopeBtn" data-i18n>ALL GAMES</button>
       </div>
     </div>
 
@@ -70,6 +70,7 @@
 
 <div class="toast" id="toast_el"></div>
 
+<script src="/js/lib/i18n.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/lib/app-client.js"></script>
 <script src="/js/lib/team-ui.js"></script>

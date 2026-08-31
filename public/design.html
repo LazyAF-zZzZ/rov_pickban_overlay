@@ -100,13 +100,13 @@
 <div class="topbar">
   <div class="logo">ROV <span>|</span> DESIGN</div>
   <nav class="topnav" aria-label="Pages">
-    <a class="tlink" href="/">HOME</a>
-    <a class="tlink" href="/teams">TEAMS</a>
-    <a class="tlink" href="/analytics">ANALYTICS</a>
-    <a class="tlink" href="/control">CONTROL</a>
-    <a class="tlink active" href="/design" aria-current="page">DESIGN</a>
-    <a class="tlink" href="/hotkeys">HOTKEYS</a>
-    <a class="tlink" href="/guide">GUIDE</a>
+    <a class="tlink" href="/" data-i18n>HOME</a>
+    <a class="tlink" href="/teams" data-i18n>TEAMS</a>
+    <a class="tlink" href="/analytics" data-i18n>ANALYTICS</a>
+    <a class="tlink" href="/control" data-i18n>CONTROL</a>
+    <a class="tlink active" href="/design" aria-current="page" data-i18n>DESIGN</a>
+    <a class="tlink" href="/hotkeys" data-i18n>HOTKEYS</a>
+    <a class="tlink" href="/guide" data-i18n>GUIDE</a>
   </nav>
 </div>
 
@@ -114,9 +114,9 @@
 
   <div class="panel theme-panel">
     <div class="panel-head">
-      <div class="panel-title">Overlay theme</div>
+      <div class="panel-title" data-i18n>Overlay theme</div>
       <span class="theme-note">Changes show on the overlay as you make them</span>
-      <button class="tlink danger" type="button" id="themeReset" style="margin-left:auto">RESET TO ORIGINAL</button>
+      <button class="tlink danger" type="button" id="themeReset" style="margin-left:auto" data-i18n>RESET TO ORIGINAL</button>
     </div>
     <div class="panel-body">
 
@@ -134,26 +134,26 @@
             <button class="tp-bd" type="button" data-bd="dark">DARK</button>
             <button class="tp-bd" type="button" data-bd="light">LIGHT</button>
           </span>
-          <button class="tlink" type="button" id="tpReload">RELOAD</button>
+          <button class="tlink" type="button" id="tpReload" data-i18n>RELOAD</button>
         </div>
       </div>
 
       <!-- Grouped by where a thing appears on the banner rather than by what
            kind of property it is. Looking for the score, you look under Centre
            column - you do not have to know it is a "size" and not a "colour". -->
-      <div class="theme-group-title">Team colours</div>
+      <div class="theme-group-title" data-i18n>Team colours</div>
       <div class="theme-grid" id="themeTeamColours"></div>
 
-      <div class="theme-group-title">Centre column</div>
+      <div class="theme-group-title" data-i18n>Centre column</div>
       <div class="theme-grid" id="themeCentre"></div>
 
-      <div class="theme-group-title">Hero cards</div>
+      <div class="theme-group-title" data-i18n>Hero cards</div>
       <div class="theme-grid" id="themeCards"></div>
 
-      <div class="theme-group-title">Ban row and labels</div>
+      <div class="theme-group-title" data-i18n>Ban row and labels</div>
       <div class="theme-grid" id="themeLabels"></div>
 
-      <div class="theme-group-title">Team logo</div>
+      <div class="theme-group-title" data-i18n>Team logo</div>
       <div class="theme-grid" id="themeLogo"></div>
 
       <div class="theme-hint">
@@ -203,6 +203,7 @@
 
 <div class="toast" id="toast_el"></div>
 
+<script src="/js/lib/i18n.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script src="js/lib/app-client.js"></script>
 <script src="js/design.js"></script>

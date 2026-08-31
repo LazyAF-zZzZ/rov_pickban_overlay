@@ -12,13 +12,13 @@
 <div class="topbar">
   <div class="logo">ROV <span>|</span> OVERLAY TOOL</div>
   <nav class="topnav" aria-label="Pages">
-    <a class="tlink active" href="/" aria-current="page">HOME</a>
-    <a class="tlink" href="/teams">TEAMS</a>
-    <a class="tlink" href="/analytics">ANALYTICS</a>
-    <a class="tlink" href="/control">CONTROL</a>
-    <a class="tlink" href="/design">DESIGN</a>
-    <a class="tlink" href="/hotkeys">HOTKEYS</a>
-    <a class="tlink" href="/guide">GUIDE</a>
+    <a class="tlink active" href="/" aria-current="page" data-i18n>HOME</a>
+    <a class="tlink" href="/teams" data-i18n>TEAMS</a>
+    <a class="tlink" href="/analytics" data-i18n>ANALYTICS</a>
+    <a class="tlink" href="/control" data-i18n>CONTROL</a>
+    <a class="tlink" href="/design" data-i18n>DESIGN</a>
+    <a class="tlink" href="/hotkeys" data-i18n>HOTKEYS</a>
+    <a class="tlink" href="/guide" data-i18n>GUIDE</a>
   </nav>
 </div>
 
@@ -34,36 +34,36 @@
   <!-- หน้าแรกคือรายการทัวร์นาเมนต์ เครื่องมืออื่นเข้าถึงได้จากแถบบน -->
   <div class="section">
     <div class="section-head">
-      <div class="section-title">Tournaments</div>
+      <div class="section-title" data-i18n>Tournaments</div>
       <div class="spacer"></div>
-      <button type="button" class="tlink primary" id="newBtn">+ NEW TOURNAMENT</button>
+      <button type="button" class="tlink primary" id="newBtn" data-i18n>+ NEW TOURNAMENT</button>
     </div>
 
     <div class="panel" id="createPanel" hidden>
       <div class="frow">
         <div class="fld">
-          <label for="fName">Tournament name</label>
-          <input id="fName" type="text" maxlength="60" placeholder="ROV Premier League 2026" autocomplete="off">
+          <label for="fName" data-i18n>Tournament name</label>
+          <input id="fName" type="text" maxlength="60" placeholder="ROV Premier League 2026" autocomplete="off" data-i18n-placeholder>
         </div>
         <div class="fld">
-          <label for="fFormat">Format</label>
+          <label for="fFormat" data-i18n>Format</label>
           <select id="fFormat"></select>
           <span class="hint" id="formatHint"></span>
         </div>
         <div class="fld">
-          <label for="fBestOf">Series length</label>
+          <label for="fBestOf" data-i18n>Series length</label>
           <select id="fBestOf"></select>
         </div>
       </div>
       <div class="frow">
         <div class="fld wide">
-          <label for="fNote">Note (optional)</label>
+          <label for="fNote" data-i18n>Note (optional)</label>
           <textarea id="fNote" maxlength="500" placeholder="Venue, dates, anything you want to remember"></textarea>
         </div>
       </div>
       <div class="frow">
-        <button type="button" class="tlink primary" id="createBtn">CREATE</button>
-        <button type="button" class="tlink" id="cancelBtn">CANCEL</button>
+        <button type="button" class="tlink primary" id="createBtn" data-i18n>CREATE</button>
+        <button type="button" class="tlink" id="cancelBtn" data-i18n>CANCEL</button>
       </div>
     </div>
 
@@ -76,6 +76,7 @@
 
 <div class="toast" id="toast_el"></div>
 
+<script src="/js/lib/i18n.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/lib/app-client.js"></script>
 <script src="/js/lib/tournament-ui.js"></script>

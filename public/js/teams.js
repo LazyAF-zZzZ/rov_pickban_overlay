@@ -72,13 +72,13 @@ function teamCard(team) {
 
   const profile = document.createElement('a');
   profile.className = 'tlink';
-  profile.textContent = 'PROFILE';
+  profile.textContent = t('PROFILE');
   profile.href = withToken(`/teams/${encodeURIComponent(team.id)}`);
 
   const removeBtn = document.createElement('button');
   removeBtn.type = 'button';
   removeBtn.className = 'tlink danger';
-  removeBtn.textContent = 'DELETE';
+  removeBtn.textContent = t('DELETE');
   removeBtn.title = 'Remove the team everywhere, including every tournament it entered';
   removeBtn.addEventListener('click', () => deleteTeam(team));
 
@@ -152,7 +152,7 @@ async function createTeam() {
   const nameInput = /** @type {HTMLInputElement} */ (document.getElementById('newTeamName'));
   const name = nameInput.value.trim();
   if (!name) {
-    showToast('Team name is required', 'red');
+    showToast(t('Team name is required'), 'red');
     nameInput.focus();
     return;
   }
@@ -225,7 +225,7 @@ function boot() {
   });
   on('clearBtn', 'click', () => {
     resetForm();
-    showToast('Form cleared', 'blue');
+    showToast(t('Form cleared'), 'blue');
   });
 
   on('createBtn', 'click', createTeam);
@@ -261,7 +261,7 @@ function boot() {
     boot();
   } catch (error) {
     console.error('teams.js boot failed', error);
-    showToast('Some controls on this page failed to start - try a hard reload', 'red');
+    showToast(t('Some controls on this page failed to start - try a hard reload'), 'red');
   }
 
   try {

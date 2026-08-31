@@ -180,31 +180,32 @@
 <div class="topbar">
   <div class="logo">ROV <span>|</span> CONTROL</div>
   <div class="match-inputs">
-    <input id="tournamentName" value="ROV Tournament" placeholder="Tournament">
-    <input id="matchTitle" value="BLUE VS RED" placeholder="Match Title">
+    <input id="tournamentName" value="ROV Tournament" placeholder="Tournament" data-i18n-placeholder>
+    <input id="matchTitle" value="BLUE VS RED" placeholder="Match Title" data-i18n-placeholder>
     <span class="save-state" id="matchInfoSaved">Auto-saves</span>
   </div>
   <!-- Live switches: the two things changed mid-broadcast. Kept together and
        apart from navigation so a page link is never next to an on-air control. -->
   <div class="live-switches">
     <div class="size-switch" role="group" aria-label="Overlay size">
-      <span class="size-switch-label">SIZE</span>
-      <button class="size-btn" type="button" id="sizeBtn1080" onclick="setOverlaySize('1080')" title="Set every overlay and result screen to 1920x1080">1080p</button>
-      <button class="size-btn" type="button" id="sizeBtn1440" onclick="setOverlaySize('1440')" title="Set every overlay and result screen to 2560x1440">1440p</button>
+      <span class="size-switch-label" data-i18n>SIZE</span>
+      <button class="size-btn" type="button" id="sizeBtn1080" onclick="setOverlaySize('1080')" title="Set every overlay and result screen to 1920x1080" data-i18n>1080p</button>
+      <button class="size-btn" type="button" id="sizeBtn1440" onclick="setOverlaySize('1440')" title="Set every overlay and result screen to 2560x1440" data-i18n>1440p</button>
     </div>
     <div class="size-switch" role="group" aria-label="Overlay on air">
-      <span class="size-switch-label">BANNER</span>
-      <button class="size-btn" type="button" id="overlayShowBtn" onclick="setOverlayVisible(true)" title="Show the overlay banner on air (tap Alt)">SHOW</button>
-      <button class="size-btn hide-btn" type="button" id="overlayHideBtn" onclick="setOverlayVisible(false)" title="Fade the overlay banner out for clean gameplay (tap Alt)">HIDE</button>
+      <span class="size-switch-label" data-i18n>BANNER</span>
+      <button class="size-btn" type="button" id="overlayShowBtn" onclick="setOverlayVisible(true)" title="Show the overlay banner on air (tap Alt)" data-i18n>SHOW</button>
+      <button class="size-btn hide-btn" type="button" id="overlayHideBtn" onclick="setOverlayVisible(false)" title="Fade the overlay banner out for clean gameplay (tap Alt)" data-i18n>HIDE</button>
     </div>
   </div>
   <nav class="topnav" aria-label="Pages">
-    <a class="tlink" href="/">HOME</a>
-    <a class="tlink" href="/teams">TEAMS</a>
-    <a class="tlink active" href="/control" aria-current="page">CONTROL</a>
-    <a class="tlink" href="/design">DESIGN</a>
-    <a class="tlink" href="/hotkeys">HOTKEYS</a>
-    <a class="tlink" href="/guide">GUIDE</a>
+    <a class="tlink" href="/" data-i18n>HOME</a>
+    <a class="tlink" href="/teams" data-i18n>TEAMS</a>
+    <a class="tlink" href="/analytics" data-i18n>ANALYTICS</a>
+    <a class="tlink active" href="/control" aria-current="page" data-i18n>CONTROL</a>
+    <a class="tlink" href="/design" data-i18n>DESIGN</a>
+    <a class="tlink" href="/hotkeys" data-i18n>HOTKEYS</a>
+    <a class="tlink" href="/guide" data-i18n>GUIDE</a>
   </nav>
 </div>
 
@@ -222,13 +223,13 @@
       <div style="width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0"></div>
       <div class="panel-title" style="color:var(--blue)" data-i18n>Blue Team</div>
       <div class="score-badge">
-        <label>SCORE</label>
+        <label data-i18n>SCORE</label>
         <input class="score-input" id="blueScore" type="number" value="0" min="0">
       </div>
     </div>
     <div class="panel-body">
       <div class="team-meta">
-        <div class="field"><label>Team Name</label><input id="blueTeamName" value="BLUE"></div>
+        <div class="field"><label data-i18n>Team Name</label><input id="blueTeamName" value="BLUE"></div>
         <div class="field">
           <label for="blueTeamLoad" data-i18n>From registry</label>
           <select class="team-load" id="blueTeamLoad" title="Fill this side from a saved team">
@@ -240,20 +241,20 @@
       <div class="logo-row">
         <div class="logo-preview" id="blueLogoPreview">184 × 184</div>
         <div class="logo-actions">
-          <label>Team Logo</label>
+          <label data-i18n>Team Logo</label>
           <div class="logo-buttons">
             <input type="file" id="blueLogoFile" accept="image/png,image/jpeg,image/webp" hidden>
-            <button class="tlink" type="button" onclick="pickTeamLogo('teamBlue')">UPLOAD</button>
-            <button class="tlink danger" type="button" onclick="clearTeamLogo('teamBlue')">CLEAR</button>
+            <button class="tlink" type="button" onclick="pickTeamLogo('teamBlue')" data-i18n>UPLOAD</button>
+            <button class="tlink danger" type="button" onclick="clearTeamLogo('teamBlue')" data-i18n>CLEAR</button>
           </div>
         </div>
       </div>
       <table class="pp-table">
         <thead><tr>
           <th style="width:20px">#</th>
-          <th style="text-align:left">NICKNAME</th>
+          <th style="text-align:left" data-i18n>NICKNAME</th>
           <th style="width:36px"></th>
-          <th style="text-align:center">HERO PICK</th>
+          <th style="text-align:center" data-i18n>HERO PICK</th>
           <th style="width:36px"></th>
         </tr></thead>
         <tbody id="blue_pp"></tbody>
@@ -271,13 +272,13 @@
       <div style="width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0"></div>
       <div class="panel-title" style="color:var(--red)" data-i18n>Red Team</div>
       <div class="score-badge">
-        <label>SCORE</label>
+        <label data-i18n>SCORE</label>
         <input class="score-input" id="redScore" type="number" value="0" min="0">
       </div>
     </div>
     <div class="panel-body">
       <div class="team-meta">
-        <div class="field"><label>Team Name</label><input id="redTeamName" value="RED"></div>
+        <div class="field"><label data-i18n>Team Name</label><input id="redTeamName" value="RED"></div>
         <div class="field">
           <label for="redTeamLoad" data-i18n>From registry</label>
           <select class="team-load" id="redTeamLoad" title="Fill this side from a saved team">
@@ -289,20 +290,20 @@
       <div class="logo-row">
         <div class="logo-preview" id="redLogoPreview">184 × 184</div>
         <div class="logo-actions">
-          <label>Team Logo</label>
+          <label data-i18n>Team Logo</label>
           <div class="logo-buttons">
             <input type="file" id="redLogoFile" accept="image/png,image/jpeg,image/webp" hidden>
-            <button class="tlink" type="button" onclick="pickTeamLogo('teamRed')">UPLOAD</button>
-            <button class="tlink danger" type="button" onclick="clearTeamLogo('teamRed')">CLEAR</button>
+            <button class="tlink" type="button" onclick="pickTeamLogo('teamRed')" data-i18n>UPLOAD</button>
+            <button class="tlink danger" type="button" onclick="clearTeamLogo('teamRed')" data-i18n>CLEAR</button>
           </div>
         </div>
       </div>
       <table class="pp-table">
         <thead><tr>
           <th style="width:20px">#</th>
-          <th style="text-align:left">NICKNAME</th>
+          <th style="text-align:left" data-i18n>NICKNAME</th>
           <th style="width:36px"></th>
-          <th style="text-align:center">HERO PICK</th>
+          <th style="text-align:center" data-i18n>HERO PICK</th>
           <th style="width:36px"></th>
         </tr></thead>
         <tbody id="red_pp"></tbody>
@@ -329,14 +330,14 @@
       <div class="draft-seq" id="draftSequenceList"></div>
       <div class="draft-controls">
         <div class="draft-btn-row">
-          <button class="dbtn start" onclick="draftStart()">START</button>
-          <button class="dbtn reset" onclick="draftReset()">RESET</button>
+          <button class="dbtn start" onclick="draftStart()" data-i18n>START</button>
+          <button class="dbtn reset" onclick="draftReset()" data-i18n>RESET</button>
         </div>
         <div class="draft-btn-row">
-          <button class="dbtn nav" onclick="draftPrev()">PREV</button>
-          <button class="dbtn pause" onclick="draftPause()">PAUSE</button>
-          <button class="dbtn resume" onclick="draftResume()">RESUME</button>
-          <button class="dbtn nav" onclick="draftNext()">NEXT</button>
+          <button class="dbtn nav" onclick="draftPrev()" data-i18n>PREV</button>
+          <button class="dbtn pause" onclick="draftPause()" data-i18n>PAUSE</button>
+          <button class="dbtn resume" onclick="draftResume()" data-i18n>RESUME</button>
+          <button class="dbtn nav" onclick="draftNext()" data-i18n>NEXT</button>
         </div>
       </div>
     </div>
@@ -370,11 +371,11 @@
   <!-- Routine actions first, then one separator, then the two that throw work
        away. RESET MATCH was styled neutral next to SWITCH TEAMS despite wiping
        the whole match - it now reads as destructive, like the button beside it. -->
-  <button class="bbtn primary" onclick="undoLast()" title="Undo last pick / ban (Ctrl+Z)">&#8630; UNDO</button>
-  <button class="bbtn neutral" onclick="switchTeams()">SWITCH TEAMS</button>
+  <button class="bbtn primary" onclick="undoLast()" title="Undo last pick / ban (Ctrl+Z)" data-i18n>&#8630; UNDO</button>
+  <button class="bbtn neutral" onclick="switchTeams()" data-i18n>SWITCH TEAMS</button>
   <div class="bb-sep"></div>
-  <button class="bbtn danger-soft" onclick="resetMatchState()" title="Clear the whole match back to an empty state">RESET MATCH</button>
-  <button class="bbtn danger" onclick="clearAll()" title="Clear every pick and ban, keeping teams and score">CLEAR PICKS &amp; BANS</button>
+  <button class="bbtn danger-soft" onclick="resetMatchState()" title="Clear the whole match back to an empty state" data-i18n>RESET MATCH</button>
+  <button class="bbtn danger" onclick="clearAll()" title="Clear every pick and ban, keeping teams and score" data-i18n>CLEAR PICKS &amp; BANS</button>
   <div class="kbd-hint" id="kbdHint"></div>
   <div class="bb-status" id="bb_status">Ready</div>
 </div>
@@ -388,14 +389,15 @@
     <div class="modal-title" id="confirmTitle"></div>
     <div class="modal-body" id="confirmBody"></div>
     <div class="modal-actions">
-      <button class="bbtn neutral" type="button" id="confirmCancel">CANCEL</button>
-      <button class="bbtn danger" type="button" id="confirmOk">CONFIRM</button>
+      <button class="bbtn neutral" type="button" id="confirmCancel" data-i18n>CANCEL</button>
+      <button class="bbtn danger" type="button" id="confirmOk" data-i18n>CONFIRM</button>
     </div>
   </div>
 </div>
 
 <div class="toast" id="toast_el"></div>
 
+<script src="/js/lib/i18n.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script src="js/lib/app-client.js"></script>
 <script src="/js/lib/obs-sources.js"></script>

@@ -43,13 +43,13 @@
 <div class="topbar">
   <div class="logo">ROV <span>|</span> HOTKEYS</div>
   <nav class="topnav" aria-label="Pages">
-    <a class="tlink" href="/">HOME</a>
-    <a class="tlink" href="/teams">TEAMS</a>
-    <a class="tlink" href="/analytics">ANALYTICS</a>
-    <a class="tlink" href="/control">CONTROL</a>
-    <a class="tlink" href="/design">DESIGN</a>
-    <a class="tlink active" href="/hotkeys" aria-current="page">HOTKEYS</a>
-    <a class="tlink" href="/guide">GUIDE</a>
+    <a class="tlink" href="/" data-i18n>HOME</a>
+    <a class="tlink" href="/teams" data-i18n>TEAMS</a>
+    <a class="tlink" href="/analytics" data-i18n>ANALYTICS</a>
+    <a class="tlink" href="/control" data-i18n>CONTROL</a>
+    <a class="tlink" href="/design" data-i18n>DESIGN</a>
+    <a class="tlink active" href="/hotkeys" aria-current="page" data-i18n>HOTKEYS</a>
+    <a class="tlink" href="/guide" data-i18n>GUIDE</a>
   </nav>
 </div>
 
@@ -57,9 +57,9 @@
 
   <div class="panel keys-panel">
     <div class="panel-head">
-      <div class="panel-title">Control panel hotkeys</div>
-      <span class="panel-note">Click CHANGE, then press the key you want</span>
-      <button class="tlink danger" type="button" id="resetAll" style="margin-left:auto">RESET ALL</button>
+      <div class="panel-title" data-i18n>Control panel hotkeys</div>
+      <span class="panel-note" data-i18n>Click CHANGE, then press the key you want</span>
+      <button class="tlink danger" type="button" id="resetAll" style="margin-left:auto" data-i18n>RESET ALL</button>
     </div>
     <div class="panel-body">
       <div id="keyRows"></div>
@@ -78,13 +78,14 @@
 
   <div class="panel">
     <div class="panel-head">
-      <div class="panel-title">Fixed keys</div>
-      <span class="panel-note">Text editing, not rebindable</span>
+      <div class="panel-title" data-i18n>Fixed keys</div>
+      <span class="panel-note" data-i18n>Text editing, not rebindable</span>
     </div>
     <div class="panel-body">
       <div class="fixed-list">
-        <div class="frow"><span class="fkey">Enter</span><span>Confirm the hero typed in a pick or ban box</span></div>
-        <div class="frow"><span class="fkey">Esc</span><span>Leave a hero box without choosing</span></div>
+        <div class="frow"><span class="fkey" data-i18n>Enter</span><span>Confirm the hero typed in a pick or ban box</span></div>
+        <div class="frow"><span class="fkey" data-i18n>Esc</span><span>Leave a hero box without choosing</span></div>
+        <div class="frow"><span class="fkey" data-i18n>Esc</span><span>Outside a box: go back to the previous page</span></div>
       </div>
     </div>
   </div>
@@ -93,6 +94,7 @@
 
 <div class="toast" id="toast_el"></div>
 
+<script src="/js/lib/i18n.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script src="js/lib/app-client.js"></script>
 <script src="js/hotkey-utils.js"></script>

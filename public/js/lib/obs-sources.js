@@ -79,7 +79,7 @@
     if (navigator.clipboard?.writeText) {
       try {
         await withTimeout(navigator.clipboard.writeText(url), 600);
-        showToast('URL copied', 'green');
+        showToast(t('URL copied'), 'green');
         return;
       } catch (error) {
         // ไม่ผ่านหรือค้าง ลองทางเก่าต่อ
@@ -88,14 +88,14 @@
 
     try {
       if (copyByTextField(url)) {
-        showToast('URL copied', 'green');
+        showToast(t('URL copied'), 'green');
         return;
       }
     } catch (error) {
       // ตกไปที่ข้อความแจ้งเตือนข้างล่าง
     }
 
-    showToast('Copy failed - select the URL and copy it by hand', 'red');
+    showToast(t('Copy failed - select the URL and copy it by hand'), 'red');
   }
 
   function render(container, options = {}) {
@@ -138,7 +138,7 @@
       const copy = document.createElement('button');
       copy.type = 'button';
       copy.className = 'tlink';
-      copy.textContent = 'COPY URL';
+      copy.textContent = t('COPY URL');
       copy.addEventListener('click', () => copyUrl(url));
 
       const open = document.createElement('a');
@@ -146,7 +146,7 @@
       open.href = withToken(path);
       open.target = '_blank';
       open.rel = 'noopener';
-      open.textContent = 'OPEN';
+      open.textContent = t('OPEN');
 
       actions.append(copy, open);
       row.append(name, urlEl, actions);

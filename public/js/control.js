@@ -13,8 +13,8 @@ let swPl = null;
 let swPk = null;
 let lastFocusedPhase = null;
 
-socket.on('connect', () => showToast('Connected', 'green'));
-socket.on('disconnect', () => showToast('Disconnected', 'red'));
+socket.on('connect', () => showToast(t('Connected'), 'green'));
+socket.on('disconnect', () => showToast(t('Disconnected'), 'red'));
 socket.on('connect_error', (error) => showToast(error.message || 'Connection error', 'red'));
 socket.on('controlError', (error) => showToast(error.message || 'Control blocked', 'red'));
 socket.on('stateUpdate', (state) => {
@@ -125,7 +125,7 @@ async function previewSfx(key) {
     source.connect(gain);
     source.start();
   } catch (error) {
-    showToast('Could not play that sound', 'red');
+    showToast(t('Could not play that sound'), 'red');
   }
 }
 
@@ -191,6 +191,12 @@ function renderSfxLevels(sfx) {
   });
 }
 
+// รายการ URL สำหรับ OBS ใช้ตัวเดียวกับหน้าทัวร์นาเมนต์
+//
+// หน้านี้ไม่ผูกกับทัวร์นาเมนต์ไหน จึงไม่ส่ง tournamentId ไป
+// overlay รายชื่อทีมจะไปเดาเอาจากแมตช์ที่กำลังออกอากาศ ซึ่งตรงกับที่หน้านี้คุมอยู่พอดี
+window.RovObsSources.render(document.getElementById('sources'));
+
 async function loadTeamOptions() {
   let teams = [];
   try {
@@ -234,7 +240,7 @@ async function applyTeamFromRegistry(team, select) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ team })
     });
-    showToast('Team loaded', 'green');
+    showToast(t('Team loaded'), 'green');
   } catch (error) {
     showToast(error.message || 'Could not load that team', 'red');
   }
@@ -274,7 +280,7 @@ function pickTeamLogo(team) {
 
 async function uploadTeamLogo(team, file) {
   if (file.size > LOGO_MAX_BYTES) {
-    showToast('Logo must be under 4 MB', 'red');
+    showToast(t('Logo must be under 4 MB'), 'red');
     return;
   }
   try {
@@ -288,7 +294,7 @@ async function uploadTeamLogo(team, file) {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || response.statusText);
-    showToast('Logo uploaded', 'green');
+    showToast(t('Logo uploaded'), 'green');
   } catch (error) {
     showToast(error.message || 'Upload failed', 'red');
   }
@@ -302,7 +308,7 @@ async function clearTeamLogo(team) {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || response.statusText);
-    showToast('Logo cleared', 'red');
+    showToast(t('Logo cleared'), 'red');
   } catch (error) {
     showToast(error.message || 'Clear failed', 'red');
   }
@@ -357,9 +363,9 @@ async function copyOverlayUrl(path) {
       document.execCommand('copy');
       input.remove();
     }
-    showToast('URL copied', 'green');
+    showToast(t('URL copied'), 'green');
   } catch (error) {
-    showToast('Copy failed', 'red');
+    showToast(t('Copy failed'), 'red');
   }
 }
 
@@ -627,7 +633,7 @@ function buildBans(color) {
     const clear = document.createElement('button');
     clear.className = 'ban-clear';
     clear.type = 'button';
-    clear.textContent = 'clear';
+    clear.textContent = t('clear');
     clear.addEventListener('click', () => clearBanSlot(team, i));
 
     wrap.append(label, selectWrap, clear);
@@ -680,7 +686,7 @@ function renderHotkeyHints() {
 
   const hints = [
     ['Enter', 'confirm hero'],
-    ['Esc', 'leave box']
+    ['Esc', 'leave box / back']
   ].concat(ACTIONS.map((action) => [bindingLabel(hotkeys[action.key]), action.short]));
 
   wrap.textContent = '';
@@ -746,7 +752,7 @@ function commitHeroInput(input, onCommit, preferMatch = false) {
   const hero = normalizeHeroInput(input.value);
   if (input.value.trim() && !hero) {
     input.value = previous;
-    showToast('Hero not found', 'red');
+    showToast(t('Hero not found'), 'red');
     return;
   }
   // The server enforces this too; checking here just makes the feedback instant.
@@ -788,11 +794,11 @@ function autosave(key, indicatorId, send) {
 function flashSaved(indicatorId) {
   const el = document.getElementById(indicatorId);
   if (!el) return;
-  el.textContent = 'Saved';
+  el.textContent = t('Saved');
   el.classList.add('saved');
   clearTimeout(el._t);
   el._t = setTimeout(() => {
-    el.textContent = 'Auto-saves';
+    el.textContent = t('Auto-saves');
     el.classList.remove('saved');
   }, 1400);
 }
@@ -873,7 +879,7 @@ function renderOverlayVisible(visible) {
 
 function switchTeams() {
   socket.emit('switchTeams');
-  showToast('Teams switched', 'blue');
+  showToast(t('Teams switched'), 'blue');
 }
 
 // CONFIRM DIALOG ------------------------------------------------------
@@ -913,13 +919,13 @@ document.getElementById('confirmModal')?.addEventListener('mousedown', (event) =
 // ล้างดราฟต์ทั้งหมด กู้คืนไม่ได้ (Ctrl+Z ย้อนได้ทีละช่องเท่านั้น)
 async function clearAll() {
   const ok = await askConfirm({
-    title: 'Clear picks and bans',
+    title: t('Clear picks and bans'),
     body: 'Clear every pick and ban for both teams? Team names, players and score are kept. This cannot be undone.',
-    confirmLabel: 'CLEAR'
+    confirmLabel: t('CLEAR')
   });
   if (!ok) return;
   socket.emit('clearAll');
-  showToast('All picks and bans cleared', 'red');
+  showToast(t('All picks and bans cleared'), 'red');
 }
 
 function clearBanSlot(team, index) {
@@ -929,7 +935,7 @@ function clearBanSlot(team, index) {
 function cancelSwap(type) {
   const sw = type === 'pl' ? swPl : swPk;
   if (!sw) return;
-  sw.btn.textContent = 'SW';
+  sw.btn.textContent = t('SW');
   sw.btn.classList.remove('cancel-mode');
   document.getElementById(`${sw.color}_row${sw.idx}`)?.classList.remove('active-row');
   if (type === 'pl') swPl = null; else swPk = null;
@@ -956,7 +962,7 @@ function swapPlayer(color, idx, btn) {
     cancelSwap('pl');
   }
   swPl = { color, idx, btn };
-  btn.textContent = 'CANCEL';
+  btn.textContent = t('CANCEL');
   btn.classList.add('cancel-mode');
   document.getElementById(`${color}_row${idx}`)?.classList.add('active-row');
 }
@@ -978,7 +984,7 @@ function swapHero(color, idx, btn) {
     cancelSwap('pk');
   }
   swPk = { color, idx, btn };
-  btn.textContent = 'CANCEL';
+  btn.textContent = t('CANCEL');
   btn.classList.add('cancel-mode');
   document.getElementById(`${color}_row${idx}`)?.classList.add('active-row');
 }
@@ -1179,20 +1185,20 @@ document.addEventListener('keyup', (event) => {
 // ถ้าไม่ล้างค่า การแตะครั้งถัดไปจะถูกนับต่อจากของเก่า
 window.addEventListener('blur', () => { tapArmedCode = null; });
 
-function draftStart() { socket.emit('draftStart'); showToast('Draft started', 'green'); }
-function draftPause() { socket.emit('draftPause'); showToast('Paused'); }
-function draftResume() { socket.emit('draftResume'); showToast('Resumed', 'blue'); }
+function draftStart() { socket.emit('draftStart'); showToast(t('Draft started'), 'green'); }
+function draftPause() { socket.emit('draftPause'); showToast(t('Paused')); }
+function draftResume() { socket.emit('draftResume'); showToast(t('Resumed'), 'blue'); }
 function draftNext() { socket.emit('draftNext'); }
 function draftPrev() { socket.emit('draftPrev'); }
-function draftReset() { socket.emit('draftReset'); showToast('Timer reset', 'red'); }
+function draftReset() { socket.emit('draftReset'); showToast(t('Timer reset'), 'red'); }
 
 
 // ล้างทั้งแมตช์ ชื่อทีม ผู้เล่น สกอร์ ดราฟต์ หายหมด
 async function resetMatchState() {
   const ok = await askConfirm({
-    title: 'Reset match',
+    title: t('Reset match'),
     body: 'Reset the whole match? Team names, players, score, picks and bans all go back to empty. This cannot be undone.',
-    confirmLabel: 'RESET'
+    confirmLabel: t('RESET')
   });
   if (!ok) return;
 
@@ -1203,7 +1209,7 @@ async function resetMatchState() {
       loadState(data.state);
       updateDraftUI(data.state);
     }
-    showToast('State reset', 'red');
+    showToast(t('State reset'), 'red');
   } catch (error) {
     showToast(error.message, 'red');
   }
@@ -1242,7 +1248,7 @@ async function renderLiveBar() {
   // ผู้ชนะรายเกมไม่ต้องกดที่นี่แล้ว มันมาจากคะแนนซีรีส์เอง (services/series.ts)
   bar.textContent = '';
   const dot = document.createElement('span');
-  dot.textContent = 'ON AIR';
+  dot.textContent = t('ON AIR');
 
   bar.append(dot);
   bar.hidden = false;

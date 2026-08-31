@@ -57,7 +57,7 @@
       role.type = 'text';
       role.className = 'prole';
       role.maxLength = 16;
-      role.placeholder = 'Role';
+      role.placeholder = t('Role');
       role.value = player.role || '';
 
       const capLabel = document.createElement('label');

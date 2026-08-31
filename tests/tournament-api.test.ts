@@ -259,6 +259,28 @@ test('the guide ships inside the app, in both languages, without needing the net
   assert.ok(!/https?:\/\/(?!127\.0\.0\.1|localhost)/.test(html), 'no external resources');
 });
 
+// แถบเมนูต้องเหมือนกันทุกหน้า ทั้งรายการและลำดับ
+//
+// จุดประสงค์คือปุ่มเดิมอยู่ที่เดิมเสมอ คนคุมงานจะได้กดโดยไม่ต้องอ่าน
+// ของจริงเคยหลุด: หน้า Control ขาดลิงก์ ANALYTICS อยู่พักหนึ่งโดยไม่มีใครสังเกต
+// และตอนถอดพรีเซ็ตออกก็ต้องแก้ทุกหน้าพร้อมกัน ลืมหน้าเดียวก็เหลือลิงก์ตายไว้
+test('every operator page carries the same page nav, in the same order', async () => {
+  const expected = ['/', '/teams', '/analytics', '/control', '/design', '/hotkeys', '/guide'];
+  const pages = [
+    '/', '/teams', '/teams/anything', '/tournament/anything',
+    '/tournament/anything/bracket', '/analytics', '/control', '/design', '/hotkeys', '/guide'
+  ];
+
+  for (const url of pages) {
+    const html = String((await request('GET', url)).body);
+    const start = html.indexOf('<nav class="topnav"');
+    assert.ok(start > -1, `${url} has a page nav`);
+    const nav = html.slice(start, html.indexOf('</nav>', start));
+    const hrefs = [...nav.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
+    assert.deepStrictEqual(hrefs, expected, `${url} nav`);
+  }
+});
+
 // เส้นแบ่งระหว่าง "หน้าคนคุมงาน" กับ "กราฟิกออกอากาศ" เป็นเรื่องของธีมด้วย
 //
 // หน้าคนคุมงานใช้ธีมกลางร่วมกันหมด ส่วนหน้าที่ออกอากาศมีหน้าตาของตัวเอง

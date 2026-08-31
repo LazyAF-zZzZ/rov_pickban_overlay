@@ -78,7 +78,7 @@ function render() {
       const reset = document.createElement('button');
       reset.type = 'button';
       reset.className = 'tlink';
-      reset.textContent = 'DEFAULT';
+      reset.textContent = t('DEFAULT');
       reset.addEventListener('click', () => save(action.key, { ...DEFAULTS[action.key] }));
       actions.appendChild(reset);
     }
@@ -106,7 +106,7 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     recordingAction = null;
     render();
-    showToast('Cancelled', 'blue');
+    showToast(t('Cancelled'), 'blue');
     return;
   }
 
@@ -130,11 +130,11 @@ document.getElementById('resetAll')?.addEventListener('click', () => {
   hotkeys = { ...DEFAULTS };
   render();
   socket.emit('resetHotkeys');
-  showToast('All hotkeys reset', 'blue');
+  showToast(t('All hotkeys reset'), 'blue');
 });
 
 render();
 fetch(controlToken ? `/api/state?token=${encodeURIComponent(controlToken)}` : '/api/state')
   .then((r) => r.json())
   .then((state) => { if (state.hotkeys) hotkeys = { ...DEFAULTS, ...state.hotkeys }; render(); })
-  .catch(() => showToast('Could not load hotkeys', 'red'));
+  .catch(() => showToast(t('Could not load hotkeys'), 'red'));

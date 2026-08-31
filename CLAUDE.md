@@ -112,6 +112,35 @@ come out empty.
 `build/server/config.js`, not `server/config.js`. Get this wrong and hero images, `public/`,
 and the data directory all resolve to nowhere — while the server still starts.
 
+**The app is bilingual and Thai is the default.** `public/js/lib/i18n.js` loads before every
+other script on every operator page, keys translations by the **English source string** rather
+than by a code, and stores the choice in `localStorage` under `rovLang`. HTML marks a
+translatable element with a bare `data-i18n` (the English text in the markup becomes the key
+and is cached on the element, so switching back to English always works); JS wraps
+user-visible strings as `t('English')`. The TH/EN button is injected into `.topbar` by the
+module itself — do not add one per page, and a page that forgets the script tag simply shows
+English rather than breaking. Never mark an element that holds user data: a team called
+"Timer" would be translated into "เวลา". Broadcast pages (`overlay`, `overlay-1440`,
+`result`, `overlay-teams`) deliberately do not load it — what viewers see stays English.
+
+**Bulk team delete goes through one endpoint, not N requests.**
+`POST /api/teams/bulk-delete` takes `{ ids }`, deletes each through the same path as the
+single delete (logo files included, or they become orphans), and emits `notifyData` **once** —
+twenty single DELETEs would make every open page re-render twenty times. Ids that are already
+gone count as `missing` rather than failing the call: another window may have deleted them
+while the operator was still choosing, and the goal — those teams no longer existing — is met
+either way. On the page, selection is held as a Set of ids, never as checkbox elements, so it
+survives the re-render that happens on every keystroke in the search box; "select all shown"
+means exactly the filtered rows, never the whole registry.
+
+**Nothing the operator creates belongs in git or in the installer.** `data/state.json` (the
+live overlay: team names, players, picks), `data/tournament.db` and uploaded team logos are
+the user own data — all gitignored, and `build.files` excludes them with `!` entries so a
+`.exe` built on one machine does not ship that machine practice lineup to everyone else.
+Hero images under `public/images/heroes` are the opposite: app assets, committed on purpose.
+The app recreates `state.json` from `defaultState` when it is missing, so untracking it costs
+nothing.
+
 **New folders must be added to `build.files` in `package.json`.** electron-builder lists
 paths explicitly, and it ships **`build/server/**/*`, not `server/**/*`** — the compiled
 output, never the TypeScript source. A missing entry builds a clean `.exe` that crashes on

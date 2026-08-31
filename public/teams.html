@@ -12,13 +12,13 @@
 <div class="topbar">
   <div class="logo">ROV <span>|</span> OVERLAY TOOL</div>
   <nav class="topnav" aria-label="Pages">
-    <a class="tlink" href="/">HOME</a>
-    <a class="tlink active" href="/teams" aria-current="page">TEAMS</a>
-    <a class="tlink" href="/analytics">ANALYTICS</a>
-    <a class="tlink" href="/control">CONTROL</a>
-    <a class="tlink" href="/design">DESIGN</a>
-    <a class="tlink" href="/hotkeys">HOTKEYS</a>
-    <a class="tlink" href="/guide">GUIDE</a>
+    <a class="tlink" href="/" data-i18n>HOME</a>
+    <a class="tlink active" href="/teams" aria-current="page" data-i18n>TEAMS</a>
+    <a class="tlink" href="/analytics" data-i18n>ANALYTICS</a>
+    <a class="tlink" href="/control" data-i18n>CONTROL</a>
+    <a class="tlink" href="/design" data-i18n>DESIGN</a>
+    <a class="tlink" href="/hotkeys" data-i18n>HOTKEYS</a>
+    <a class="tlink" href="/guide" data-i18n>GUIDE</a>
   </nav>
 </div>
 
@@ -26,18 +26,18 @@
 
   <div class="section">
     <div class="section-head">
-      <div class="section-title">Team registry</div>
+      <div class="section-title" data-i18n>Team registry</div>
       <div class="status-tags" id="countBadges"></div>
       <div class="spacer"></div>
-      <button type="button" class="tlink primary" id="newBtn">+ NEW TEAM</button>
+      <button type="button" class="tlink primary" id="newBtn" data-i18n>+ NEW TEAM</button>
     </div>
 
     <!-- ทะเบียนเก็บได้ไม่จำกัด (เพดาน 128 อยู่ที่ระดับทัวร์นาเมนต์)
          พอมีหลายร้อยทีม การไล่หาด้วยตาไม่ไหว ช่องค้นหาจึงจำเป็น ไม่ใช่ของแถม -->
     <div class="frow" style="margin-bottom:14px;">
       <div class="fld">
-        <label for="searchBox">Search</label>
-        <input id="searchBox" type="search" placeholder="Team name or tag" autocomplete="off">
+        <label for="searchBox" data-i18n>Search</label>
+        <input id="searchBox" type="search" placeholder="Team name or tag" autocomplete="off" data-i18n-placeholder>
       </div>
     </div>
 
@@ -45,15 +45,15 @@
     <div class="panel" id="createPanel" hidden>
       <div class="frow">
         <div class="fld">
-          <label for="newTeamName">Team name</label>
-          <input id="newTeamName" type="text" maxlength="24" placeholder="Flash Wolves" autocomplete="off">
+          <label for="newTeamName" data-i18n>Team name</label>
+          <input id="newTeamName" type="text" maxlength="24" placeholder="Flash Wolves" autocomplete="off" data-i18n-placeholder>
         </div>
         <div class="fld" style="flex:0 0 130px;">
-          <label for="newTeamTag">Tag</label>
-          <input id="newTeamTag" type="text" maxlength="6" placeholder="FW" autocomplete="off">
+          <label for="newTeamTag" data-i18n>Tag</label>
+          <input id="newTeamTag" type="text" maxlength="6" placeholder="FW" autocomplete="off" data-i18n-placeholder>
         </div>
         <div class="fld" style="flex:0 0 auto;justify-content:flex-end;">
-          <button type="button" class="tlink" id="newTeamLogoBtn">CHOOSE LOGO</button>
+          <button type="button" class="tlink" id="newTeamLogoBtn" data-i18n>CHOOSE LOGO</button>
         </div>
       </div>
 
@@ -61,10 +61,10 @@
       <div id="newTeamPlayers"></div>
 
       <div class="frow" style="margin-top:12px;margin-bottom:0;">
-        <button type="button" class="tlink primary" id="createBtn">CREATE TEAM</button>
-        <button type="button" class="tlink" id="clearBtn">CLEAR FORM</button>
+        <button type="button" class="tlink primary" id="createBtn" data-i18n>CREATE TEAM</button>
+        <button type="button" class="tlink" id="clearBtn" data-i18n>CLEAR FORM</button>
         <div class="spacer" style="margin-left:auto;"></div>
-        <button type="button" class="tlink" id="closeBtn">CLOSE</button>
+        <button type="button" class="tlink" id="closeBtn" data-i18n>CLOSE</button>
       </div>
     </div>
 
@@ -77,6 +77,7 @@
 
 <div class="toast" id="toast_el"></div>
 
+<script src="/js/lib/i18n.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/lib/app-client.js"></script>
 <script src="/js/lib/team-ui.js"></script>

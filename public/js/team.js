@@ -96,7 +96,7 @@ function renderTournaments(list) {
   if (list.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'empty';
-    empty.textContent = 'This team has not been added to a tournament yet.';
+    empty.textContent = t('This team has not been added to a tournament yet.');
     body.appendChild(empty);
     return;
   }
@@ -135,7 +135,7 @@ function historyRow(match) {
 
   if (match.isBye) {
     opponent.classList.add('tbd');
-    opponent.textContent = 'no opponent';
+    opponent.textContent = t('no opponent');
   } else if (match.opponentId) {
     // คู่แข่งยังอยู่ในทะเบียน กดเข้าไปดูโปรไฟล์ได้
     const link = document.createElement('a');
@@ -151,7 +151,7 @@ function historyRow(match) {
     opponent.classList.add('gone');
   } else {
     opponent.classList.add('tbd');
-    opponent.textContent = 'to be decided';
+    opponent.textContent = t('to be decided');
   }
 
   const score = document.createElement('div');
@@ -181,7 +181,7 @@ function renderHistory(matches) {
   if (matches.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'empty';
-    empty.textContent = 'No matches yet. Draw a bracket in a tournament this team has entered.';
+    empty.textContent = t('No matches yet. Draw a bracket in a tournament this team has entered.');
     body.appendChild(empty);
     return;
   }
@@ -208,7 +208,7 @@ function showMissing(message) {
   const name = document.createElement('div');
   name.className = 'team-name';
   name.style.fontSize = '26px';
-  name.textContent = 'Team not found';
+  name.textContent = t('Team not found');
   head.appendChild(name);
 
   const body = document.createElement('div');
@@ -253,7 +253,7 @@ async function save() {
       })
     });
     await reload();
-    showToast('Saved', 'green');
+    showToast(t('Saved'), 'green');
   } catch (error) {
     showToast(error.message || 'Could not save', 'red');
   }
@@ -278,7 +278,7 @@ async function uploadLogo(file) {
   try {
     await sendLogo(teamId, file);
     await reload();
-    showToast('Logo uploaded', 'green');
+    showToast(t('Logo uploaded'), 'green');
   } catch (error) {
     showToast(error.message || 'Upload failed', 'red');
   }
@@ -288,7 +288,7 @@ async function clearLogo() {
   try {
     await fetchJson(`/api/teams/${encodeURIComponent(teamId)}/logo`, { method: 'DELETE' });
     await reload();
-    showToast('Logo cleared', 'blue');
+    showToast(t('Logo cleared'), 'blue');
   } catch (error) {
     showToast(error.message || 'Could not clear the logo', 'red');
   }
@@ -302,7 +302,7 @@ function boot() {
   on('revertBtn', 'click', () => {
     if (team) {
       renderForm(team);
-      showToast('Reverted to saved values', 'blue');
+      showToast(t('Reverted to saved values'), 'blue');
     }
   });
 
@@ -337,7 +337,7 @@ function boot() {
     boot();
   } catch (error) {
     console.error('team.js boot failed', error);
-    showToast('Some controls on this page failed to start - try a hard reload', 'red');
+    showToast(t('Some controls on this page failed to start - try a hard reload'), 'red');
   }
 
   if (!teamId) {

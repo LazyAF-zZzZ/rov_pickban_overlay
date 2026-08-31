@@ -86,6 +86,10 @@ later ones depend on earlier ones.
    resources, including the point the user asked for explicitly: the overlay
    source must stay open in the live scene or OBS mixes no audio from it.
 
+8. **Thai, and Thai is the default.** `public/js/lib/i18n.js`, ~196 entries
+   keyed by the English source string. See the section in `CLAUDE.md`; the
+   remaining work is in §8.
+
 **The team registry has its own pages now.** `/teams` lists every team ever
 created with a search box and a one-form create; `/teams/:id` is the profile —
 roster editing, logo, the tournaments entered, and match history across all of
@@ -611,6 +615,12 @@ pattern already in `public/js/overlay.js`.
 ---
 
 ## 8. Open items
+
+- **The Thai translation is complete for chrome and JS messages, but not audited page by
+  page.** `i18n.js` carries ~196 entries covering the top bar, every button, form label and
+  toast. Strings with data interpolated into them (`\`Deleted ${name}\``) are still English,
+  because the English sentence is the translation key and a key cannot contain a team name.
+  Those need splitting into a translated frame plus a substituted value before they can move.
 
 - **The user guide now lives in two places and they can drift.** `/guide` (in-app, bilingual,
   offline) and `docs/USER_GUIDE.md` (for reading on GitHub) carry the same content by hand.

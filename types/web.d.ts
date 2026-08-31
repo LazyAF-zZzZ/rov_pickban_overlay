@@ -23,6 +23,21 @@ interface RovSfxApi {
   setLevels(levels: unknown): void;
 }
 declare const RovSfx: RovSfxApi;
+
+// ระบบสองภาษา (public/js/lib/i18n.js)
+//
+// t() เป็น global เหมือน io() ไม่ได้ดึงออกมาจาก window เพราะทุกหน้าเรียกใช้ตรงๆ
+// ค่าที่สองคือข้อความอังกฤษต้นฉบับ ถ้าไม่ส่งมาจะใช้กุญแจเป็นข้อความแทน
+interface RovI18nApi {
+  readonly lang: string;
+  t(key: string, english?: string): string;
+  apply(root?: ParentNode | null): void;
+  set(lang: string): void;
+  onChange(fn: (lang: string) => void): void;
+}
+declare const RovI18n: RovI18nApi;
+declare function t(key: string, english?: string): string;
+
 // socket.io client ที่มาจาก /socket.io/socket.io.js
 declare function io(options?: any): RovSocket;
 
@@ -96,6 +111,7 @@ interface RovHotkeyUtilsApi {
 
 interface Window {
   RovClient: RovClientApi;
+  RovI18n: RovI18nApi;
   RovSfx: RovSfxApi;
   /** obs-browser ฝังไว้ให้เฉพาะตอนหน้าถูกเปิดเป็น browser source ใน OBS */
   obsstudio?: { pluginVersion?: string; [key: string]: unknown };

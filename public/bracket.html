@@ -15,28 +15,28 @@
 <div class="topbar">
   <div class="logo">ROV <span>|</span> MATCH SESSION</div>
   <nav class="topnav" aria-label="Pages">
-    <a class="tlink" href="/">HOME</a>
-    <a class="tlink" href="/teams">TEAMS</a>
-    <a class="tlink" href="/analytics">ANALYTICS</a>
-    <a class="tlink" href="/control">CONTROL</a>
-    <a class="tlink" href="/design">DESIGN</a>
-    <a class="tlink" href="/hotkeys">HOTKEYS</a>
-    <a class="tlink" href="/guide">GUIDE</a>
+    <a class="tlink" href="/" data-i18n>HOME</a>
+    <a class="tlink" href="/teams" data-i18n>TEAMS</a>
+    <a class="tlink" href="/analytics" data-i18n>ANALYTICS</a>
+    <a class="tlink" href="/control" data-i18n>CONTROL</a>
+    <a class="tlink" href="/design" data-i18n>DESIGN</a>
+    <a class="tlink" href="/hotkeys" data-i18n>HOTKEYS</a>
+    <a class="tlink" href="/guide" data-i18n>GUIDE</a>
   </nav>
 </div>
 
 <!-- ตัวควบคุมการแข่งทั้งหมดอยู่ในแถบนี้แถบเดียว
      เดิมกระจายอยู่บนหน้าทัวร์นาเมนต์ ซึ่งเป็นหน้าตั้งค่าก่อนแข่ง คนละจังหวะการใช้งาน -->
 <div class="bracket-head">
-  <a class="tlink" id="backLink" data-esc-back href="/">&larr; TOURNAMENT</a>
+  <a class="tlink" id="backLink" data-esc-back href="/" data-i18n>&larr; TOURNAMENT</a>
   <div class="bracket-title" id="headName"></div>
   <div class="status-tags" id="headBadges"></div>
   <div class="spacer"></div>
   <label class="badge" id="randomiseLabel" style="cursor:pointer;display:flex;align-items:center;gap:6px;">
     <input type="checkbox" id="randomiseDraw"> Random draw
   </label>
-  <button type="button" class="tlink primary" id="drawBtn">DRAW MATCHES</button>
-  <button type="button" class="tlink danger" id="clearMatchesBtn" hidden>CLEAR</button>
+  <button type="button" class="tlink primary" id="drawBtn" data-i18n>DRAW MATCHES</button>
+  <button type="button" class="tlink danger" id="clearMatchesBtn" hidden data-i18n>CLEAR</button>
 </div>
 
 <div class="bracket-subhead">
@@ -50,6 +50,7 @@
 
 <div class="toast" id="toast_el"></div>
 
+<script src="/js/lib/i18n.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/lib/app-client.js"></script>
 <script src="/js/lib/team-ui.js"></script>
