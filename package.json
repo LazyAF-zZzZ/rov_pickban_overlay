@@ -56,6 +56,9 @@
       "package.json",
       "public/**/*",
       "data/**/*",
+      "!data/state.json",
+      "!data/presets.json",
+      "!data/tournament.db*",
       "node_modules/**/*"
     ],
     "win": {

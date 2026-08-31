@@ -56,3 +56,15 @@ data/tournament.db-wal
 # folder when the server starts (ensureSoundDir), and the sound files themselves
 # are the user own. None of it is project source.
 public/images/sounds/
+
+# state.json คือสภาพ overlay ที่กำลังออกอากาศอยู่ (ชื่อทีม ผู้เล่น พิค คะแนน)
+# เป็นข้อมูลของผู้ใช้ ไม่ใช่ซอร์ส และแอพสร้างใหม่เองได้ถ้าไม่มีไฟล์
+# (ดู live-state.ts ที่ loadJson มี defaultState เป็นค่าสำรองอยู่แล้ว)
+data/state.json
+
+# โลโก้ทีมที่อัปโหลดเองเป็นภาพของผู้ใช้ ไม่ใช่ของที่มากับแอพ
+# ต่างจากรูปฮีโร่ใน public/images/heroes ซึ่งเป็นทรัพยากรของตัวแอพและต้องมีติดไปด้วย
+public/images/team-logos/*.png
+
+# สำเนาโค้ดเก่าที่เคยก๊อปเก็บไว้ตอนแก้งาน git เก็บประวัติให้อยู่แล้ว ไม่ต้องเก็บซ้ำ
+backups/

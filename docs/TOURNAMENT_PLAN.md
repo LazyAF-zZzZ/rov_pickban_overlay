@@ -90,6 +90,11 @@ later ones depend on earlier ones.
    keyed by the English source string. See the section in `CLAUDE.md`; the
    remaining work is in §8.
 
+9. **The operator's own data is out of git.** `state.json`, `tournament.db` and
+   uploaded logos are gitignored and excluded from `build.files`. Real user
+   data still exists in `%APPDATA%\rov-overlay-tool\`, untouched — only the
+   repo copies went.
+
 **The team registry has its own pages now.** `/teams` lists every team ever
 created with a search box and a one-form create; `/teams/:id` is the profile —
 roster editing, logo, the tournaments entered, and match history across all of
