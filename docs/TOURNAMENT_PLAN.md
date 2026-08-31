@@ -75,10 +75,16 @@ later ones depend on earlier ones.
    with `?sfx=1`, one `GainNode` per event, files dropped into
    `USER_SOUND_DIR` by fixed name. Per-event levels (pick / ban / timer) live in
    `state.sfx`, ride `CARRIED_OVER_KEYS`, and have sliders on the Control
+   Panel. The ten-second countdown ticks once per second, not once at ten.
+
 6. **OBS browser sources on the Control Panel.** `public/js/lib/obs-sources.js`,
    one shared list, overlays default to the `?sfx=1` variant. Copy-to-clipboard
    races a 600ms timeout and falls back to `execCommand`, and clicking the URL
    selects it — see §9.
+
+7. **An in-app guide at `/guide`.** Nine numbered steps, bilingual, no external
+   resources, including the point the user asked for explicitly: the overlay
+   source must stay open in the live scene or OBS mixes no audio from it.
 
 **The team registry has its own pages now.** `/teams` lists every team ever
 created with a search box and a one-form create; `/teams/:id` is the profile —
@@ -605,6 +611,10 @@ pattern already in `public/js/overlay.js`.
 ---
 
 ## 8. Open items
+
+- **The user guide now lives in two places and they can drift.** `/guide` (in-app, bilingual,
+  offline) and `docs/USER_GUIDE.md` (for reading on GitHub) carry the same content by hand.
+  The in-app one is the copy users actually see; if only one gets updated, make it that one.
 
 - **Overlay sound effects: files are still drop-in, but levels are now proper settings.**
   `state.sfx` carries a per-event level (pick / ban / timer) through `CARRIED_OVER_KEYS`, and

@@ -118,7 +118,8 @@ Height: 1440
 อ่านรายละเอียดเพิ่มได้ที่:
 
 ```text
-docs/OBS_SETUP.md
+docs/USER_GUIDE.md    คู่มือผู้ใช้ ไทย/อังกฤษ อ่านอันนี้ก่อน
+docs/OBS_SETUP.md     ตั้งค่า OBS แบบละเอียด
 ```
 
 ## วิธีใช้จาก source code

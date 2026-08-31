@@ -236,6 +236,29 @@ test('the overlay loads its sound module first and stays silent unless asked', a
   assert.strictEqual((await request('GET', '/sounds/pick.mp3')).status, 404);
 });
 
+// คู่มืออยู่ในแอพ ไม่ใช่ในโฟลเดอร์ docs
+//
+// เหตุผลที่ต้องอยู่ในแอพ: เวลาที่คนต้องการคู่มือคือตอนยืนงงอยู่หน้างาน
+// ซึ่งไม่มีใครไปเปิดไฟล์ .md และอาจไม่มีเน็ตด้วย
+// เนื้อหาสองภาษาต้องอยู่ในหน้าเลยทั้งคู่ ไม่ใช่โหลดทีหลัง
+// ปุ่มสลับภาษาแค่ซ่อน/แสดง คู่มือจึงอ่านได้แม้ JS จะพัง
+test('the guide ships inside the app, in both languages, without needing the network', async () => {
+  const page = await request('GET', '/guide');
+  assert.strictEqual(page.status, 200);
+
+  const html = String(page.body);
+  assert.ok(html.includes('/js/guide.js'), 'serves its own script');
+  assert.ok(html.includes('/css/theme.css'), 'uses the shared theme');
+
+  // ทั้งสองภาษาต้องอยู่ในไฟล์ ไม่ได้ไปดึงมาทีหลัง
+  assert.ok(html.includes('data-lang="en"'), 'carries the English copy');
+  assert.ok(html.includes('data-lang="th"'), 'carries the Thai copy');
+  assert.ok(html.includes('เปิดโปรแกรม'), 'the Thai copy is real text, not a placeholder');
+
+  // ห้ามพึ่งอะไรจากอินเทอร์เน็ต แอพนี้ใช้แบบออฟไลน์
+  assert.ok(!/https?:\/\/(?!127\.0\.0\.1|localhost)/.test(html), 'no external resources');
+});
+
 // เส้นแบ่งระหว่าง "หน้าคนคุมงาน" กับ "กราฟิกออกอากาศ" เป็นเรื่องของธีมด้วย
 //
 // หน้าคนคุมงานใช้ธีมกลางร่วมกันหมด ส่วนหน้าที่ออกอากาศมีหน้าตาของตัวเอง
