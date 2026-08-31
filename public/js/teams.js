@@ -194,7 +194,7 @@ function renderBulkBar() {
 
   const label = document.createElement('div');
   label.className = 'bulk-count';
-  label.textContent = `${count} ${t('selected', 'selected')}`;
+  label.textContent = tf('{count} selected', { count });
 
   const spacer = document.createElement('div');
   spacer.className = 'spacer';
@@ -208,7 +208,7 @@ function renderBulkBar() {
   const deleteBtn = document.createElement('button');
   deleteBtn.type = 'button';
   deleteBtn.className = 'tlink danger';
-  deleteBtn.textContent = `${t('DELETE SELECTED')} (${count})`;
+  deleteBtn.textContent = tf('DELETE SELECTED ({count})', { count });
   deleteBtn.addEventListener('click', deleteSelected);
 
   bar.append(label, spacer, clearBtn, deleteBtn);
@@ -229,10 +229,10 @@ async function deleteSelected() {
   // โชว์ชื่อจริงไม่เกินห้าทีม ที่เหลือบอกเป็นจำนวน
   // รายชื่อยาวสามสิบบรรทัดในกล่องยืนยันไม่มีใครอ่าน และดันปุ่มตกจอ
   const names = chosen.slice(0, 5).map((team) => team.name).join(', ');
-  const more = chosen.length > 5 ? ` ${t('and')} ${chosen.length - 5} ${t('more')}` : '';
+  const more = chosen.length > 5 ? tf(' and {n} more', { n: chosen.length - 5 }) : '';
 
   const body = [
-    `${t('Delete these teams from the registry?')} (${chosen.length})`,
+    tf('Delete these teams from the registry? ({count})', { count: chosen.length }),
     names + more
   ];
   if (entered > 0) {
@@ -255,7 +255,7 @@ async function deleteSelected() {
     });
     selected.clear();
     await reload();
-    showToast(`${t('Teams deleted')} (${result.removed})`, 'blue');
+    showToast(tf('{count} teams deleted', { count: result.removed }), 'blue');
   } catch (error) {
     showToast(error.message || t('Could not delete the teams'), 'red');
   }
@@ -330,19 +330,19 @@ async function createTeam() {
     try {
       await sendLogo(team.id, pendingLogo);
     } catch (error) {
-      showToast(`${team.name} created, but the logo failed: ${error.message}`, 'red');
+      showToast(tf('{name} created, but the logo failed: {reason}', { name: team.name, reason: error.message }), 'red');
     }
   }
 
   resetForm();
   nameInput.focus();
   await reload();
-  showToast(`${team.name} created`, 'green');
+  showToast(tf('{name} created', { name: team.name }), 'green');
 }
 
 async function deleteTeam(team) {
   const stat = summaries.get(team.id);
-  const body = [`${t('Delete this team from the registry?')} "${team.name}"`];
+  const body = [tf('Delete this team from the registry? "{name}"', { name: team.name })];
   if (stat?.tournaments) {
     body.push(t('It is dropped from every tournament it entered. Match history keeps the name as it was on the day.'));
   }

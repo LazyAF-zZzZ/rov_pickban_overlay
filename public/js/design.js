@@ -364,7 +364,7 @@ function renderPreviewSize(overlaySize) {
   frame.style.setProperty('--tp-scale', String(PREVIEW_DISPLAY_WIDTH / w));
 
   const caption = document.getElementById('tpCaption');
-  if (caption) caption.textContent = `Live preview - ${w} x ${h}`;
+  if (caption) caption.textContent = tf('Live preview - {w} x {h}', { w, h });
 
   loadPreview(size);
 }

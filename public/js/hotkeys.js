@@ -42,24 +42,24 @@ function render() {
     main.className = 'krow-main';
     const label = document.createElement('div');
     label.className = 'krow-label';
-    label.textContent = action.label;
+    label.textContent = t(action.label);
     main.appendChild(label);
     if (action.note) {
       const note = document.createElement('div');
       note.className = 'krow-note';
-      note.textContent = action.note;
+      note.textContent = t(action.note);
       main.appendChild(note);
     }
     if (clashes.length) {
       const warn = document.createElement('div');
       warn.className = 'krow-conflict';
-      warn.textContent = `Same key as: ${clashes.join(', ')}`;
+      warn.textContent = tf('Same key as: {others}', { others: clashes.join(', ') });
       main.appendChild(warn);
     }
 
     const cap = document.createElement('div');
     cap.className = 'kcap';
-    cap.textContent = recordingAction === action.key ? 'Press a key...' : bindingLabel(binding);
+    cap.textContent = recordingAction === action.key ? t('Press a key...') : bindingLabel(binding);
 
     const actions = document.createElement('div');
     actions.className = 'krow-actions';
@@ -67,7 +67,7 @@ function render() {
     const change = document.createElement('button');
     change.type = 'button';
     change.className = 'tlink';
-    change.textContent = recordingAction === action.key ? 'CANCEL' : 'CHANGE';
+    change.textContent = recordingAction === action.key ? t('CANCEL') : t('CHANGE');
     change.addEventListener('click', () => {
       recordingAction = recordingAction === action.key ? null : action.key;
       render();
@@ -151,7 +151,7 @@ function renderGlobal() {
 
     const label = document.createElement('div');
     label.className = 'krow-label';
-    label.textContent = action.label;
+    label.textContent = t(action.label);
     main.appendChild(label);
 
     // สามสถานะ ไม่ใช่สอง: จองติด / โปรแกรมอื่นในเครื่องยึดไว้ก่อน / ปุ่มนี้จองไม่ได้เลย
@@ -197,7 +197,10 @@ function renderGlobal() {
 function saveGlobal(action, binding) {
   recordingGlobal = null;
   socket.emit('updateGlobalHotkeys', { bindings: { [action]: binding } });
-  showToast(`${ACTIONS.find((a) => a.key === action).label}: ${bindingLabel(binding)}`, 'green');
+  showToast(tf('{action}: {key}', {
+    action: t(ACTIONS.find((a) => a.key === action).label),
+    key: bindingLabel(binding)
+  }), 'green');
 }
 
 function save(action, binding) {
@@ -205,7 +208,10 @@ function save(action, binding) {
   recordingAction = null;
   render();
   socket.emit('updateHotkeys', { [action]: binding });
-  showToast(`${ACTIONS.find((a) => a.key === action).label}: ${bindingLabel(binding)}`, 'green');
+  showToast(tf('{action}: {key}', {
+    action: t(ACTIONS.find((a) => a.key === action).label),
+    key: bindingLabel(binding)
+  }), 'green');
 }
 
 // ระหว่างบันทึก ต้องกิน event ทุกปุ่ม ไม่งั้น Tab จะย้ายโฟกัส

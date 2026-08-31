@@ -318,7 +318,7 @@ async function openInControl(match) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     });
-    showToast(`Game ${data.live?.gameNo ?? 1} is on air`, 'green');
+    showToast(tf('Game {n} is on air', { n: data.live?.gameNo ?? 1 }), 'green');
     window.location.href = withToken('/control');
   } catch (error) {
     showToast(error.message || 'Could not put this match on air', 'red');

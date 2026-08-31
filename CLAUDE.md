@@ -149,6 +149,13 @@ English rather than breaking. Never mark an element that holds user data: a team
 "Timer" would be translated into "เวลา". Broadcast pages (`overlay`, `overlay-1440`,
 `result`, `overlay-teams`) deliberately do not load it — what viewers see stays English.
 
+Messages that carry data go through `tf()` rather than `t()`: the frame is the key and the
+values ride separately, as in `tf('Deleted {name}', { name: team.name })`. A frame's Thai
+entry must use exactly the placeholders its key has — one missing and the value silently
+disappears, one extra and `{name}` is printed on screen — and it must exist, unlike a plain
+`t()` string, which falls back to English harmlessly. Tests in `i18n.test.ts` hold both, and
+also that no key is translated twice, because the second entry would win without a word.
+
 **Bulk team delete goes through one endpoint, not N requests.**
 `POST /api/teams/bulk-delete` takes `{ ids }`, deletes each through the same path as the
 single delete (logo files included, or they become orphans), and emits `notifyData` **once** —

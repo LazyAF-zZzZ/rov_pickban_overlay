@@ -31,12 +31,18 @@ declare const RovSfx: RovSfxApi;
 interface RovI18nApi {
   readonly lang: string;
   t(key: string, english?: string): string;
+  tf(key: string, values?: Record<string, string | number>, english?: string): string;
   apply(root?: ParentNode | null): void;
   set(lang: string): void;
   onChange(fn: (lang: string) => void): void;
 }
 declare const RovI18n: RovI18nApi;
 declare function t(key: string, english?: string): string;
+declare function tf(
+  key: string,
+  values?: Record<string, string | number>,
+  english?: string
+): string;
 
 // socket.io client ที่มาจาก /socket.io/socket.io.js
 declare function io(options?: any): RovSocket;

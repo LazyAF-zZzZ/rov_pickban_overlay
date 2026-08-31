@@ -111,14 +111,14 @@ function statRow(stat) {
   const winCell = cell(win, 'num win');
   if (stat.winRate !== null) {
     winCell.classList.add(stat.winRate >= 0.5 ? 'good' : 'bad');
-    winCell.title = `${stat.wins} of ${stat.decided} games with a recorded winner`;
+    winCell.title = tf('{wins} of {decided} games with a recorded winner', { wins: stat.wins, decided: stat.decided });
   } else if (stat.picked > 0) {
     winCell.title = 'No winner recorded for any game this hero was picked in';
   }
 
   const prio = cell(stat.banPriority === null ? '—' : `#${stat.banPriority}`, 'num prio');
   if (stat.earlyBans > 0) {
-    prio.title = `${stat.earlyBans} first-phase bans (${pct(stat.earlyBanRate)} of games)`;
+    prio.title = tf('{bans} first-phase bans ({rate} of games)', { bans: stat.earlyBans, rate: pct(stat.earlyBanRate) });
   }
 
   row.append(
@@ -157,7 +157,7 @@ function render() {
   if (shown.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'empty';
-    empty.textContent = `No hero matches "${filter}".`;
+    empty.textContent = tf('No hero matches "{search}".', { search: filter });
     body.appendChild(empty);
     return;
   }

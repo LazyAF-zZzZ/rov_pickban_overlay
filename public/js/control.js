@@ -108,7 +108,7 @@ async function previewSfx(key) {
   try {
     const buffer = await sfxPreviewBuffer(key);
     if (!buffer) {
-      showToast(`No ${key} sound file found`, 'red');
+      showToast(tf('No {event} sound file found', { event: key }), 'red');
       return;
     }
 
@@ -621,7 +621,7 @@ function buildBans(color) {
 
     const label = document.createElement('span');
     label.className = 'ban-slot-label';
-    label.textContent = `Ban ${i + 1}`;
+    label.textContent = tf('Ban {n}', { n: i + 1 });
 
     const selectWrap = document.createElement('div');
     selectWrap.className = 'ban-select-wrap';
@@ -758,7 +758,7 @@ function commitHeroInput(input, onCommit, preferMatch = false) {
   // The server enforces this too; checking here just makes the feedback instant.
   if (hero && takenHeroes(input.id).has(hero)) {
     input.value = previous;
-    showToast(`${hero} is already used`, 'red');
+    showToast(tf('{hero} is already used', { hero }), 'red');
     return;
   }
   const next = hero || null;
@@ -843,7 +843,7 @@ document.addEventListener('input', (event) => {
 
 function setOverlaySize(size) {
   socket.emit('updateOverlaySize', { size });
-  showToast(`Overlay size set to ${size}p`, 'blue');
+  showToast(tf('Overlay size set to {size}p', { size }), 'blue');
 }
 
 function renderOverlaySize(size) {
@@ -956,7 +956,7 @@ function swapPlayer(color, idx, btn) {
       socket.emit('updatePlayerName', { team, index: idx, name: b.value });
       const from = swPl.idx;
       cancelSwap('pl');
-      showToast(`Player ${from + 1} swapped with ${idx + 1}`, 'green');
+      showToast(tf('Player {a} swapped with {b}', { a: from + 1, b: idx + 1 }), 'green');
       return;
     }
     cancelSwap('pl');
@@ -978,7 +978,7 @@ function swapHero(color, idx, btn) {
       socket.emit('swapPicks', { team, index1: swPk.idx, index2: idx });
       const from = swPk.idx;
       cancelSwap('pk');
-      showToast(`Pick ${from + 1} swapped with ${idx + 1}`, 'green');
+      showToast(tf('Pick {a} swapped with {b}', { a: from + 1, b: idx + 1 }), 'green');
       return;
     }
     cancelSwap('pk');

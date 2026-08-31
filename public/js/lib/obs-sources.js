@@ -116,7 +116,7 @@
       const urlEl = document.createElement('div');
       urlEl.className = 'src-url';
       urlEl.textContent = url;
-      urlEl.title = `${url}  (${source.size})  - click to select, then Ctrl+C`;
+      urlEl.title = tf('{url}  ({size})  - click to select, then Ctrl+C', { url, size: source.size });
 
       // คลิกที่ URL แล้วเลือกทั้งบรรทัดให้เลย
       //

@@ -43,7 +43,7 @@ committed, one commit per numbered item, and the table below carries the ids.
 | `e4c363b` | The operator's own data leaves the repository |
 | `fa2655c` | Bulk team delete |
 
-Current state: **0 type errors under `strict`, 193 tests passing.** Creating a
+Current state: **0 type errors under `strict`, 198 tests passing.** Creating a
 tournament, adding a team with its players in one form, uploading logos,
 drawing single/double elimination, round robin and group brackets, recording
 Bo3/Bo5 results, opening a match in the control panel and having its draft
@@ -661,11 +661,19 @@ pattern already in `public/js/overlay.js`.
 
 ## 8. Open items
 
-- **The Thai translation is complete for chrome and JS messages, but not audited page by
-  page.** `i18n.js` carries ~196 entries covering the top bar, every button, form label and
-  toast. Strings with data interpolated into them (`\`Deleted ${name}\``) are still English,
-  because the English sentence is the translation key and a key cannot contain a team name.
-  Those need splitting into a translated frame plus a substituted value before they can move.
+- **Messages that carry data are translated too, through `tf()`.** The frame is the key and
+  the values are passed separately: `tf('Deleted {name}', { name: team.name })`. That was the
+  last thing keeping toasts in English — the English sentence is the translation key, and a
+  key cannot contain a team name. `i18n.js` now carries ~250 entries.
+
+  Two rules the tests hold. A Thai frame must use exactly the placeholders its key has:
+  one missing and the value silently disappears, one extra and the word `{name}` appears on
+  screen. And every `tf()` frame must have a Thai entry, unlike a plain `t()` string, which
+  falls back to English harmlessly — half a sentence in each language reads as a fault
+  rather than as an untranslated string.
+
+  What is left is the page-by-page audit: reading each screen in Thai and fixing what sounds
+  wrong, which is a language job rather than a code one.
 
 - **The user guide now lives in two places and they can drift.** `/guide` (in-app, bilingual,
   offline) and `docs/USER_GUIDE.md` (for reading on GitHub) carry the same content by hand.
@@ -932,6 +940,12 @@ Each of these cost real debugging time. They are also in `CLAUDE.md`.
   which is why cancelling a box does not also leave the page. Typing fields are
   skipped by `event.target`, not `document.activeElement`: the hero box blurs
   itself on Esc, so by the time the shared listener runs the focus is gone.
+- **A translation table is an object literal, so a repeated key wins in silence and a
+  key cannot be a concatenation.** Both happened while adding `tf()` frames. The duplicate
+  was caught only because `typecheck:web` runs `tsc` over `i18n.js`; a test now checks it
+  directly, along with placeholder parity between each key and its Thai value — a frame
+  whose translation misspells `{name}` prints `{name}` on the operator's screen, with no
+  error anywhere.
 - **A system-wide shortcut is taken from every program on the machine, so a bare key
   is never allowed.** `toAccelerator()` returns `null` unless the binding carries at
   least one modifier, and `sanitizeGlobalHotkeys` drops anything it refuses back to the

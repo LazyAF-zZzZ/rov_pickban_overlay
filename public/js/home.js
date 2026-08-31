@@ -92,7 +92,7 @@ async function loadOptions() {
   options.bestOf.forEach((n) => {
     const opt = document.createElement('option');
     opt.value = String(n);
-    opt.textContent = `Best of ${n}`;
+    opt.textContent = tf('Best of {n}', { n });
     if (n === 3) opt.selected = true;
     bestOf.appendChild(opt);
   });
@@ -137,7 +137,7 @@ async function createTournament() {
         note: /** @type {HTMLInputElement} */ (document.getElementById('fNote')).value
       })
     });
-    showToast(`Created ${tournament.name}`, 'green');
+    showToast(tf('Created {name}', { name: tournament.name }), 'green');
     window.location.href = `/tournament/${encodeURIComponent(tournament.id)}`;
   } catch (error) {
     showToast(error.message || 'Could not create tournament', 'red');

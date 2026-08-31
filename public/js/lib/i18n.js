@@ -14,6 +14,8 @@
 //   <script src="/js/lib/i18n.js"></script>
 // ข้อความที่ JS สร้างเอง ให้ครอบด้วย t() พร้อมภาษาอังกฤษเป็นค่าตั้งต้น:
 //   showToast(t('Saved'), 'green');
+// ข้อความที่มีข้อมูลแทรก ให้ใช้ tf() พร้อมกรอบที่มีช่อง:
+//   showToast(tf('Deleted {name}', { name: team.name }), 'red');
 //
 // overlay กับ result ไม่โหลดไฟล์นี้ ตัวหนังสือบนจอคนดูเป็นอังกฤษตลอด
 // เป็นการตัดสินใจของงานถ่ายทอด ไม่ใช่ของหน้าคนคุม
@@ -195,6 +197,72 @@
     'more': 'ทีม',
 
 
+
+    // ข้อความที่มีข้อมูลแทรก ใช้ผ่าน tf() ช่องในกรอบต้องสะกดตรงกับฝั่งที่เรียก
+    // ภาษาไทยไม่มีรูปพหูพจน์ กรอบเดียวจึงครอบทั้งหนึ่งชิ้นและหลายชิ้น
+    '{count} selected': 'เลือกไว้ {count} ทีม',
+    'DELETE SELECTED ({count})': 'ลบที่เลือก ({count})',
+    '{count} teams deleted': 'ลบไปแล้ว {count} ทีม',
+    ' and {n} more': ' และอีก {n} ทีม',
+    'Delete these teams from the registry? ({count})': 'ลบทีมเหล่านี้ออกจากทะเบียนใช่ไหม ({count} ทีม)',
+    'Delete this team from the registry? "{name}"': 'ลบทีม "{name}" ออกจากทะเบียนใช่ไหม',
+    '{name} created': 'สร้าง {name} แล้ว',
+    '{name} added': 'เพิ่ม {name} แล้ว',
+    '{name} created, but the logo failed: {reason}': 'สร้าง {name} แล้ว แต่โลโก้ไม่สำเร็จ: {reason}',
+    '{name} is in the registry, but {reason}': '{name} อยู่ในทะเบียนแล้ว แต่{reason}',
+    'Created {name}': 'สร้าง {name} แล้ว',
+    'Deleted {name}': 'ลบ {name} แล้ว',
+    ' ({matches} matches and {games} drafts gone)': ' (หายไป {matches} คู่ และดราฟต์ {games} ชุด)',
+    'Delete "{name}" permanently?': 'ลบ "{name}" ถาวรใช่ไหม',
+    // กุญแจต้องเป็นสตริงเดียว ไม่ใช่การต่อสตริง object key ต่อกันไม่ได้
+    // ค่าที่เรียกมาจากฝั่งโน้นต่อกันตอนรันแล้ว จึงตรงกับกุญแจนี้พอดี
+    'Its team list, every match in the bracket and every draft recorded under it are erased. There is no undo and nothing left behind to restore from.':
+      'รายชื่อทีม ทุกคู่ในสาย และดราฟต์ทุกชุดที่บันทึกไว้ใต้ทัวร์นาเมนต์นี้จะถูกลบทั้งหมด ย้อนกลับไม่ได้ และไม่เหลืออะไรไว้ให้กู้',
+    'The teams themselves stay in the registry, along with their history in other tournaments.':
+      'ตัวทีมยังอยู่ในทะเบียน พร้อมประวัติในทัวร์นาเมนต์อื่นเหมือนเดิม',
+    'It is on air right now. Deleting it takes the match off the broadcast.':
+      'ตอนนี้กำลังออกอากาศอยู่ ลบแล้วแมตช์จะหลุดจากการถ่ายทอดทันที',
+    'Could not delete the tournament': 'ลบทัวร์นาเมนต์ไม่สำเร็จ',
+    '{format} allows {max}, this has {count}': '{format} รับได้ {max} ทีม ตอนนี้มี {count}',
+    '{min}-{max} teams': '{min}-{max} ทีม',
+    'No teams yet. This format holds up to {max} teams.': 'ยังไม่มีทีม รูปแบบนี้รับได้ถึง {max} ทีม',
+    'No bracket drawn yet. Open the match session to draw it.': 'ยังไม่ได้จับสาย เปิดหน้าสายการแข่งเพื่อจับ',
+    '{count} matches drawn. Scores, the bracket and putting a match on air all live in the match session.':
+      'จับสายแล้ว {count} คู่ คะแนน สายการแข่ง และการเอาแมตช์ขึ้นจอ อยู่ที่หน้าสายการแข่งทั้งหมด',
+    'Game {n} is on air': 'เกมที่ {n} ขึ้นจอแล้ว',
+    'Best of {n}': 'ชนะ {n} เกม',
+    'Ban {n}': 'แบนที่ {n}',
+    '{hero} is already used': 'ใช้ {hero} ไปแล้ว',
+    'No {event} sound file found': 'ไม่พบไฟล์เสียงของ {event}',
+    'Overlay size set to {size}p': 'ตั้งขนาด overlay เป็น {size}p',
+    'Player {a} swapped with {b}': 'สลับผู้เล่นคนที่ {a} กับ {b}',
+    'Pick {a} swapped with {b}': 'สลับพิคที่ {a} กับ {b}',
+    'Live preview - {w} x {h}': 'ตัวอย่างสด - {w} x {h}',
+    'No hero matches "{search}".': 'ไม่พบฮีโร่ที่ตรงกับ "{search}"',
+    '{wins} of {decided} games with a recorded winner': 'ชนะ {wins} จาก {decided} เกมที่บันทึกผู้ชนะไว้',
+    '{bans} first-phase bans ({rate} of games)': 'แบนในเฟสแรก {bans} ครั้ง ({rate} ของเกมทั้งหมด)',
+    '{url}  ({size})  - click to select, then Ctrl+C': '{url}  ({size})  - คลิกเพื่อเลือก แล้วกด Ctrl+C',
+
+    // คีย์ลัด: ชื่อของแต่ละคำสั่ง และคีย์ลัดระดับระบบ
+    'Show / hide overlay banner': 'แสดง / ซ่อนแบนเนอร์',
+    'Fades the banner off air and back': 'ค่อยๆ ซ่อนแบนเนอร์แล้วเรียกกลับมา',
+    'Pause / resume draft timer': 'หยุด / เดินเวลาดราฟต์',
+    'Previous draft phase': 'เฟสก่อนหน้า',
+    'Next draft phase': 'เฟสถัดไป',
+    'Undo last pick or ban': 'ย้อนพิคหรือแบนล่าสุด',
+    'Press a key...': 'กดปุ่มที่ต้องการ...',
+    'Same key as: {others}': 'ปุ่มซ้ำกับ: {others}',
+    '{action}: {key}': '{action}: {key}',
+    'System-wide hotkeys': 'คีย์ลัดระดับระบบ',
+    'Work while OBS or the game has focus': 'ใช้ได้ตอนอยู่ใน OBS หรือในเกม',
+    'Switch on': 'เปิดใช้งาน',
+    'System-wide hotkeys on': 'เปิดคีย์ลัดระดับระบบแล้ว',
+    'System-wide hotkeys off': 'ปิดคีย์ลัดระดับระบบแล้ว',
+    'A system-wide hotkey needs Ctrl, Alt, Shift or Win': 'คีย์ลัดระดับระบบต้องมี Ctrl, Alt, Shift หรือ Win ประกอบ',
+    'Registered as': 'จองไว้เป็น',
+    'another program is holding this key': 'มีโปรแกรมอื่นจองปุ่มนี้ไว้อยู่',
+    'This key cannot be registered system-wide': 'ปุ่มนี้จองระดับระบบไม่ได้',
+
     // ข้อความที่ JS สร้างขึ้น (toast, กล่องยืนยัน, ปุ่มที่สร้างเอง)
     'Team saved': 'บันทึกทีมแล้ว',
     'Team added': 'เพิ่มทีมแล้ว',
@@ -279,6 +347,25 @@
     const fallback = english === undefined ? key : english;
     if (lang !== 'th') return fallback;
     return Object.prototype.hasOwnProperty.call(TH, key) ? TH[key] : fallback;
+  }
+
+  // ข้อความที่มีข้อมูลแทรกอยู่ แปลด้วยการแยก "กรอบ" ออกจาก "ค่า"
+  //
+  // กุญแจของคำแปลคือประโยคอังกฤษ ซึ่งกลายเป็นคนละกุญแจทุกครั้งถ้าชื่อทีมอยู่ในประโยค
+  // `Deleted Talon` กับ `Deleted Buriram` คือสองกุญแจที่ไม่มีทางมีคำแปลสักอัน
+  // จึงเขียนกรอบไว้เป็น 'Deleted {name}' แล้วส่งค่าแยกมาต่างหาก
+  //
+  // ค่าที่แทนเข้าไปเป็นข้อความจากผู้ใช้ จึงต้องแทนรอบเดียวจบ
+  // ตัวแทนที่แบบ callback ของ String.replace ไม่ไล่อ่านสิ่งที่เพิ่งแทนลงไปซ้ำ
+  // ทีมที่ตั้งชื่อตัวเองว่า "{name}" จึงทำให้ข้อความเพี้ยนไม่ได้
+  //
+  // ช่องที่ไม่มีค่าส่งมาให้คงข้อความเดิมไว้ ({name} โผล่บนจอ) ไม่ใช่กลายเป็นช่องว่าง
+  // ช่องว่างอ่านเหมือนข้อความปกติที่หายไปครึ่งหนึ่ง หาสาเหตุไม่เจอ
+  function tf(key, values, english) {
+    const source = values || {};
+    return t(key, english).replace(/\{(\w+)\}/g, (whole, field) => (
+      Object.prototype.hasOwnProperty.call(source, field) ? String(source[field]) : whole
+    ));
   }
 
   // จำต้นฉบับอังกฤษไว้ที่ตัว element เอง ครั้งแรกที่เจอ
@@ -371,7 +458,8 @@
     boot();
   }
 
-  global.RovI18n = { t, apply: applyTo, set, onChange, get lang() { return lang; } };
+  global.RovI18n = { t, tf, apply: applyTo, set, onChange, get lang() { return lang; } };
   // ทางลัด หน้าไหนก็เรียก t() ได้เลยโดยไม่ต้อง destructure
   global.t = t;
+  global.tf = tf;
 })(window);

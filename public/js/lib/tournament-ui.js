@@ -18,15 +18,17 @@
 (function (global) {
   const { fetchJson, confirmBox, showToast } = global.RovClient;
 
-  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-
   // สรุปของที่เพิ่งหายไป เอาไว้ต่อท้าย toast ให้เห็นว่าการลบกินอะไรไปจริงบ้าง
+  //
+  // ไม่แจกแจงเป็นรายการต่อกันด้วย "and" เพราะการต่อคำเองแปลไม่ได้
+  // ภาษาอื่นเรียงลำดับคำไม่เหมือนกัน กรอบเดียวที่มีทั้งสองตัวเลขจึงแปลได้จริง
   function removedSummary(removed) {
     if (!removed) return '';
-    const bits = [];
-    if (removed.matches) bits.push(plural(removed.matches, 'match', 'matches'));
-    if (removed.games) bits.push(plural(removed.games, 'draft', 'drafts'));
-    return bits.length ? ` (${bits.join(' and ')} gone)` : '';
+    if (!removed.matches && !removed.games) return '';
+    return tf(' ({matches} matches and {games} drafts gone)', {
+      matches: removed.matches || 0,
+      games: removed.games || 0
+    });
   }
 
   // ถามให้แน่ใจก่อน แล้วค่อยลบถาวร คืน true เมื่อลบไปแล้วจริงเท่านั้น
@@ -44,13 +46,13 @@
     }
 
     const body = [
-      `Delete "${tournament.name}" permanently?`,
-      'Its team list, every match in the bracket and every draft recorded under it are erased. ' +
-        'There is no undo and nothing left behind to restore from.',
-      'The teams themselves stay in the registry, along with their history in other tournaments.'
+      tf('Delete "{name}" permanently?', { name: tournament.name }),
+      t('Its team list, every match in the bracket and every draft recorded under it are erased. '
+        + 'There is no undo and nothing left behind to restore from.'),
+      t('The teams themselves stay in the registry, along with their history in other tournaments.')
     ];
     if (onAir) {
-      body.splice(1, 0, 'It is on air right now. Deleting it takes the match off the broadcast.');
+      body.splice(1, 0, t('It is on air right now. Deleting it takes the match off the broadcast.'));
     }
 
     const sure = await confirmBox({
@@ -66,10 +68,10 @@
         `/api/tournaments/${encodeURIComponent(tournament.id)}`,
         { method: 'DELETE' }
       );
-      showToast(`Deleted ${tournament.name}${removedSummary(result.removed)}`, 'red');
+      showToast(tf('Deleted {name}', { name: tournament.name }) + removedSummary(result.removed), 'red');
       return true;
     } catch (error) {
-      showToast(error.message || 'Could not delete the tournament', 'red');
+      showToast(error.message || t('Could not delete the tournament'), 'red');
       return false;
     }
   }

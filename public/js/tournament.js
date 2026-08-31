@@ -89,10 +89,10 @@ function renderFormatHint() {
 
   const teams = current?.teamCount ?? 0;
   if (teams > spec.maxTeams) {
-    hint.textContent = `${spec.label} allows ${spec.maxTeams}, this has ${teams}`;
+    hint.textContent = tf('{format} allows {max}, this has {count}', { format: spec.label, max: spec.maxTeams, count: teams });
     hint.style.color = 'var(--red)';
   } else {
-    hint.textContent = `${spec.minTeams}-${spec.maxTeams} teams`;
+    hint.textContent = tf('{min}-{max} teams', { min: spec.minTeams, max: spec.maxTeams });
     hint.style.color = '';
   }
 }
@@ -119,7 +119,7 @@ function renderTeams(t, teams) {
   if (teams.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'empty';
-    empty.textContent = `No teams yet. This format holds up to ${t.maxTeams} teams.`;
+    empty.textContent = tf('No teams yet. This format holds up to {max} teams.', { max: t.maxTeams });
     body.appendChild(empty);
     return;
   }
@@ -471,7 +471,7 @@ async function createAndAdd() {
     try {
       await sendLogo(team.id, pendingLogo);
     } catch (error) {
-      showToast(`${team.name} created, but the logo failed: ${error.message}`, 'red');
+      showToast(tf('{name} created, but the logo failed: {reason}', { name: team.name, reason: error.message }), 'red');
     }
   }
 
@@ -480,11 +480,14 @@ async function createAndAdd() {
     await addTeamToTournament(team.id);
     resetNewTeamForm();
     nameInput.focus();
-    showToast(`${team.name} added`, 'green');
+    showToast(tf('{name} added', { name: team.name }), 'green');
   } catch (error) {
     // เช่นทัวร์นาเมนต์เต็ม ทีมยังอยู่ในทะเบียน หยิบไปใส่ทัวร์นาเมนต์อื่นได้
     await refreshRegistry();
-    showToast(`${team.name} is in the registry, but ${(error.message || 'could not be added').toLowerCase()}`, 'red');
+    showToast(tf('{name} is in the registry, but {reason}', {
+      name: team.name,
+      reason: (error.message || 'could not be added').toLowerCase()
+    }), 'red');
   }
 }
 
@@ -652,10 +655,10 @@ function renderMatchSummary(list) {
   if (list.length === 0) {
     note.textContent = current && current.teamCount < 2
       ? 'Add at least two teams, then open the match session to draw the bracket.'
-      : 'No bracket drawn yet. Open the match session to draw it.';
+      : t('No bracket drawn yet. Open the match session to draw it.');
   } else {
-    note.textContent = `${total} ${total === 1 ? 'match' : 'matches'} drawn. ` +
-      'Scores, the bracket and putting a match on air all live in the match session.';
+    // ภาษาไทยไม่มีรูปพหูพจน์ กรอบเดียวจึงใช้ได้ทั้งหนึ่งคู่และหลายคู่
+    note.textContent = tf('{count} matches drawn. Scores, the bracket and putting a match on air all live in the match session.', { count: total });
   }
   body.appendChild(note);
 }
