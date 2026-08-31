@@ -12,7 +12,7 @@ conversation history, everything needed to continue is here or in `CLAUDE.md`.
 ## 0. Where things stand
 
 **Last updated 2026-08-31.** The branch is `main` and the last commit is
-`fa2655c`. Everything described under "The 2026-08-31 session" below is
+`a47e980`. Everything described under "The 2026-08-31 session" below is
 committed, one commit per numbered item, and the table below carries the ids.
 
 | Commit | What |
@@ -42,6 +42,9 @@ committed, one commit per numbered item, and the table below carries the ids.
 | `5a4f35c` | Thai, and Thai is the default |
 | `e4c363b` | The operator's own data leaves the repository |
 | `fa2655c` | Bulk team delete |
+| `53a12f1` | §8: the team snapshot is frozen at the draw, not at kick-off |
+| `c9be021` | §8: system-wide hotkeys through Electron `globalShortcut` |
+| `a47e980` | §8: messages that carry data are translated, through `tf()` |
 
 Current state: **0 type errors under `strict`, 198 tests passing.** Creating a
 tournament, adding a team with its players in one form, uploading logos,
@@ -109,9 +112,8 @@ later ones depend on earlier ones.
     `POST /api/teams/bulk-delete` — one endpoint, one `notifyData`, logo files
     included. See `CLAUDE.md` for why it is not N single deletes.
 
-**The state at the end of that session.** `npm run check`, `npm run typecheck`,
-`npm run typecheck:web` and `npm test` (177) are all clean on `fa2655c`. Nothing
-is pushed yet — the ten commits above sit on local `main`.
+**The state at the end of the split.** All ten landed clean on `fa2655c`,
+with `docs:` stamping the commit ids straight after.
 
 Two notes for anyone reading the history. The commits reconstruct the session
 after the fact, so a few lines land one commit away from the topic they belong
@@ -120,6 +122,33 @@ to: the `/guide` route in `pages.ts` arrives with the sound commit, and the
 that stylesheet wholesale. And one bug was fixed while splitting: `deleteButton(t)`
 in `home.js` shadowed the i18n `t()`, so `t('DELETE')` threw and no tournament
 card rendered.
+
+### Clearing §8, same session
+
+With the split committed, the three open items in §8 that were actually
+open — as opposed to notes or deliberate deferrals — were taken in order.
+
+11. **The team snapshot is frozen at the draw.** `games.freeze()` writes game 1
+    the moment both teams of a match are known, so a match scored straight into
+    the bracket can still name its opponent after that team is deleted. It was
+    the last way left to lose a result permanently. See §4.
+
+12. **System-wide hotkeys.** `state.globalHotkeys` plus `globalShortcut` in the
+    Electron main process, off until switched on, and never a bare key. See §9
+    for the three rules and why one of them is about telling the truth rather
+    than about safety.
+
+13. **Messages that carry data are translated.** `tf('Deleted {name}', …)` —
+    the frame is the key, the values ride separately. See §8.
+
+**Where that leaves things.** `npm run check`, `npm run typecheck`,
+`npm run typecheck:web` and `npm test` (198) are all clean on `a47e980`.
+Nothing is pushed yet; the thirteen commits above and the two documentation
+commits between them sit on local `main`.
+
+What is left in §8 is deliberate: renaming `public/js` to TypeScript, the
+sound upload flow, renaming the match-session route, and reading every screen
+in Thai to fix what sounds wrong — a language job rather than a code one.
 
 **The team registry has its own pages now.** `/teams` lists every team ever
 created with a search box and a one-form create; `/teams/:id` is the profile —
