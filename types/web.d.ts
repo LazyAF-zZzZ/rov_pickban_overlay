@@ -31,6 +31,7 @@ interface RovClientApi {
   absoluteUrl(path: string): string;
   fetchJson(url: string, options?: RequestInit): Promise<any>;
   showToast(message: string, type?: 'green' | 'blue' | 'red'): void;
+  goBack(): void;
 }
 
 interface RovTeamUiApi {

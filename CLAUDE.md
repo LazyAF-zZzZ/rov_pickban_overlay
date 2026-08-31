@@ -55,6 +55,14 @@ IIFE-plus-global pattern: `public/js/lib/app-client.js` exports `window.RovClien
 `window.HotkeyUtils`. New control pages load `socket.io.js`, then `app-client.js`, then their
 own script.
 
+**Esc goes back a page, and `app-client.js` owns that binding.** Its `window`
+keydown listener runs after everything else on the page, so a page that needs Esc for
+its own thing must call `preventDefault()` or `stopPropagation()` — both confirm
+boxes do. It reads `event.target` rather than `document.activeElement` to skip typing
+fields, because a field can blur itself on Esc before the shared listener runs. Pages
+with a parent mark their back link `data-esc-back`; it is the fallback when there is
+no in-app history to return to.
+
 **Any page that renders a team roster loads `team-ui.js` before its own script.** It holds
 `buildPlayerRows`, `logoImage`, `sendLogo` and the defensive `on()` binder. Forget the tag and
 the page dies at its first line, where it destructures `window.RovTeamUI` — blank page, no

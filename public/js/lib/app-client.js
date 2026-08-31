@@ -55,6 +55,60 @@
     el._t = setTimeout(() => el.classList.remove('show'), 2200);
   }
 
+  // Esc = ย้อนกลับไปหน้าก่อนหน้า
+  //
+  // แอปเปิดในหน้าต่าง Electron ที่ไม่มีปุ่ม Back ของเบราว์เซอร์ให้กด
+  // คนคุมงานจึงต้องมีทางถอยออกจากหน้าย่อย (สายแมตช์ / หน้าทีม) ด้วยคีย์บอร์ด
+  //
+  // ดักที่ window ชั้น bubble ซึ่งเป็นชั้นสุดท้าย เพื่อให้หน้าที่ Esc มีความหมาย
+  // อยู่ก่อนแล้วได้ทำงานก่อน: กล่องยืนยันของหน้า Control เรียก preventDefault()
+  // หรือ stopPropagation() ไว้ กด Esc ปิดกล่องจึงไม่เด้งออกจากหน้าไปด้วย
+  //
+  // event.target คือช่องที่โฟกัสอยู่ตอนกดเสมอ แม้ handler ของหน้าจะ blur ทิ้งไปแล้ว
+  // ก่อนมาถึงตรงนี้ ดูจาก target จึงเชื่อถือได้กว่า document.activeElement
+  /** @param {EventTarget | null} target */
+  function isTypingTarget(target) {
+    const el = /** @type {HTMLElement | null} */ (target);
+    if (!el || !el.tagName) return false;
+    const tag = el.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    return el.isContentEditable === true;
+  }
+
+  // ไม่มีประวัติให้ถอย (เปิดหน้านี้ตรงๆ จากลิงก์) ก็ใช้ลิงก์ย้อนกลับของหน้าเอง
+  // หน้าไหนไม่มีลิงก์นั้นให้กลับหน้าแรก ยกเว้นตัวเองเป็นหน้าแรกอยู่แล้ว
+  //
+  // history.length อย่างเดียวไม่พอ ในแท็บเบราว์เซอร์ที่เพิ่งเปิดใหม่จะนับหน้าว่าง
+  // about:blank เป็นประวัติหนึ่งช่องด้วย ถอยไปแล้วจะได้จอขาวแทนที่จะได้หน้าแอป
+  // ต้องเห็น referrer เป็นโดเมนเดียวกันด้วย ถึงจะแน่ใจว่าหน้าก่อนหน้าคือหน้าของแอป
+  function cameFromApp() {
+    if (!document.referrer) return false;
+    try {
+      return new URL(document.referrer).origin === window.location.origin;
+    } catch {
+      return false;
+    }
+  }
+
+  function goBack() {
+    if (window.history.length > 1 && cameFromApp()) {
+      window.history.back();
+      return;
+    }
+    const link = /** @type {HTMLAnchorElement | null} */ (document.querySelector('[data-esc-back]'));
+    const href = link ? link.getAttribute('href') : (window.location.pathname === '/' ? '' : '/');
+    if (href) window.location.href = withToken(href);
+  }
+
+  window.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || event.defaultPrevented || event.repeat) return;
+    if (event.ctrlKey || event.altKey || event.shiftKey || event.metaKey) return;
+    if (isTypingTarget(event.target)) return;
+    // เผื่อหน้าไหนมีกล่องทึบแต่ยังไม่ได้ดัก Esc เอง ปิดกล่องสำคัญกว่าถอยหน้า
+    if (document.querySelector('.modal-backdrop:not([hidden])')) return;
+    goBack();
+  });
+
   // รับสัญญาณว่าข้อมูลฝั่งทัวร์นาเมนต์เปลี่ยน แล้วให้หน้าไปดึงเฉพาะส่วนที่ตัวเองสนใจ
   //
   // สัญญาณมีแค่หัวข้อกับ id ไม่มีข้อมูลจริงติดมา (ดู server/services/sync.ts)
@@ -116,7 +170,7 @@
   }
 
   global.RovClient = {
-    controlToken, socket, withToken, absoluteUrl, fetchJson, showToast,
+    controlToken, socket, withToken, absoluteUrl, fetchJson, showToast, goBack,
     onDataChange, isEditingWithin, deferWhileEditing
   };
 })(window);

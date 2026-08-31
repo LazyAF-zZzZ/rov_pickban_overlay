@@ -39,6 +39,19 @@ drawing single/double elimination, round robin and group brackets, recording
 Bo3/Bo5 results, opening a match in the control panel and having its draft
 recorded all work end to end in the browser.
 
+### The 2026-08-31 session
+
+Eleven changes, none committed. Listed in the order they were asked for, because
+later ones depend on earlier ones.
+
+1. **Esc goes back a page.** `goBack()` in `public/js/lib/app-client.js`, on a
+   `window` bubble listener. It stands down for typing fields, for
+   `defaultPrevented`, and whenever a `.modal-backdrop` is visible — a modal's
+   own Esc-to-close must win. History is only used when the previous page was
+   this app (same-origin referrer); otherwise it falls back to
+   `[data-esc-back]`, then `/`. Following browser history blindly would walk
+   the operator out of the tool mid-event.
+
 **The team registry has its own pages now.** `/teams` lists every team ever
 created with a search box and a one-form create; `/teams/:id` is the profile —
 roster editing, logo, the tournaments entered, and match history across all of
@@ -720,6 +733,17 @@ Each of these cost real debugging time. They are also in `CLAUDE.md`.
   while every team was still playing. It takes the `elimination` flag now. The
   bug predates the match-session split but was invisible while the flat list,
   which said `Round N`, was the view people used.
+- **Esc belongs to `app-client.js`, so a page that wants it must claim it.**
+  Esc goes back a page for every operator page, from a `window` listener that
+  runs last. A page keeping Esc for itself has to call `preventDefault()` or
+  `stopPropagation()` — the confirm box in `control.js` and `RovClient.confirmBox()` do,
+  which is why cancelling a box does not also leave the page. Typing fields are
+  skipped by `event.target`, not `document.activeElement`: the hero box blurs
+  itself on Esc, so by the time the shared listener runs the focus is gone.
+- **`history.length` counts the blank page a new browser tab starts on.** Going
+  back from a page opened straight into a fresh tab lands on `about:blank`, not
+  in the app. `goBack()` also requires a same-origin `document.referrer`, and
+  otherwise falls back to the page's own `[data-esc-back]` link, then home.
 - **Driving the app in a browser writes to real local data.** A verification
   pass that puts a match on air rewrites the tracked `data/state.json`, and any
   tournament feature creates `data/tournament.db`. Stop the server before
