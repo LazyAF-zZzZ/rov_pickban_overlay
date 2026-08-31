@@ -24,7 +24,9 @@ import {
   sanitizeOverlaySize,
   sanitizeTheme,
   sanitizeHotkeys,
-  sanitizeSfx
+  sanitizeSfx,
+  sanitizeGlobalHotkeys,
+  GLOBAL_HOTKEY_DEFAULTS
 } from '../domain/settings';
 import { deepClone } from '../lib/json';
 import { getState, emitState, pushUndo, popUndo } from '../store/live-state';
@@ -209,6 +211,27 @@ export function registerHandlers(socket: Socket): void {
     if (!data || typeof data !== 'object') return;
     const state = getState();
     state.sfx = sanitizeSfx({ ...state.sfx, ...(data as Payload) });
+    emitState();
+  });
+
+  // คีย์ลัดระดับระบบ ส่งมาเป็นก้อนบางส่วนได้ เช่น { enabled: true }
+  //
+  // เก็บใน state เหมือนค่าตั้งค่าอื่น แต่คนที่เอาไปใช้คือ process หลักของ Electron
+  // ไม่ใช่ overlay ดู electron-main.js ว่ามันอ่านค่านี้มาจากไหน
+  rawEvent(socket, 'updateGlobalHotkeys', (data) => {
+    if (!data || typeof data !== 'object') return;
+    const state = getState();
+    const patch = data as Payload;
+    state.globalHotkeys = sanitizeGlobalHotkeys({
+      ...state.globalHotkeys,
+      ...patch,
+      bindings: { ...state.globalHotkeys.bindings, ...(patch.bindings as Payload || {}) }
+    });
+    emitState();
+  });
+
+  controlEvent(socket, 'resetGlobalHotkeys', () => {
+    getState().globalHotkeys = deepClone(GLOBAL_HOTKEY_DEFAULTS);
     emitState();
   });
 

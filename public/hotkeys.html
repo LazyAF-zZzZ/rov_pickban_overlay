@@ -28,6 +28,21 @@
 .krow.changed .kcap{border-color:var(--gold-line);}
 .krow-actions{display:flex;gap:6px;flex-wrap:wrap;}
 
+/* คีย์ลัดระดับระบบ -------------------------------------------------------- */
+
+.gswitch{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted2);cursor:pointer;}
+.gswitch input{accent-color:var(--gold);cursor:pointer;}
+.gswitch input:disabled{cursor:default;}
+/* เปิดในเบราว์เซอร์ = เห็นได้ ตั้งไม่ได้ และมีบรรทัดบอกว่าทำไม
+   ซ่อนทิ้งจะเรียบกว่า แต่คนที่ไม่เคยเปิดแอพเดสก์ท็อปจะไม่รู้เลยว่ามีของนี้อยู่ */
+#globalPanel .desktop-only{display:none;}
+#globalPanel.unavailable .desktop-only{display:block;border-left-color:var(--red);}
+#globalPanel.unavailable .krow{opacity:0.55;}
+/* ปิดอยู่ = แถวยังอ่านได้แต่บอกให้รู้ว่าตอนนี้ไม่มีผล */
+#globalRows.off{opacity:0.55;}
+.krow-accel{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:0.04em;}
+.krow-accel.taken{color:var(--red);}
+
 /* ปุ่มที่เปลี่ยนไม่ได้ ---------------------------------------------------- */
 
 .fixed-list{display:flex;flex-direction:column;gap:8px;}
@@ -64,14 +79,46 @@
     <div class="panel-body">
       <div id="keyRows"></div>
       <div class="hint">
-        These work on the Control Panel while its window has focus. A browser
-        page cannot register system-wide shortcuts, so they will not fire while
-        you are in OBS or the game.
+        These work on the Control Panel while its window has focus. For keys
+        that keep working while you are in OBS or the game, see
+        <b>System-wide hotkeys</b> below.
         <br><br>
         Tapping a modifier on its own (Alt, Ctrl, Shift) is allowed and is the
         default for the banner toggle. It fires on release, and only when the
         key is tapped alone - so Alt+Tab still switches windows without cutting
         your banner off air.
+      </div>
+    </div>
+  </div>
+
+  <div class="panel keys-panel" id="globalPanel">
+    <div class="panel-head">
+      <div class="panel-title" data-i18n>System-wide hotkeys</div>
+      <span class="panel-note" data-i18n>Work while OBS or the game has focus</span>
+      <label class="gswitch" style="margin-left:auto">
+        <input type="checkbox" id="globalEnabled">
+        <span data-i18n>Switch on</span>
+      </label>
+    </div>
+    <div class="panel-body">
+      <div id="globalRows"></div>
+      <div class="hint desktop-only">
+        This panel only does anything in the desktop app. A page in a browser
+        cannot register keys with Windows, so nothing here is switchable while
+        you are reading it in one.
+      </div>
+      <div class="hint">
+        The desktop app registers these with Windows itself, so they fire from
+        anywhere - no need to click back into the Control Panel first.
+        <br><br>
+        Every one of them needs a modifier (Ctrl, Alt, Shift or Win). A bare key
+        registered system-wide is taken away from every other program on this
+        machine, which would be a strange thing to have happen after installing
+        a broadcast overlay.
+        <br><br>
+        A key another program already holds is marked in red here, because the
+        app is told which ones it actually got. Nothing breaks - that one
+        shortcut simply does not fire, and the rest still work.
       </div>
     </div>
   </div>

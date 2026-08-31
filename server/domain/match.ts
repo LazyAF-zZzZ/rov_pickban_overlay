@@ -16,16 +16,18 @@ import { clampNumber, sanitizeText, normalizeArray } from '../lib/sanitize';
 import { sanitizeHero } from './heroes';
 import type { TeamKey, SlotType } from './draft';
 import { DRAFT_SEQUENCE, PICK_COUNT, BAN_COUNT, isSlotId, sanitizeTimer } from './draft';
-import type { OverlaySize, Theme, Hotkeys, SfxLevels } from './settings';
+import type { OverlaySize, Theme, Hotkeys, SfxLevels, GlobalHotkeys } from './settings';
 import {
   DEFAULT_OVERLAY_SIZE,
   THEME_DEFAULTS,
   HOTKEY_DEFAULTS,
   SFX_DEFAULTS,
+  GLOBAL_HOTKEY_DEFAULTS,
   sanitizeOverlaySize,
   sanitizeTheme,
   sanitizeHotkeys,
-  sanitizeSfx
+  sanitizeSfx,
+  sanitizeGlobalHotkeys
 } from './settings';
 import type { Logo, Skin, SkinSlot } from './media';
 import { SKIN_SLOTS, sanitizeLogo, sanitizeSkin } from './media';
@@ -58,6 +60,7 @@ export interface GameState {
   theme: Theme;
   hotkeys: Hotkeys;
   sfx: SfxLevels;
+  globalHotkeys: GlobalHotkeys;
   skin: Skin;
   matchInfo: MatchInfo;
 }
@@ -113,6 +116,7 @@ export const defaultState: GameState = {
   theme: { ...THEME_DEFAULTS },
   hotkeys: deepClone(HOTKEY_DEFAULTS),
   sfx: { ...SFX_DEFAULTS },
+  globalHotkeys: deepClone(GLOBAL_HOTKEY_DEFAULTS),
   skin: emptySkin(),
   matchInfo: {
     title: 'BLUE VS RED',
@@ -206,6 +210,7 @@ export function sanitizeState(state: unknown): GameState {
     theme: sanitizeTheme(source.theme),
     hotkeys: sanitizeHotkeys(source.hotkeys),
     sfx: sanitizeSfx(source.sfx),
+    globalHotkeys: sanitizeGlobalHotkeys(source.globalHotkeys),
     skin: sanitizeSkin(source.skin),
     matchInfo: {
       title: sanitizeText(matchInfo.title, 80) || defaultState.matchInfo.title,

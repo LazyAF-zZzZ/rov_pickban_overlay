@@ -107,6 +107,20 @@ fields, because a field can blur itself on Esc before the shared listener runs. 
 with a parent mark their back link `data-esc-back`; it is the fallback when there is
 no in-app history to return to.
 
+**System-wide hotkeys are the Electron main process's job, and they are off until asked
+for.** `state.globalHotkeys` holds `{ enabled, bindings }` and rides `CARRIED_OVER_KEYS`;
+`electron-main.js` polls `GET /api/global-hotkeys` every two seconds and registers what it
+finds with `globalShortcut`, and a press comes back in as `POST /api/global-hotkeys/fire`.
+Three rules hold it together. **A binding without a modifier is refused** — `toAccelerator()`
+returns `null`, and that function is the only key table in the project, so the server cannot
+accept a key Electron would fail to register. **Registration failure has to be visible**:
+`globalShortcut.register()` returns `false` when another program already holds the key, so
+the main process reports what it actually got to `POST /api/global-hotkeys/registered` and
+`/hotkeys` marks the rest in red — otherwise the symptom is a key that does nothing, which
+reads as a broken feature. And **it polls rather than subscribing**, because the main process
+has no socket and cannot `require` the server either: the app also attaches to a server
+someone else started, where there is nothing in-process to require.
+
 **Any page that renders a team roster loads `team-ui.js` before its own script.** It holds
 `buildPlayerRows`, `logoImage`, `sendLogo` and the defensive `on()` binder. Forget the tag and
 the page dies at its first line, where it destructures `window.RovTeamUI` — blank page, no

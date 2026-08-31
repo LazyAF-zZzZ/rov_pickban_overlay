@@ -209,6 +209,10 @@ Change these on the **HOTKEYS** page. They only work while the app window is in 
 
 เปลี่ยนได้ที่หน้า **HOTKEYS** คีย์ลัดทำงานเฉพาะตอนที่หน้าต่างโปรแกรมอยู่ข้างหน้าเท่านั้น ไม่ทำงานตอนอยู่ใน OBS หรือในเกม
 
+If you need keys that keep working while you are in OBS or the game, switch on **System-wide hotkeys** on the same page. They are off until you do, and each one needs Ctrl, Alt, Shift or Win. This only works in the desktop app.
+
+ถ้าต้องการปุ่มที่กดได้ตอนอยู่ใน OBS หรือในเกม ให้เปิด **System-wide hotkeys** ที่หน้าเดียวกัน ค่าเริ่มต้นคือปิดไว้ และทุกปุ่มต้องมี Ctrl, Alt, Shift หรือ Win ประกอบ ใช้ได้เฉพาะในแอพเดสก์ท็อป
+
 ---
 
 ## 9. When something looks wrong / เวลามีอะไรผิดปกติ

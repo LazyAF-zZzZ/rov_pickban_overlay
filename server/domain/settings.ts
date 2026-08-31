@@ -171,7 +171,7 @@ export function sanitizeSfx(value: unknown): SfxLevels {
 // ตอนทำโหมดทัวร์นาเมนต์ การกดเลือกแมตช์ก็คือการเปลี่ยนแมตช์เหมือนกัน
 // ให้ใช้ทางนี้ อย่าเขียนทับ state ทั้งก้อน
 export const CARRIED_OVER_KEYS = [
-  'overlayVisible', 'overlaySize', 'theme', 'hotkeys', 'skin', 'sfx'
+  'overlayVisible', 'overlaySize', 'theme', 'hotkeys', 'skin', 'sfx', 'globalHotkeys'
 ] as const;
 
 export type CarriedOverKey = typeof CARRIED_OVER_KEYS[number];
@@ -189,3 +189,102 @@ export function carryOverSettings<T extends object>(
   });
   return nextState;
 }
+
+// คีย์ลัดระดับระบบ ทำงานตอนโฟกัสไม่ได้อยู่ที่แอพนี้
+//
+// คนละเรื่องกับ hotkeys ด้านบน ตัวนั้นหน้า Control ดักเอง ใช้ได้เฉพาะตอนหน้าต่างนั้นถูกโฟกัส
+// ซึ่งไม่ใช่สถานการณ์จริงของคนแคสต์: มือหนึ่งอยู่ที่ OBS อีกมืออยู่ที่เกม
+// ตัวนี้ Electron ไปจองปุ่มกับระบบปฏิบัติการ (globalShortcut) จึงกดจากที่ไหนก็ได้
+//
+// การจองแบบนั้นคือการแย่งปุ่มมาจากทุกโปรแกรมในเครื่อง จึงมีกฎบังคับสองข้อ
+// 1. ปิดไว้เป็นค่าเริ่มต้น ไม่มีใครควรเสียปุ่มไปเพราะติดตั้งโปรแกรมนี้
+// 2. ต้องมี modifier อย่างน้อยหนึ่งตัวเสมอ จอง Space เดี่ยวๆ ไว้ทั้งระบบ
+//    แปลว่าทั้งเครื่องพิมพ์เว้นวรรคไม่ได้จนกว่าจะปิดแอพ ซึ่งคนกดจะไม่มีทางเดาถูกว่าเพราะอะไร
+export const GLOBAL_HOTKEY_ACTIONS = [
+  'toggleBanner', 'pauseResume', 'prevPhase', 'nextPhase', 'undo'
+] as const;
+
+export type GlobalHotkeyAction = typeof GLOBAL_HOTKEY_ACTIONS[number];
+export type GlobalHotkeyBindings = Record<GlobalHotkeyAction, HotkeyBinding>;
+
+export interface GlobalHotkeys {
+  enabled: boolean;
+  bindings: GlobalHotkeyBindings;
+}
+
+// Ctrl+Alt เป็นฐาน เพราะแทบไม่มีโปรแกรมไหนใช้ และ OBS เองก็ไม่ได้จองไว้
+export const GLOBAL_HOTKEY_DEFAULTS: GlobalHotkeys = {
+  enabled: false,
+  bindings: {
+    toggleBanner: { code: 'KeyH', ctrl: true, shift: false, alt: true, meta: false },
+    pauseResume: { code: 'Space', ctrl: true, shift: false, alt: true, meta: false },
+    prevPhase: { code: 'ArrowLeft', ctrl: true, shift: false, alt: true, meta: false },
+    nextPhase: { code: 'ArrowRight', ctrl: true, shift: false, alt: true, meta: false },
+    undo: { code: 'KeyZ', ctrl: true, shift: false, alt: true, meta: false }
+  }
+};
+
+// DOM code -> ชื่อปุ่มในรูปแบบ accelerator ของ Electron
+//
+// ตารางนี้เป็นทั้งตัวแปลงและตัวจำกัด ปุ่มที่ไม่อยู่ในตารางแปลว่าจองไม่ได้
+// อยู่ที่นี่ที่เดียวเพราะทั้งเซิร์ฟเวอร์ (ตอนตรวจค่าที่รับมา) และ electron-main.js
+// (ตอนจองจริง) ต้องเห็นรายการเดียวกัน ถ้าแยกกันเขียน วันหนึ่งจะมีปุ่มที่ผ่านการตรวจ
+// แล้วไปพังเงียบๆ ตอนจอง ซึ่งคนตั้งค่าจะเห็นแค่ "กดแล้วไม่มีอะไรเกิดขึ้น"
+const ACCELERATOR_KEYS: Record<string, string> = {
+  Space: 'Space', Enter: 'Return', Tab: 'Tab', Backspace: 'Backspace',
+  Escape: 'Escape', Delete: 'Delete', Insert: 'Insert',
+  Home: 'Home', End: 'End', PageUp: 'PageUp', PageDown: 'PageDown',
+  ArrowLeft: 'Left', ArrowRight: 'Right', ArrowUp: 'Up', ArrowDown: 'Down',
+  Minus: '-', Equal: '=', BracketLeft: '[', BracketRight: ']',
+  Semicolon: ';', Quote: "'", Backquote: '`', Backslash: '\\',
+  Comma: ',', Period: '.', Slash: '/'
+};
+
+for (let i = 0; i < 26; i += 1) {
+  const letter = String.fromCharCode(65 + i);
+  ACCELERATOR_KEYS[`Key${letter}`] = letter;
+}
+for (let i = 0; i <= 9; i += 1) {
+  ACCELERATOR_KEYS[`Digit${i}`] = String(i);
+  ACCELERATOR_KEYS[`Numpad${i}`] = `num${i}`;
+}
+for (let i = 1; i <= 24; i += 1) {
+  ACCELERATOR_KEYS[`F${i}`] = `F${i}`;
+}
+
+// คืน null = ปุ่มนี้เอาไปจองทั้งระบบไม่ได้ ไม่ใช่ข้อผิดพลาด แค่ใช้ไม่ได้กับงานนี้
+// ทั้งหน้าเว็บและตัวจองต้องเช็คค่า null นี้ก่อนเสมอ
+export function toAccelerator(binding: HotkeyBinding | null | undefined): string | null {
+  if (!binding) return null;
+  const key = ACCELERATOR_KEYS[binding.code];
+  if (!key) return null;
+
+  const parts: string[] = [];
+  if (binding.ctrl) parts.push('Control');
+  if (binding.alt) parts.push('Alt');
+  if (binding.shift) parts.push('Shift');
+  if (binding.meta) parts.push('Super');
+  // ไม่มี modifier = จองปุ่มเปล่าทั้งระบบ ห้ามเด็ดขาด ดูเหตุผลด้านบน
+  if (parts.length === 0) return null;
+
+  parts.push(key);
+  return parts.join('+');
+}
+
+export function sanitizeGlobalHotkeys(value: unknown): GlobalHotkeys {
+  const source = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>;
+  const rawBindings = (source.bindings && typeof source.bindings === 'object'
+    ? source.bindings
+    : {}) as Record<string, unknown>;
+
+  const bindings = {} as GlobalHotkeyBindings;
+  GLOBAL_HOTKEY_ACTIONS.forEach((action) => {
+    const fallback = GLOBAL_HOTKEY_DEFAULTS.bindings[action];
+    const binding = sanitizeHotkeyBinding(rawBindings[action], fallback);
+    // ผ่านรูปแบบ code แล้วยังไม่พอ ต้องจองได้จริงด้วย ไม่งั้นเก็บค่าที่ใช้ไม่ได้ไว้เฉยๆ
+    bindings[action] = toAccelerator(binding) ? binding : { ...fallback };
+  });
+
+  return { enabled: source.enabled === true, bindings };
+}
+

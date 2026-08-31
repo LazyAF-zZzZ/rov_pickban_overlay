@@ -17,6 +17,7 @@ import { stateRoutes } from './http/api-state';
 import { mediaRoutes } from './http/api-media';
 import { tournamentRoutes } from './http/api-tournaments';
 import { teamRoutes } from './http/api-teams';
+import { hotkeyRoutes } from './http/api-hotkeys';
 import { registerHandlers } from './sockets/handlers';
 import { attachDraftCapture } from './services/live-match';
 
@@ -64,6 +65,7 @@ export function createApp(): Express {
   app.use(mediaRoutes());
   app.use(tournamentRoutes());
   app.use(teamRoutes());
+  app.use(hotkeyRoutes());
 
   return app;
 }

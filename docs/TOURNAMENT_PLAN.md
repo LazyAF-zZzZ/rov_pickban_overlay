@@ -43,7 +43,7 @@ committed, one commit per numbered item, and the table below carries the ids.
 | `e4c363b` | The operator's own data leaves the repository |
 | `fa2655c` | Bulk team delete |
 
-Current state: **0 type errors under `strict`, 180 tests passing.** Creating a
+Current state: **0 type errors under `strict`, 193 tests passing.** Creating a
 tournament, adding a team with its players in one form, uploading logos,
 drawing single/double elimination, round robin and group brackets, recording
 Bo3/Bo5 results, opening a match in the control panel and having its draft
@@ -708,10 +708,16 @@ pattern already in `public/js/overlay.js`.
   the job. It buys stricter inference at the cost of a build step and a serving
   strategy for the output; the checker above gets the bug-catching without
   either. Do it when something needs types the JSDoc form cannot express.
-- **Global hotkeys via Electron `globalShortcut`.** Agreed but not built. Lets a
-  caster drive the draft while OBS has focus. The app's own hotkeys page
-  currently implies this is impossible — true for a browser page, not for the
-  Electron main process.
+- **Global hotkeys are built, and switched off until asked for.** `state.globalHotkeys`
+  holds `{ enabled, bindings }`, rides `CARRIED_OVER_KEYS`, and is set from the panel on
+  `/hotkeys`. The Electron main process polls `GET /api/global-hotkeys` every two seconds
+  and registers what it finds through `globalShortcut`; a press comes back as
+  `POST /api/global-hotkeys/fire`. See §9 for the two rules that keep it safe and the one
+  that keeps it honest.
+
+  What is deliberately not there: a way to bind a bare key (see §9), and any action beyond
+  the five the Control Panel already has. Picking heroes needs a hero name, which a
+  keystroke cannot carry.
 - **The losers bracket has now been seen rendered**, and looking at it was
   worth it. Two things were wrong that no test caught. The sections came out
   ordered Grand final → Losers → Winners, because the API sends
@@ -926,6 +932,26 @@ Each of these cost real debugging time. They are also in `CLAUDE.md`.
   which is why cancelling a box does not also leave the page. Typing fields are
   skipped by `event.target`, not `document.activeElement`: the hero box blurs
   itself on Esc, so by the time the shared listener runs the focus is gone.
+- **A system-wide shortcut is taken from every program on the machine, so a bare key
+  is never allowed.** `toAccelerator()` returns `null` unless the binding carries at
+  least one modifier, and `sanitizeGlobalHotkeys` drops anything it refuses back to the
+  default. Registering a bare `Space` globally would mean the machine could not type a
+  space until the app was closed, and nobody would guess why. The same function is the
+  only key table in the project: the server validates with it and Electron registers
+  what it returns, so a key cannot pass one and fail the other.
+- **`globalShortcut.register()` returns `false` when another program already holds the
+  key, and that is not an error anyone can see.** On the machine this was built on,
+  `Control+Alt+Space` was already taken. Four of five keys registered and the fifth
+  silently did nothing — which is the same symptom as a broken feature. The main
+  process now reports which accelerators it actually got back to
+  `POST /api/global-hotkeys/registered`, and `/hotkeys` marks the rest in red. Any
+  future shortcut work has to keep that loop: silence has to be visible somewhere.
+- **The Electron main process has no socket, so it polls.** It cannot `require` the
+  server either — the app supports attaching to a server someone else started (see
+  `startServerIfNeeded`), where there is nothing in-process to require. A two-second
+  poll of `localhost` is the one path that works in both cases, and it re-registers
+  only when the answer changes: unregistering and re-registering every tick would leave
+  a gap in which the keys do nothing, twice a minute.
 - **An empty game row is not a played game, and the difference is one column.**
   Freezing the pairing at the draw creates a `games` row for every match, played or
   not. That is safe only because `analytics` divides by `COUNT(*) WHERE draft_locked = 1`,

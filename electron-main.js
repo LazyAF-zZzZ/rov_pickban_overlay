@@ -1,7 +1,7 @@
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
-const { app, BrowserWindow, Menu, dialog, shell } = require('electron');
+const { app, BrowserWindow, Menu, dialog, shell, globalShortcut } = require('electron');
 
 const HOST = process.env.HOST || '127.0.0.1';
 const PORT = Number(process.env.PORT) || 3000;
@@ -123,6 +123,119 @@ async function startServerIfNeeded() {
   await waitForServer();
 }
 
+// คีย์ลัดระดับระบบ -----------------------------------------------------------
+//
+// เหตุผลที่ต้องอยู่ตรงนี้: หน้าเว็บจองปุ่มกับระบบปฏิบัติการไม่ได้
+// คีย์ลัดของหน้า Control ทำงานเฉพาะตอนหน้าต่างนั้นถูกโฟกัส ซึ่งไม่ใช่ท่าที่คนแคสต์ใช้จริง
+// (โฟกัสอยู่ที่ OBS หรือที่เกม) มีแต่ process หลักของ Electron ที่จองได้
+//
+// ค่าอยู่ใน state ฝั่งเซิร์ฟเวอร์ ตั้งจากหน้า /hotkeys ตรงนี้จึงต้องคอยถามว่าเปลี่ยนหรือยัง
+// ถามด้วย HTTP แบบวนถาม ไม่ใช่ socket ตั้งใจ: process นี้ไม่มี socket.io-client
+// และแอพรองรับกรณีเซิร์ฟเวอร์ถูกสตาร์ทไว้ก่อนจากที่อื่น ซึ่ง require ตรงๆ ก็ไม่ได้
+// การถาม localhost ทุกสองวินาทีถูกกว่าการมีสองเส้นทางให้ดูแล
+const HOTKEY_POLL_MS = 2000;
+
+let heldAccelerators = [];
+let lastHotkeySignature = '';
+let hotkeyPollTimer = null;
+
+function apiRequest(method, pathname, body) {
+  return new Promise((resolve, reject) => {
+    const payload = body === undefined ? null : Buffer.from(JSON.stringify(body));
+    const headers = {};
+    if (payload) {
+      headers['Content-Type'] = 'application/json';
+      headers['Content-Length'] = String(payload.length);
+    }
+    // โทเคนอ่านตอนยิงทุกครั้ง ไม่ได้เก็บไว้ตอนเริ่ม เพราะ startServerIfNeeded
+    // อาจตั้งค่า env ทีหลังในรอบชีวิตเดียวกัน
+    if (process.env.CONTROL_TOKEN) {
+      headers.Authorization = `Bearer ${process.env.CONTROL_TOKEN}`;
+    }
+
+    const req = http.request(
+      { host: HOST, port: PORT, path: pathname, method, headers },
+      (res) => {
+        let text = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => { text += chunk; });
+        res.on('end', () => {
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            reject(new Error(`${method} ${pathname} -> ${res.statusCode}`));
+            return;
+          }
+          try { resolve(text ? JSON.parse(text) : {}); } catch (error) { reject(error); }
+        });
+      }
+    );
+
+    req.on('error', reject);
+    req.setTimeout(1500, () => req.destroy(new Error('timeout')));
+    if (payload) req.write(payload);
+    req.end();
+  });
+}
+
+function releaseGlobalHotkeys() {
+  heldAccelerators.forEach((accelerator) => {
+    try { globalShortcut.unregister(accelerator); } catch { /* จองไม่ติดอยู่แล้ว */ }
+  });
+  heldAccelerators = [];
+}
+
+// จองใหม่เฉพาะตอนค่าเปลี่ยนจริง ไม่ใช่ทุกครั้งที่ถาม
+// ปลดแล้วจองใหม่ทุกสองวินาทีคือช่องว่างสั้นๆ ที่ปุ่มไม่ทำงาน ทุกสองวินาที
+function applyGlobalHotkeys(config) {
+  const signature = JSON.stringify(config);
+  if (signature === lastHotkeySignature) return;
+  lastHotkeySignature = signature;
+
+  releaseGlobalHotkeys();
+  if (!config || !config.enabled) {
+    reportHeldAccelerators();
+    return;
+  }
+
+  Object.entries(config.accelerators || {}).forEach(([action, accelerator]) => {
+    let ok = false;
+    // register คืน false เมื่อโปรแกรมอื่นจองปุ่มนี้ไว้ก่อน ไม่ใช่ความผิดพลาดของเรา
+    // และ throw ได้ถ้าข้อความ accelerator ใช้ไม่ได้ กันไว้ทั้งสองทาง
+    // ตัวที่จองไม่ได้ต้องไม่ทำให้ตัวที่เหลือไม่ถูกจอง
+    try {
+      ok = globalShortcut.register(accelerator, () => {
+        apiRequest('POST', '/api/global-hotkeys/fire', { action })
+          .catch((error) => console.warn(`Global hotkey ${action} failed:`, error.message));
+      });
+    } catch (error) {
+      ok = false;
+    }
+
+    if (ok) heldAccelerators.push(accelerator);
+    else console.warn(`Global hotkey ${accelerator} (${action}) could not be registered - another program may hold it`);
+  });
+
+  reportHeldAccelerators();
+}
+
+// บอกเซิร์ฟเวอร์ว่าจองติดจริงกี่ปุ่ม เพื่อให้หน้า /hotkeys พูดตรงกับความจริง
+//
+// ไม่มีทางนี้ หน้าจะบอกว่าจองครบทุกปุ่มเสมอ แล้วปุ่มที่โปรแกรมอื่นในเครื่องยึดไว้ก่อน
+// จะกลายเป็น "กดแล้วไม่มีอะไรเกิดขึ้น" ซึ่งเป็นอาการเดียวกับของเสีย
+function reportHeldAccelerators() {
+  apiRequest('POST', '/api/global-hotkeys/registered', { held: heldAccelerators })
+    .catch(() => { /* เซิร์ฟเวอร์ปิดไปแล้ว ไม่มีใครรอฟังอยู่ */ });
+}
+
+function watchGlobalHotkeys() {
+  const tick = () => {
+    apiRequest('GET', '/api/global-hotkeys')
+      .then(applyGlobalHotkeys)
+      .catch(() => { /* เซิร์ฟเวอร์ยังไม่พร้อมหรือปิดไปแล้ว รอบหน้าค่อยถามใหม่ */ });
+  };
+  tick();
+  hotkeyPollTimer = setInterval(tick, HOTKEY_POLL_MS);
+}
+
 function createWindow(route = '/', options = {}) {
   const targetUrl = `${BASE_URL}${route}`;
   const windowTitle = options.title || 'ROV Overlay Tool';
@@ -241,6 +354,7 @@ app.whenReady().then(async () => {
 
   await startServerIfNeeded();
   Menu.setApplicationMenu(buildMenu());
+  watchGlobalHotkeys();
   mainWindow = createWindow('/');
 
   app.on('activate', () => {
@@ -252,6 +366,15 @@ app.whenReady().then(async () => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
+});
+
+// ปุ่มที่จองไว้ต้องคืนระบบก่อนปิด ไม่งั้นในบางกรณีปุ่มค้างอยู่กับ process ที่ตายไปแล้ว
+app.on('will-quit', () => {
+  if (hotkeyPollTimer) clearInterval(hotkeyPollTimer);
+  releaseGlobalHotkeys();
+  globalShortcut.unregisterAll();
+  // บอกด้วยว่าตอนนี้ไม่ได้ถือปุ่มไหนแล้ว เผื่อเซิร์ฟเวอร์ยังทำงานต่อหลังแอพปิด
+  reportHeldAccelerators();
 });
 
 app.on('before-quit', () => {
