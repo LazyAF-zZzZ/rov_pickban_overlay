@@ -55,6 +55,90 @@
     el._t = setTimeout(() => el.classList.remove('show'), 2200);
   }
 
+  // กล่องยืนยันกลาง สำหรับงานที่ทำแล้วย้อนกลับไม่ได้
+  //
+  // ไม่ใช้ window.confirm() ด้วยเหตุผลเดียวกับกล่องยืนยันในหน้า Control:
+  // ใน Electron กล่องของระบบเป็น modal ของทั้งหน้าต่าง ปิดแล้วคีย์บอร์ดหลุด
+  // และเขียนข้อความหลายบรรทัดให้อ่านง่ายไม่ได้
+  //
+  // สองหน้านั้นมี markup ของกล่องอยู่ในตัวเอง หน้าอื่นไม่มี ตัวนี้จึงสร้าง DOM
+  // เองตอนถูกเรียก โดยใช้คลาสชุดเดียวกัน (สไตล์อยู่ใน app.css)
+  //
+  // body รับได้ทั้งข้อความเดียวและอาร์เรย์ของย่อหน้า ทุกบรรทัดวางด้วย
+  // textContent เพราะชื่อทัวร์นาเมนต์กับชื่อทีมเป็นข้อความจากผู้ใช้
+  function confirmBox({ title, body, confirmLabel, cancelLabel, danger = false }) {
+    const translate = typeof global.t === 'function' ? global.t : (key) => key;
+    const okText = confirmLabel || translate('CONFIRM');
+    const cancelText = cancelLabel || translate('CANCEL');
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+
+    const box = document.createElement('div');
+    box.className = 'modal';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'true');
+
+    const head = document.createElement('div');
+    head.className = 'modal-title';
+    head.textContent = title;
+
+    const text = document.createElement('div');
+    text.className = 'modal-body';
+    (Array.isArray(body) ? body : [body]).forEach((line) => {
+      const p = document.createElement('p');
+      p.textContent = line;
+      text.appendChild(p);
+    });
+
+    const actions = document.createElement('div');
+    actions.className = 'modal-actions';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'tlink';
+    cancelBtn.textContent = cancelText;
+
+    const okBtn = document.createElement('button');
+    okBtn.type = 'button';
+    okBtn.className = danger ? 'tlink danger' : 'tlink primary';
+    okBtn.textContent = okText;
+
+    actions.append(cancelBtn, okBtn);
+    box.append(head, text, actions);
+    backdrop.appendChild(box);
+
+    const previousFocus = /** @type {HTMLElement | null} */ (document.activeElement);
+    document.body.appendChild(backdrop);
+
+    // งานที่ลบของทิ้งเริ่มที่ปุ่มยกเลิก เคาะ Enter ทันทีแล้วต้องไม่มีอะไรหาย
+    (danger ? cancelBtn : okBtn).focus();
+
+    return new Promise((resolve) => {
+      const close = (answer) => {
+        backdrop.remove();
+        document.removeEventListener('keydown', onKey, true);
+        if (previousFocus && document.contains(previousFocus)) previousFocus.focus();
+        resolve(answer);
+      };
+
+      // ดักชั้น capture เพื่อกินคีย์ก่อนใครทั้งหมด แล้วหยุดไม่ให้ไหลต่อ
+      // ไม่งั้น Esc จะปิดกล่องแล้วเด้งย้อนหน้าต่อไปอีกทีด้วยการกดครั้งเดียว
+      const onKey = (event) => {
+        if (event.key !== 'Escape') return;
+        event.preventDefault();
+        event.stopPropagation();
+        close(false);
+      };
+      document.addEventListener('keydown', onKey, true);
+
+      cancelBtn.addEventListener('click', () => close(false));
+      okBtn.addEventListener('click', () => close(true));
+      backdrop.addEventListener('mousedown', (event) => {
+        if (event.target === backdrop) close(false);   // คลิกนอกกล่อง
+      });
+    });
+  }
+
   // Esc = ย้อนกลับไปหน้าก่อนหน้า
   //
   // แอปเปิดในหน้าต่าง Electron ที่ไม่มีปุ่ม Back ของเบราว์เซอร์ให้กด
@@ -170,7 +254,7 @@
   }
 
   global.RovClient = {
-    controlToken, socket, withToken, absoluteUrl, fetchJson, showToast, goBack,
+    controlToken, socket, withToken, absoluteUrl, fetchJson, showToast, goBack, confirmBox,
     onDataChange, isEditingWithin, deferWhileEditing
   };
 })(window);

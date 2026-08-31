@@ -32,6 +32,18 @@ interface RovClientApi {
   fetchJson(url: string, options?: RequestInit): Promise<any>;
   showToast(message: string, type?: 'green' | 'blue' | 'red'): void;
   goBack(): void;
+  confirmBox(options: {
+    title: string;
+    body: string | string[];
+    confirmLabel?: string;
+    cancelLabel?: string;
+    danger?: boolean;
+  }): Promise<boolean>;
+}
+
+interface RovTournamentUiApi {
+  /** ถามยืนยันแล้วลบถาวร คืน true เมื่อลบไปแล้วจริง */
+  confirmAndDelete(tournament: { id: string; name: string }): Promise<boolean>;
 }
 
 interface RovTeamUiApi {
@@ -64,6 +76,7 @@ interface RovHotkeyUtilsApi {
 interface Window {
   RovClient: RovClientApi;
   RovTeamUI: RovTeamUiApi;
+  RovTournamentUI: RovTournamentUiApi;
   HotkeyUtils: RovHotkeyUtilsApi;
   // overlay-size.js ตั้งไว้ให้หน้าอื่นเรียก
   applyOverlaySize(size: string): void;

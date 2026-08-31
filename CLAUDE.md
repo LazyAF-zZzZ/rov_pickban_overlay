@@ -55,6 +55,20 @@ IIFE-plus-global pattern: `public/js/lib/app-client.js` exports `window.RovClien
 `window.HotkeyUtils`. New control pages load `socket.io.js`, then `app-client.js`, then their
 own script.
 
+**Any page that can delete a tournament loads `tournament-ui.js` before its own script.**
+Same rule and same failure as `team-ui.js`: the page destructures `window.RovTournamentUI`
+on its first line and dies blank without it. It holds `confirmAndDelete`, the one copy of
+the wording that warns what a delete destroys — the home list and `/tournament/:id` must not
+grow separate versions of that warning. It reads `window.RovClient` at load time, so it
+loads after `app-client.js`. A test in `tournament-api.test.ts` asserts both.
+
+**Deleting a tournament is a hard delete and `PRAGMA foreign_keys = ON` is what makes it
+one.** The bracket, its games and their draft slots disappear through the `ON DELETE CASCADE`
+chain in `migrations.ts`, not through any code in `remove()`. Without that pragma the delete
+still returns success while orphaned matches and drafts stay behind and keep feeding the
+statistics. `remove()` counts them before deleting, because after the delete every count is
+zero, and the API hands those numbers back for the UI to report.
+
 **Esc goes back a page, and `app-client.js` owns that binding.** Its `window`
 keydown listener runs after everything else on the page, so a page that needs Esc for
 its own thing must call `preventDefault()` or `stopPropagation()` — both confirm

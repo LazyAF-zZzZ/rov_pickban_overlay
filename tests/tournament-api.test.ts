@@ -123,6 +123,47 @@ test('a tournament can be created, listed, read, updated and deleted', async () 
   assert.strictEqual((await request('GET', `/api/tournaments/${id}`)).status, 404);
 });
 
+// การลบผ่าน API ต้องบอกกลับด้วยว่ากินอะไรไปบ้าง หน้าเว็บเอาไปแสดงใน toast
+// และต้องปลดแมตช์ที่กำลังออกอากาศออก ไม่ใช่ปล่อยให้หน้าอื่นยังคิดว่ามีของอยู่บนจอ
+test('deleting a tournament reports the damage and takes it off air', async () => {
+  const cup = (await request('POST', '/api/tournaments', {
+    name: 'Deletable Cup', format: 'single_elim', bestOf: 3
+  })).body.tournament;
+
+  const ids: string[] = [];
+  for (const name of ['Alpha', 'Bravo']) {
+    const team = (await request('POST', '/api/teams', { name })).body.team;
+    ids.push(team.id);
+    await request('POST', `/api/tournaments/${cup.id}/teams`, { teamId: team.id });
+  }
+
+  const drawn = (await request('POST', `/api/tournaments/${cup.id}/matches`, {})).body.matches;
+  assert.strictEqual(drawn.length, 1, 'two teams make one match');
+
+  const wentLive = await request('POST', `/api/matches/${drawn[0].id}/live`);
+  assert.strictEqual(wentLive.status, 200);
+  assert.strictEqual((await request('GET', '/api/live-match')).body.live.tournamentId, cup.id);
+
+  const removed = await request('DELETE', `/api/tournaments/${cup.id}`);
+  assert.strictEqual(removed.status, 200);
+  assert.strictEqual(removed.body.wasLive, true);
+  assert.strictEqual(removed.body.removed.teams, 2);
+  assert.strictEqual(removed.body.removed.matches, 1);
+  assert.strictEqual(removed.body.removed.games, 1, 'going on air created a game to record');
+
+  assert.strictEqual((await request('GET', `/api/tournaments/${cup.id}`)).status, 404);
+  assert.strictEqual(
+    (await request('GET', '/api/live-match')).body.live.tournamentId,
+    null,
+    'nothing is left pointing at the deleted tournament'
+  );
+
+  // ทีมยังอยู่ในทะเบียน ทัวร์นาเมนต์อื่นต้องใช้ต่อได้
+  for (const id of ids) {
+    assert.strictEqual((await request('GET', `/api/teams/${id}`)).status, 200);
+  }
+});
+
 test('a tournament needs a name', async () => {
   const { status, body } = await request('POST', '/api/tournaments', { name: '   ' });
   assert.strictEqual(status, 400);
@@ -149,6 +190,27 @@ test('status flips without sending the whole form', async () => {
 
   const junk = await request('POST', `/api/tournaments/${id}/status`, { status: 'banana' });
   assert.strictEqual(junk.body.tournament.status, 'active', 'junk falls back to active');
+});
+
+// หน้าที่ลบทัวร์นาเมนต์ได้ต้องโหลด tournament-ui.js ก่อนสคริปต์ของตัวเอง
+// ลืมแท็กนี้ = หน้าตายตั้งแต่บรรทัด destructure โดยไม่มีอะไรบอกว่าเพราะอะไร
+// (กฎเดียวกับ team-ui.js ที่ team-api.test.ts เฝ้าอยู่)
+test('every page that deletes a tournament loads the shared tournament module', async () => {
+  const pages = [
+    { url: '/', script: '/js/home.js' },
+    { url: '/tournament/anything', script: '/js/tournament.js' }
+  ];
+
+  for (const page of pages) {
+    const html = String((await request('GET', page.url)).body);
+    const libAt = html.indexOf('/js/lib/tournament-ui.js');
+    assert.ok(libAt > -1, `${page.url} loads tournament-ui.js`);
+    assert.ok(libAt < html.indexOf(page.script), `${page.url} loads it before ${page.script}`);
+    assert.ok(
+      html.indexOf('/js/lib/app-client.js') < libAt,
+      `${page.url} loads app-client.js first, which tournament-ui.js reads at load time`
+    );
+  }
 });
 
 test('the tournament page is served for any id', async () => {

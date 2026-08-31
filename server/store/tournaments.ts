@@ -45,6 +45,19 @@ export type RosterResult =
 
 export type SimpleResult = { ok: true; error?: undefined } | { error: string; ok?: undefined };
 
+// สิ่งที่หายไปพร้อมกับทัวร์นาเมนต์ นับไว้ก่อนลบ เพื่อบอกผู้ใช้ได้ว่าการลบครั้งนี้
+// กินอะไรไปบ้าง teams คือที่นั่งในรายชื่อผู้เข้าแข่ง ไม่ใช่ทีมในทะเบียนกลาง
+// ทีมในทะเบียนไม่หายไปไหน ทัวร์นาเมนต์อื่นยังใช้ทีมเดิมได้ครบ
+export interface RemovedCounts {
+  teams: number;
+  matches: number;
+  games: number;
+}
+
+export type RemoveResult =
+  | { ok: true; removed: RemovedCounts; error?: undefined }
+  | { error: string; ok?: undefined; removed?: undefined };
+
 interface TournamentRow {
   id: string;
   name: string;
@@ -77,7 +90,7 @@ export interface TournamentStore {
   create(input: unknown): TournamentResult;
   update(id: string, input: unknown): TournamentResult;
   setStatus(id: string, status: unknown): TournamentResult;
-  remove(id: string): SimpleResult;
+  remove(id: string): RemoveResult;
   teams(id: string): SeededTeam[];
   teamCount(id: string): number;
   addTeam(id: string, teamId: string, seed?: number): RosterResult;
@@ -95,6 +108,10 @@ export function createTournamentStore(db: DatabaseSync, teamStore: TeamStore): T
     ),
     setStatus: db.prepare('UPDATE tournaments SET status = ?, updated_at = ? WHERE id = ?'),
     remove: db.prepare('DELETE FROM tournaments WHERE id = ?'),
+    countMatches: db.prepare('SELECT COUNT(*) AS n FROM matches WHERE tournament_id = ?'),
+    countGames: db.prepare(
+      'SELECT COUNT(*) AS n FROM games WHERE match_id IN (SELECT id FROM matches WHERE tournament_id = ?)'
+    ),
     byId: db.prepare('SELECT * FROM tournaments WHERE id = ?'),
     all: db.prepare('SELECT * FROM tournaments ORDER BY created_at DESC'),
 
@@ -112,6 +129,8 @@ export function createTournamentStore(db: DatabaseSync, teamStore: TeamStore): T
 
   const findRow = (id: string): TournamentRow | undefined => q.byId.get(id) as TournamentRow | undefined;
   const teamCountOf = (id: string): number => (q.countTeams.get(id) as { n: number }).n;
+  const countOf = (stmt: { get(id: string): unknown }, id: string): number =>
+    (stmt.get(id) as { n: number }).n;
   const isMember = (id: string, teamId: string): boolean => q.hasTeam.get(id, teamId) !== undefined;
 
   const store: TournamentStore = {
@@ -159,10 +178,22 @@ export function createTournamentStore(db: DatabaseSync, teamStore: TeamStore): T
       return { tournament: store.get(id) as Tournament };
     },
 
+    // ลบจริง ไม่เหลืออะไรไว้ ไม่มีธง "ซ่อนไว้" ที่ไหนทั้งนั้น
+    //
+    // แถวที่เหลือถูก FK แบบ CASCADE พาไปเอง (ดู migrations.ts):
+    // tournament_teams และ matches -> games -> game_slots หายทั้งสาย
+    // ตัวชี้ live_match เป็น ON DELETE SET NULL จึงคลายออก ไม่ค้างชี้ของที่ไม่มีแล้ว
+    //
+    // ต้องนับก่อนสั่งลบ ถ้าอ่านทีหลังจะได้ศูนย์ทุกครั้ง
     remove(id) {
       if (!findRow(id)) return { error: 'Tournament not found' };
+      const removed: RemovedCounts = {
+        teams: teamCountOf(id),
+        matches: countOf(q.countMatches, id),
+        games: countOf(q.countGames, id)
+      };
       q.remove.run(id);
-      return { ok: true };
+      return { ok: true, removed };
     },
 
     // ทีมที่ลงแข่ง พร้อมข้อมูลทีมเต็มจากทะเบียนกลาง

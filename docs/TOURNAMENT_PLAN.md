@@ -52,6 +52,14 @@ later ones depend on earlier ones.
    `[data-esc-back]`, then `/`. Following browser history blindly would walk
    the operator out of the tool mid-event.
 
+2. **Deleting a tournament, hard.** `DELETE /api/tournaments/:id` with
+   `ON DELETE CASCADE` behind it — no soft-delete flag, no orphan rows. The
+   store counts teams, matches and games **before** deleting so the toast can
+   say what went; the route captures `wasLive` before and calls `clearLive()`
+   after, or the overlay keeps pointing at a tournament that no longer exists.
+   The confirmation lives in one place, `public/js/lib/tournament-ui.js`, and
+   adds an extra line when that tournament is on air right now.
+
 **The team registry has its own pages now.** `/teams` lists every team ever
 created with a search box and a one-form create; `/teams/:id` is the profile —
 roster editing, logo, the tournaments entered, and match history across all of
@@ -733,6 +741,19 @@ Each of these cost real debugging time. They are also in `CLAUDE.md`.
   while every team was still playing. It takes the `elimination` flag now. The
   bug predates the match-session split but was invisible while the flat list,
   which said `Round N`, was the view people used.
+- **Deleting a tournament is a hard delete, and `PRAGMA foreign_keys = ON` is what
+  makes it one.** `DELETE FROM tournaments` only removes one row; the bracket, its
+  games and their draft slots go with it because of the `ON DELETE CASCADE` chain in
+  `migrations.ts`. Turn that pragma off in `db.ts` and the delete still "works" —
+  the list looks clean while orphaned matches and drafts stay in the file and keep
+  turning up in cross-tournament statistics. `tournaments.remove()` counts what it
+  is about to destroy *before* firing the delete, and the API returns those numbers so
+  the operator sees what a confirmation actually cost. Covered by a store test that
+  counts every table afterwards.
+- **A live pointer left over a deleted tournament goes stale silently.** The FK sets
+  `live_match.match_id` to NULL on its own, but nothing tells the open pages, so they
+  keep showing a match that no longer exists. The DELETE route checks `describeLive()`
+  *before* removing and calls `clearLive()` afterwards to broadcast the change.
 - **Esc belongs to `app-client.js`, so a page that wants it must claim it.**
   Esc goes back a page for every operator page, from a `window` listener that
   runs last. A page keeping Esc for itself has to call `preventDefault()` or

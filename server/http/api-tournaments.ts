@@ -84,14 +84,24 @@ export function tournamentRoutes(): Router {
     res.json({ ok: true, tournament: result.tournament });
   });
 
+  // ลบถาวร ไม่มีถังขยะให้กู้ ทัวร์นาเมนต์ สายการแข่ง และดราฟต์ที่บันทึกไว้หายหมด
+  // หน้าเว็บต้องถามยืนยันก่อนเรียก แล้วเอา removed ไปบอกว่าอะไรหายไปเท่าไร
+  //
+  // ถ้าลบตัวที่กำลังออกอากาศ ต้องเคลียร์ตัวชี้ให้ด้วย
+  // FK คลาย match_id เป็น NULL ให้อยู่แล้ว แต่ไม่มีใครส่งสัญญาณบอกหน้าอื่น
+  // หน้าที่เปิดค้างไว้จะยังโชว์ว่าแมตช์ที่ลบไปแล้วอยู่บนจอ
   router.delete('/api/tournaments/:id', requireControl, (req, res) => {
+    const wasLive = describeLive().tournamentId === req.params.id;
+
     const result = getStores().tournaments.remove(req.params.id);
     if (result.error !== undefined) {
       res.status(404).json({ error: result.error });
       return;
     }
+
+    if (wasLive) clearLive();
     notifyData({ topic: 'tournaments', tournamentId: req.params.id });
-    res.json({ ok: true });
+    res.json({ ok: true, removed: result.removed, wasLive });
   });
 
   // ROSTER ------------------------------------------------------------

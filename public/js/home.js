@@ -9,6 +9,9 @@
 
 const { socket, fetchJson, showToast } = window.RovClient;
 
+// การลบใช้ร่วมกับหน้า /tournament/:id คำเตือนจึงเป็นชุดเดียวกันทั้งสองที่
+const { confirmAndDelete } = window.RovTournamentUI;
+
 let options = null;
 
 // STATUS BAR ---------------------------------------------------------
@@ -154,8 +157,35 @@ function formatLabel(id) {
   return options?.formats.find((f) => f.id === id)?.label || id;
 }
 
+// ปุ่มลบวางทับการ์ด ไม่ได้วางไว้ข้างในการ์ด
+//
+// การ์ดทั้งใบเป็น <a> ปุ่มที่ซ้อนอยู่ข้างในจะโดนคลิกดูดไปเปิดหน้าทัวร์นาเมนต์
+// (และ <button> ใน <a> ก็ไม่ถูกกติกา HTML อยู่แล้ว) ห่อด้วย div แล้ววางปุ่มเป็นพี่น้อง
+// กันจึงจบทั้งสองเรื่องพร้อมกัน โดยไม่ต้องไปดักหยุด event ให้ถูกจังหวะ
+function deleteButton(tournament) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'tcard-del';
+  btn.textContent = 'DELETE';
+  btn.title = `Delete ${tournament.name} and everything recorded under it`;
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    // กันกดซ้ำระหว่างรอ ถ้าไม่ได้ลบก็คืนปุ่มให้กดใหม่ได้
+    // ถ้าลบไปแล้วการ์ดจะหายไปทั้งใบตอน renderList() ไม่ต้องคืนอะไร
+    const deleted = await confirmAndDelete(tournament);
+    if (deleted) await renderList();
+    else btn.disabled = false;
+  });
+
+  return btn;
+}
+
 // ทุกอย่างประกอบด้วย textContent ชื่อทัวร์นาเมนต์มาจากผู้ใช้
 function tournamentCard(t) {
+  const wrap = document.createElement('div');
+  wrap.className = 'tcard-wrap';
+
   const card = document.createElement('a');
   card.className = `tcard ${t.status}`;
   card.href = `/tournament/${encodeURIComponent(t.id)}`;
@@ -186,7 +216,8 @@ function tournamentCard(t) {
     card.appendChild(note);
   }
 
-  return card;
+  wrap.append(card, deleteButton(t));
+  return wrap;
 }
 
 async function renderList() {

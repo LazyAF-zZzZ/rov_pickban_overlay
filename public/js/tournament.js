@@ -8,6 +8,9 @@
 
 const { socket, fetchJson, absoluteUrl, withToken, showToast, onDataChange, deferWhileEditing } = window.RovClient;
 
+// การลบใช้ร่วมกับหน้าแรก คำเตือนจึงเป็นชุดเดียวกันทั้งสองที่
+const { confirmAndDelete } = window.RovTournamentUI;
+
 // ช่องผู้เล่น โลโก้ และตัวอัปโหลด ใช้ร่วมกับหน้า /teams และ /teams/:id
 // อย่าก็อปกลับมาไว้ในไฟล์นี้อีก — สองชุดที่แก้คนละที่คือที่มาของบั๊กเดิม
 const { badge, buildPlayerRows, logoImage, sendLogo, hiddenFilePicker, on } = window.RovTeamUI;
@@ -417,17 +420,15 @@ async function save() {
   }
 }
 
+// ลบถาวร ถามยืนยันในกล่องของแอพเอง ไม่ใช่ window.confirm ของระบบ
+// (เหตุผลเดียวกับหน้า Control เขียนไว้ใน lib/app-client.js)
 async function remove() {
-  const name = current?.name || 'this tournament';
-  if (!window.confirm(`Delete "${name}"?\n\nThe tournament and its team list are removed. Teams themselves stay in the registry.`)) {
-    return;
-  }
-  try {
-    await fetchJson(`/api/tournaments/${encodeURIComponent(tournamentId)}`, { method: 'DELETE' });
-    window.location.href = '/';
-  } catch (error) {
-    showToast(error.message || 'Could not delete', 'red');
-  }
+  const deleted = await confirmAndDelete({
+    id: tournamentId,
+    name: current?.name || 'this tournament'
+  });
+  // ทัวร์นาเมนต์ที่เปิดอยู่ไม่มีแล้ว หน้านี้จึงไม่เหลืออะไรให้แสดง
+  if (deleted) window.location.href = '/';
 }
 
 // TEAM ACTIONS -------------------------------------------------------

@@ -8,6 +8,8 @@ import type { TeamStore } from '../server/store/teams';
 import { createTeamStore } from '../server/store/teams';
 import type { Tournament } from '../server/store/tournaments';
 import { createTournamentStore } from '../server/store/tournaments';
+import { createMatchStore } from '../server/store/matches';
+import { createGameStore } from '../server/store/games';
 import { MAX_TEAMS, ROUND_ROBIN_MAX_TEAMS } from '../server/domain/tournament';
 import { isSafeMediaId } from '../server/domain/media';
 import type { Team } from '../server/domain/team';
@@ -192,6 +194,48 @@ test('deleting a tournament leaves the team registry intact', () => {
   tournaments.remove(tournament.id);
   assert.strictEqual(teams.count(), 4, 'teams outlive the tournament they played in');
   assert.strictEqual(tournaments.get(tournament.id), null);
+});
+
+// ลบทัวร์นาเมนต์แล้วต้องไม่เหลือเศษของมันในฐานเลย
+//
+// เขียนไว้เพราะการลบแบบ "ทิ้งของลูกไว้" เงียบมาก: หน้าเว็บดูสะอาด รายการหายไปแล้ว
+// แต่แมตช์กับดราฟต์ยังนอนอยู่ในไฟล์ และไปโผล่ในสถิติที่นับข้ามทัวร์นาเมนต์
+test('deleting a tournament takes its bracket and every recorded draft with it', () => {
+  const { db, teams, tournaments } = freshStores();
+  const matches = createMatchStore(db, tournaments);
+  const games = createGameStore(db);
+
+  const tournament = makeTournament(tournaments, { name: 'Cup', format: 'single_elim', bestOf: 3 });
+  const roster = makeTeams(teams, 4);
+  roster.forEach((team, i) => tournaments.addTeam(tournament.id, team.id, i));
+
+  const drawn = must(matches.generate(tournament.id).matches);
+  const first = must(drawn[0]);
+  const game = games.ensure(first.id, 1, {
+    blueTeamId: must(roster[0]).id,
+    redTeamId: must(roster[1]).id,
+    blueName: 'A',
+    redName: 'B'
+  });
+  db.prepare('INSERT INTO game_slots (game_id, side, kind, idx, hero) VALUES (?, ?, ?, ?, ?)')
+    .run(game.id, 'blue', 'pick', 0, 'valhein');
+
+  const count = (sql: string): number => (db.prepare(sql).get() as { n: number }).n;
+  assert.ok(count('SELECT COUNT(*) AS n FROM game_slots') > 0, 'the draft was recorded first');
+
+  const result = tournaments.remove(tournament.id);
+  assert.deepStrictEqual(
+    result.removed,
+    { teams: 4, matches: drawn.length, games: 1 },
+    'the delete reports what it destroyed'
+  );
+
+  assert.strictEqual(count('SELECT COUNT(*) AS n FROM tournaments'), 0);
+  assert.strictEqual(count('SELECT COUNT(*) AS n FROM tournament_teams'), 0);
+  assert.strictEqual(count('SELECT COUNT(*) AS n FROM matches'), 0, 'the bracket went with it');
+  assert.strictEqual(count('SELECT COUNT(*) AS n FROM games'), 0, 'so did the games');
+  assert.strictEqual(count('SELECT COUNT(*) AS n FROM game_slots'), 0, 'and the draft rows under them');
+  assert.strictEqual(teams.count(), 4, 'only the teams outlive it');
 });
 
 test('status flips between active and finished, junk falls back to active', () => {
