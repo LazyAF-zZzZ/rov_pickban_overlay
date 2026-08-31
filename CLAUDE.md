@@ -202,6 +202,27 @@ with `isSafeMediaId` — never from a team name someone typed.
 historical records that reference the old name. Stored game history must be treated as opaque
 strings and **not** re-sanitized against the live roster.
 
+**`/overlay-analytics` is a broadcast graphic; `/analytics` is the operator page.** Same
+split as `/overlay-teams` versus `/teams`, and a test keeps them apart. The board loads
+no operator stylesheet and no translator — viewers see English — and it never joins the
+`dataChanged` room: its numbers move when a draft locks, which is when the board is not
+on screen and OBS has the source suspended anyway. Refreshing on scene activation is the
+real answer, with `?refresh=<seconds>` for a board left up all event.
+
+**Ranking for the board lives in `domain/analytics.ts`, not in the page.** `rankHeroes()`
+takes `mode`, `top` and `minDecided`; `/api/analytics` accepts them and returns the ranked
+slice, and the operator page sends none of them so its behaviour is untouched. Two of its
+rules exist so the graphic does not mislead: a win rate needs a floor of decided games,
+because "100%" off one game reads on air as the strongest hero in the event; and the
+summary is always computed from the whole tournament, never from the trimmed board, or a
+`top=10` graphic would claim the event had ten heroes in it.
+
+**Anything a broadcast graphic animates has to be forced to its end state, not just faded
+in.** The board starts rows at `opacity: 0`, bars at `width: 0` and numbers at zero, so a
+frozen source can leave a blank board *or* a board where every hero reads 0% — the second
+is worse, because it looks like data. `.settled` kills the animations, sets bars to their
+real width and writes the final numbers in one pass.
+
 **OBS freezes browser sources that are off-scene**, so `animationend` may never fire. Any
 entrance animation needs a timer fallback — see `public/js/overlay.js`.
 

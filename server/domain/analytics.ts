@@ -98,3 +98,73 @@ export function summarise(
     slotsPerGame: SLOTS_PER_GAME
   };
 }
+
+// การจัดอันดับสำหรับกราฟิกออกอากาศ
+//
+// หน้าสถิติของคนคุมงานเรียงตาม presence อย่างเดียวแล้วให้คนกวาดตาอ่านเองทั้งตาราง
+// กราฟิกบนจอมีที่ว่างสิบแถวและคนดูมีเวลาสิบวินาที จึงต้องเลือกมาให้แล้วว่าจะเล่าอะไร
+// อยู่ในนี้ไม่ใช่ในไฟล์ของหน้าเว็บ เพราะเป็นกติกาที่ต้องมีเทสต์ ไม่ใช่การจัดหน้า
+export const RANK_MODES = ['presence', 'pick', 'ban', 'win'] as const;
+export type RankMode = typeof RANK_MODES[number];
+
+export function isRankMode(value: unknown): value is RankMode {
+  return typeof value === 'string' && (RANK_MODES as readonly string[]).includes(value);
+}
+
+// อัตราชนะต้องมีขั้นต่ำ ไม่งั้นกราฟิกจะนำด้วยฮีโร่ที่ลง "หนึ่งเกม ชนะ 100%"
+//
+// ตัวเลขนั้นถูกต้องตามเลขคณิตแต่โกหกคนดู เพราะมันบอกว่าฮีโร่ตัวนี้แข็งที่สุดในรายการ
+// ทั้งที่มันแปลว่า "มีคนหยิบมาครั้งเดียวแล้วบังเอิญชนะ"
+// สามเกมยังน้อยอยู่ แต่พอจะกัน 100% แบบเกมเดียวออกไปได้ และปรับได้จาก URL
+export const DEFAULT_MIN_DECIDED = 3;
+
+export interface RankOptions {
+  mode?: RankMode;
+  top?: number;
+  minDecided?: number;
+}
+
+// ตัวตัดสินรองต้องมีเสมอ ไม่งั้นลำดับจะสลับไปมาระหว่างการโหลดสองครั้งที่ข้อมูลเท่ากัน
+// ซึ่งบนกราฟิกที่รีเฟรชเองแปลว่าแถวจะกระโดดสลับที่โดยไม่มีอะไรเปลี่ยนจริง
+const TIE_BREAK = (a: HeroStat, b: HeroStat): number => (
+  b.present - a.present || b.picked - a.picked || a.hero.localeCompare(b.hero)
+);
+
+export function rankHeroes(stats: readonly HeroStat[], options: RankOptions = {}): HeroStat[] {
+  const mode: RankMode = options.mode && isRankMode(options.mode) ? options.mode : 'presence';
+  const minDecided = Number.isFinite(options.minDecided)
+    ? Math.max(0, Math.trunc(options.minDecided as number))
+    : DEFAULT_MIN_DECIDED;
+
+  // แต่ละโหมดคัดตัวที่ "ไม่มีเรื่องจะเล่า" ออกก่อน
+  //
+  // ฮีโร่ที่ไม่เคยถูกแบนเลยไม่ควรไปอยู่ในกระดานแบนที่อันดับสิบด้วยเลขศูนย์
+  // แถวที่เป็นศูนย์กินที่ของแถวที่มีข้อมูลจริง และทำให้กราฟิกดูเหมือนข้อมูลไม่มา
+  const pool = stats.filter((stat) => {
+    if (mode === 'pick') return stat.picked > 0;
+    if (mode === 'ban') return stat.banned > 0;
+    if (mode === 'win') return stat.winRate !== null && stat.decided >= minDecided;
+    return stat.present > 0;
+  });
+
+  const sorted = [...pool].sort((a, b) => {
+    if (mode === 'pick') return b.pickRate - a.pickRate || TIE_BREAK(a, b);
+    if (mode === 'ban') return b.banRate - a.banRate || TIE_BREAK(a, b);
+    // winRate ผ่านตัวกรองมาแล้วจึงไม่เป็น null ตรงนี้ แต่ตัวตรวจชนิดไม่รู้
+    if (mode === 'win') return (b.winRate ?? 0) - (a.winRate ?? 0) || TIE_BREAK(a, b);
+    return b.presence - a.presence || TIE_BREAK(a, b);
+  });
+
+  // top ที่ไม่ได้ส่งมาหรือส่งขยะมา = เอาทั้งหมด ไม่ใช่ศูนย์
+  // Number(null) เป็น 0 ซึ่งผ่าน isFinite ได้ และจะกลายเป็นกระดานเปล่า
+  const limit = Number.isFinite(options.top) ? Math.trunc(options.top as number) : 0;
+  return limit > 0 ? sorted.slice(0, limit) : sorted;
+}
+
+// ค่าที่กราฟิกเอาไปวาดแถบ ต่างกันตามโหมด
+export function rateFor(stat: HeroStat, mode: RankMode): number {
+  if (mode === 'pick') return stat.pickRate;
+  if (mode === 'ban') return stat.banRate;
+  if (mode === 'win') return stat.winRate ?? 0;
+  return stat.presence;
+}

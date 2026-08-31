@@ -41,6 +41,9 @@ The pages you will use are on the top bar: **HOME · TEAMS · ANALYTICS · CONTR
 4. Tick **Control audio via OBS** so viewers can hear the sound effects
 5. Leave **Shutdown source when not visible** unticked, so the overlay keeps running
 6. Do the same for *Result* if you want the winner screen
+7. From a tournament page, *Team list* and *Stats board* are copied the same way. Tick
+   **Refresh browser when scene becomes active** on those two so they animate in and show
+   current numbers every time you cut to them
 
 If the COPY button does nothing, click the URL text once — it selects itself — then press Ctrl+C.
 
@@ -52,6 +55,8 @@ If the COPY button does nothing, click the URL text once — it selects itself �
 4. ติ๊ก **Control audio via OBS** เพื่อให้คนดูได้ยินเสียงเอฟเฟกต์
 5. อย่าติ๊ก **Shutdown source when not visible** เพื่อให้ overlay ทำงานค้างไว้
 6. ถ้าอยากได้หน้าประกาศผู้ชนะ ให้เพิ่ม *Result* ด้วยวิธีเดียวกัน
+7. ในหน้าทัวร์นาเมนต์จะมี *Team list* กับ *Stats board* ให้ก๊อปด้วยวิธีเดียวกัน สองอันนี้ให้ติ๊ก
+   **Refresh browser when scene becomes active** ด้วย จะได้เล่นอนิเมชันใหม่และได้ตัวเลขล่าสุดทุกครั้งที่ตัดเข้าซีน
 
 ถ้ากดปุ่ม COPY แล้วไม่มีอะไรเกิดขึ้น ให้คลิกที่ตัว URL หนึ่งครั้ง มันจะเลือกให้เอง แล้วกด Ctrl+C
 

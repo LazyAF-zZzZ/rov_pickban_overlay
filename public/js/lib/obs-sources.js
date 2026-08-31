@@ -32,7 +32,9 @@
     // ไม่งั้น overlay จะเดาเอาจากแมตช์ที่ออกอากาศ ซึ่งไม่ใช่สิ่งที่คนก๊อป URL
     // จากหน้าทัวร์นาเมนต์ตั้งใจ ส่วนหน้า Control ไม่มี id ให้แนบ การเดาจาก
     // แมตช์ที่ออกอากาศจึงเป็นสิ่งที่ถูกต้องพอดีสำหรับหน้านั้น
-    { name: 'Team list', path: '/overlay-teams', size: 'matches overlay size', perTournament: true }
+    { name: 'Team list', path: '/overlay-teams', size: 'matches overlay size', perTournament: true },
+    // กระดานสถิติของทัวร์นาเมนต์นี้ ต้องแนบ id เหมือนรายชื่อทีมด้วยเหตุผลเดียวกัน
+    { name: 'Stats board', path: '/overlay-analytics', size: 'matches overlay size', perTournament: true }
   ];
 
   function pathFor(source, options) {

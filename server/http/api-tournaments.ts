@@ -12,7 +12,7 @@ import { getStores } from '../store/index';
 import { FORMATS, BEST_OF_OPTIONS, STATUSES, MAX_TEAMS } from '../domain/tournament';
 import { requireControl } from './auth';
 import { goLive, clearLive, describeLive, notifyAnalytics } from '../services/live-match';
-import { toHeroStats, summarise } from '../domain/analytics';
+import { toHeroStats, summarise, rankHeroes, isRankMode } from '../domain/analytics';
 import { notifyData } from '../services/sync';
 import { recordSeriesResult } from '../services/series';
 
@@ -257,11 +257,23 @@ export function tournamentRoutes(): Router {
 
     const raw = getStores().analytics.read(scope);
     const heroes = toHeroStats(raw.counts, raw.games);
-    res.json({
-      scope,
-      summary: summarise(heroes, raw.games, raw.decidedGames),
-      heroes
-    });
+
+    // สรุปคิดจากชุดเต็มเสมอ ไม่ใช่จากชุดที่ถูกตัดมาสิบแถว
+    // ไม่งั้นกราฟิกที่ขอ top=10 จะบอกคนดูว่าทัวร์นาเมนต์นี้มีฮีโร่ลงแค่สิบตัว
+    const summary = summarise(heroes, raw.games, raw.decidedGames);
+
+    // การจัดอันดับเป็นของกราฟิกออกอากาศ หน้าสถิติของคนคุมงานไม่ส่งพารามิเตอร์พวกนี้มา
+    // และต้องได้ผลเหมือนเดิมทุกประการ (เรียงตาม presence ครบทุกตัว)
+    const ranking = req.query as { mode?: unknown; top?: unknown; minDecided?: unknown };
+    const ranked = isRankMode(ranking.mode) || ranking.top !== undefined
+      ? rankHeroes(heroes, {
+        mode: isRankMode(ranking.mode) ? ranking.mode : 'presence',
+        top: Number(ranking.top),
+        minDecided: ranking.minDecided === undefined ? undefined : Number(ranking.minDecided)
+      })
+      : heroes;
+
+    res.json({ scope, summary, heroes: ranked });
   });
 
   router.put('/api/matches/:matchId/result', requireControl, (req, res) => {

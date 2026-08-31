@@ -105,7 +105,7 @@ test('every tf() frame has a Thai translation', () => {
 // หน้าจอของคนดูไม่แปล เป็นการตัดสินใจของงานถ่ายทอด ไม่ใช่ของหน้าคนคุม
 // เทสต์นี้กันไม่ให้ใครเผลอเรียก t() ในไฟล์ของ overlay ซึ่งจะพังทันทีเพราะไม่มีโมดูลโหลดอยู่
 test('broadcast scripts never call the translator', () => {
-  const broadcast = ['overlay.js', 'overlay-teams.js', 'result.js', 'overlay-sfx.js'];
+  const broadcast = ['overlay.js', 'overlay-teams.js', 'overlay-analytics.js', 'result.js', 'overlay-sfx.js'];
   broadcast.forEach((name) => {
     const file = path.join(ROOT, 'public', 'js', name);
     if (!fs.existsSync(file)) return;

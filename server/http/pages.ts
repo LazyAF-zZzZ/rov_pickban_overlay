@@ -24,6 +24,9 @@ export const PAGES: Record<string, string> = {
   '/result': 'result.html',
   // รายชื่อทีมสำหรับเปิดก่อนเริ่มงาน ชื่อ /overlay-teams เพราะ /teams เป็นหน้าคนคุมงานแล้ว
   '/overlay-teams': 'overlay-teams.html',
+  // กระดานสถิติ pick/ban สำหรับขึ้นจอระหว่างพัก ชื่อขึ้นต้นด้วย overlay- ด้วยเหตุผลเดียวกัน
+  // /analytics เป็นหน้าของคนคุมงานไปแล้ว
+  '/overlay-analytics': 'overlay-analytics.html',
   // หน้าตั้งค่าภาพพื้นหลัง แยกจาก Control Panel เพราะเป็นงานก่อนแข่ง
   '/design': 'design.html',
   '/hotkeys': 'hotkeys.html',

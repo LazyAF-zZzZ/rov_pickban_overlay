@@ -1,0 +1,289 @@
+/* Overlay กระดานสถิติ pick/ban ของทัวร์นาเมนต์หนึ่ง
+ *
+ * หลักการเดียวกับ overlay-teams.css: วางบนผืน 1920x1080 แล้วถ้าเลือก 1440p
+ * ก็ขยายทั้งผืนด้วย 4/3 ไม่ได้ทำ layout แยกอีกชุด
+ *
+ * พื้นหลังโปร่งใสเสมอ OBS ซ้อนทับฉากอื่นอยู่ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    width: 1920px;
+    height: 1080px;
+    background: transparent;
+    font-family: 'Kanit', 'Segoe UI', Arial, sans-serif;
+    overflow: hidden;
+}
+
+body[data-size="1440"] { width: 2560px; height: 1440px; }
+body[data-size="1440"] .an-stage {
+    transform: scale(calc(4 / 3));
+    transform-origin: top left;
+}
+
+.an-stage {
+    width: 1920px;
+    height: 1080px;
+    padding: 70px 92px;
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+}
+
+/* HEAD -------------------------------------------------------------- */
+
+.an-head {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 40px;
+    padding-bottom: 18px;
+    border-bottom: 2px solid rgba(245, 185, 66, 0.28);
+
+    /* หัวข้อไม่มี delay จึงเข้ามาก่อนแถวแรกเสมอ */
+    opacity: 0;
+    transform: translateY(-26px);
+    animation: anHeadIn 520ms cubic-bezier(0.16, 0.84, 0.32, 1) forwards;
+}
+
+.an-title {
+    font-size: 54px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    line-height: 1.05;
+    text-transform: uppercase;
+    color: #ffffff;
+    text-shadow: 0 4px 22px rgba(0, 0, 0, 0.85);
+}
+.an-sub {
+    margin-top: 8px;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 7px;
+    text-transform: uppercase;
+    color: #f5b942;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+}
+
+/* จำนวนเกมที่ตัวเลขทั้งกระดานคิดมาจาก ต้องอยู่บนจอเสมอ
+   เปอร์เซ็นต์ที่ไม่บอกว่าหารด้วยอะไรคือตัวเลขที่อ่านผิดได้ทุกทาง */
+.an-meta {
+    flex: 0 0 auto;
+    text-align: right;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.55);
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+    white-space: nowrap;
+}
+
+/* BOARD ------------------------------------------------------------- */
+
+/* กระดานที่มีไม่กี่แถวต้องอยู่กลางผืน ไม่ใช่เกาะขอบบนแล้วเหลือที่ว่างครึ่งจอ
+   แต่พอแถวเยอะจนล้น ต้องกลับไปเกาะขอบบนก่อน ไม่งั้นของจะล้นออกทั้งบนและล่าง
+   แล้วตัวย่อใน js จะคำนวณจากขอบที่เลื่อนไปแล้ว (ดูคลาส .overflowing) */
+.an-board {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 1), 1fr);
+    gap: 12px 40px;
+    align-content: center;
+}
+.an-board.overflowing { align-content: start; }
+
+.an-row {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 10px 20px 10px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-left: 4px solid var(--accent, #3b82f6);
+    background: linear-gradient(100deg, rgba(17, 18, 32, 0.94), rgba(24, 25, 41, 0.84));
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+
+    /* สถานะเริ่มต้นคือ "ยังไม่เข้ามา" อนิเมชันเป็นคนพาเข้ามา
+       ถ้าอนิเมชันไม่เคยเล่น แถวจะไม่โผล่เลย ตัวจับเวลาใน js จึงต้องบังคับสถานะปลายทาง
+       ดูคอมเมนต์ .settled ข้างล่าง */
+    opacity: 0;
+    transform: translateX(-42px);
+    animation: anRowIn 520ms cubic-bezier(0.16, 0.84, 0.32, 1) forwards;
+    animation-delay: calc(var(--i, 0) * var(--stagger, 90ms));
+}
+
+/* สามอันดับแรกเด่นกว่าเพื่อน คนดูควรอ่านอันดับได้โดยไม่ต้องหาเลข */
+.an-row.top { border-color: rgba(245, 185, 66, 0.34); }
+.an-row.top .an-rank { color: #f5b942; }
+
+/* RANK -------------------------------------------------------------- */
+
+.an-rank {
+    flex: 0 0 auto;
+    width: 52px;
+    text-align: center;
+    font-size: 30px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -1px;
+    color: rgba(255, 255, 255, 0.4);
+
+    /* เด้งเข้ามาหลังตัวแถวเล็กน้อย ให้ตาไปจับที่อันดับก่อนแล้วค่อยกวาดไปทางขวา */
+    opacity: 0;
+    transform: scale(0.55);
+    animation: anRankIn 420ms cubic-bezier(0.2, 1.5, 0.4, 1) forwards;
+    animation-delay: calc(var(--i, 0) * var(--stagger, 90ms) + 160ms);
+}
+
+/* HERO -------------------------------------------------------------- */
+
+.an-face {
+    flex: 0 0 auto;
+    width: 64px;
+    height: 64px;
+    border-radius: 10px;
+    object-fit: cover;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+}
+/* ภาพฮีโร่หายไม่ควรทิ้งกรอบว่างไว้กลางกราฟิก ตัวอักษรย่อทำหน้าที่แทน */
+.an-face.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.42);
+}
+
+.an-id { flex: 1 1 auto; min-width: 0; }
+
+.an-name {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    line-height: 1.15;
+    text-transform: uppercase;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* METER ------------------------------------------------------------- */
+
+.an-meter {
+    margin-top: 7px;
+    height: 9px;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.09);
+    overflow: hidden;
+}
+.an-fill {
+    height: 100%;
+    border-radius: 5px;
+    background: linear-gradient(90deg, var(--accent, #3b82f6), var(--accent-2, #93c5fd));
+
+    /* โตจากศูนย์ด้วย transition ไม่ใช่ keyframes ตั้งใจ
+       ความกว้างปลายทางต่างกันทุกแถว จึงเขียนเป็น keyframe ชุดเดียวไม่ได้
+       js ตั้ง --w แล้วเติมคลาส .grow ในเฟรมถัดไป ตัวบังคับสถานะปลายทางก็ใช้ทางเดียวกัน */
+    width: 0;
+    transition: width 900ms cubic-bezier(0.16, 0.84, 0.32, 1);
+    transition-delay: calc(var(--i, 0) * var(--stagger, 90ms) + 220ms);
+}
+.an-row.grow .an-fill { width: var(--w, 0%); }
+
+/* NUMBERS ----------------------------------------------------------- */
+
+.an-figures {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: baseline;
+    gap: 22px;
+}
+
+.an-stat { text-align: right; }
+
+.an-value {
+    font-size: 20px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: rgba(255, 255, 255, 0.82);
+    line-height: 1.1;
+}
+.an-label {
+    margin-top: 2px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.34);
+}
+
+/* ตัวเลขหลักของโหมดที่เลือก ใหญ่กว่าและเป็นสีทอง อ่านได้จากปลายห้อง */
+.an-stat.lead .an-value {
+    font-size: 34px;
+    font-weight: 800;
+    color: #f5b942;
+    min-width: 118px;
+}
+.an-stat.lead .an-label { color: rgba(245, 185, 66, 0.55); }
+
+.an-stat.win .an-value.good { color: #86efac; }
+.an-stat.win .an-value.bad { color: #fca5a5; }
+
+/* แถวแน่นขึ้นเมื่อขอมาเกินสิบ ไม่งั้นล้นออกนอกจอเงียบๆ */
+.an-board.dense .an-row { padding: 6px 16px 6px 12px; gap: 14px; border-radius: 9px; }
+.an-board.dense .an-face { width: 46px; height: 46px; border-radius: 8px; }
+.an-board.dense .an-rank { width: 40px; font-size: 22px; }
+.an-board.dense .an-name { font-size: 20px; }
+.an-board.dense .an-meter { height: 7px; margin-top: 5px; }
+.an-board.dense .an-value { font-size: 17px; }
+.an-board.dense .an-stat.lead .an-value { font-size: 25px; min-width: 90px; }
+.an-board.dense .an-figures { gap: 16px; }
+
+/* ตัวสำรองของ OBS
+ *
+ * OBS หยุด browser source ที่ไม่ได้ออกอากาศ อนิเมชันจะค้างและ animationend
+ * ไม่ยิงเลย แถวที่เริ่มจาก opacity:0 จึงมีสิทธิ์ไม่โผล่ขึ้นมาตลอดกาล
+ * js ตั้งเวลาไว้เติม .settled ให้เสมอ กติกาตรงนี้คือ "จบเกมให้" โดยไม่สนอนิเมชัน
+ *
+ * แถบก็ต้องถูกบังคับด้วย ไม่ใช่แค่ความทึบ แถบที่ค้างอยู่ที่ศูนย์คือกราฟิกที่
+ * บอกคนดูว่าทุกฮีโร่มีค่าเป็นศูนย์ ซึ่งผิดยิ่งกว่าการไม่มีแถบ */
+.an-stage.settled .an-head,
+.an-stage.settled .an-row,
+.an-stage.settled .an-rank {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+}
+.an-stage.settled .an-fill {
+    transition: none !important;
+    width: var(--w, 0%);
+}
+
+@keyframes anHeadIn {
+    from { opacity: 0; transform: translateY(-26px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes anRowIn {
+    from { opacity: 0; transform: translateX(-42px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes anRankIn {
+    from { opacity: 0; transform: scale(0.55); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+/* ข้อความตอนตั้งค่า เช่นยังไม่ได้เลือกทัวร์นาเมนต์
+   จงใจให้จางและเล็ก ถ้าหลุดออกอากาศจะได้ไม่เด่นกว่ากราฟิกจริง */
+.an-note {
+    flex: 0 0 auto;
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.34);
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}

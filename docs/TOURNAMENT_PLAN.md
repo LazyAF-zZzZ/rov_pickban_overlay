@@ -46,7 +46,7 @@ committed, one commit per numbered item, and the table below carries the ids.
 | `c9be021` | §8: system-wide hotkeys through Electron `globalShortcut` |
 | `a47e980` | §8: messages that carry data are translated, through `tf()` |
 
-Current state: **0 type errors under `strict`, 198 tests passing.** Creating a
+Current state: **0 type errors under `strict`, 210 tests passing.** Creating a
 tournament, adding a team with its players in one form, uploading logos,
 drawing single/double elimination, round robin and group brackets, recording
 Bo3/Bo5 results, opening a match in the control panel and having its draft
@@ -227,6 +227,43 @@ URL options, all optional: `?tournament=<id>` (defaults to the live match's
 tournament, then the newest one), `?title=`, `?subtitle=`, `?columns=1..6`,
 `?roster=off`, `?stagger=<ms>`. The tournament page's OBS section lists it with
 the id already in the URL, ready to paste.
+
+**The stats board is the second broadcast graphic.** `/overlay-analytics` ranks
+the heroes of one tournament for the screen, the way `/overlay-teams` does its
+roster. It is **not** `/analytics` — that is the operator page from Phase 8, and
+a test asserts the two stay apart, the same collision `/teams` had.
+
+URL options, all optional: `?tournament=<id>` (defaults to the live match's
+tournament, then the newest one), `?mode=presence|pick|ban|win`, `?top=1..20`,
+`?columns=1|2`, `?title=`, `?subtitle=`, `?minGames=<n>`, `?stagger=<ms>`,
+`?refresh=<seconds>`. The tournament page's OBS section lists it with the id
+already in the URL, ready to paste.
+
+**The ranking is a server rule, not page decoration.** `rankHeroes()` in
+`domain/analytics.ts` picks and orders; `/api/analytics` takes `mode`, `top` and
+`minDecided` and returns the ranked slice. Putting it in `domain/` is what makes
+it testable, and the operator page — which sends none of those — is unchanged.
+
+Two rules there are about not lying to viewers rather than about layout. **A win
+rate needs a floor of decided games** (default 3): "100% win rate" from one game
+is arithmetically true and reads on screen as "the strongest hero in the event".
+And **the summary always counts the whole tournament**, never the trimmed board,
+or a `top=10` graphic would tell viewers the event had ten heroes in it.
+
+Heroes with nothing to say in a mode are left out rather than listed as zero — a
+row of zeroes takes the place of a row with data and makes the graphic look like
+it failed to load.
+
+**The bar scales against the best hero on the board, not against 100%.** The most
+contested hero in a real event sits around 30-40% presence, so a 0-100 scale makes
+every bar short and nearly identical. Win rate is the exception and keeps 0-100,
+because 50% is a real line there.
+
+**Everything that animates is forced to its end state.** Rows start at
+`opacity: 0`, bars at `width: 0`, and the numbers count up from zero — three ways
+for a frozen source to end up showing a blank board, or worse, a board where
+every hero reads 0%. One timer adds `.settled`, which kills the animations, sets
+the bars to their real width and writes the final numbers.
 
 **The entrance guarantees its own end state.** Cards start at `opacity: 0` and
 are carried in by the animation, so an animation that never runs means a blank
@@ -681,6 +718,7 @@ completeness from the state it already receives rather than asking the server.
 | 6 | `/teams` directory and `/teams/:id` profile with history | done `23bd837` |
 | 7 | Team-list overlay with staggered slide-in, at `/overlay-teams` | done `23bd837` |
 | 8 | Pick/ban analytics, live, per tournament and per team | done `23bd837` |
+| — | Stats board overlay at `/overlay-analytics`, ranked per tournament | done |
 
 The team-list overlay must not rely on `animationend` alone — OBS freezes browser
 sources that are off-scene, so the event may never fire. Use the timer fallback

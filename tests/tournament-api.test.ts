@@ -227,7 +227,7 @@ test('the overlay loads its sound module first and stays silent unless asked', a
   }
 
   // หน้าที่ออกอากาศอันอื่นไม่มีเสียง เปิดพร้อมกันแล้วจะได้ยินซ้อนกัน
-  for (const url of ['/result', '/overlay-teams']) {
+  for (const url of ['/result', '/overlay-teams', '/overlay-analytics']) {
     const html = String((await request('GET', url)).body);
     assert.ok(!html.includes('overlay-sfx.js'), `${url} must not play sound too`);
   }
@@ -297,7 +297,7 @@ test('operator pages share the theme and broadcast pages keep their own look', a
     assert.ok(html.includes('/css/theme.css'), `${url} links the shared theme`);
   }
 
-  for (const url of ['/overlay', '/overlay-1440', '/result', '/overlay-teams']) {
+  for (const url of ['/overlay', '/overlay-1440', '/result', '/overlay-teams', '/overlay-analytics']) {
     const html = String((await request('GET', url)).body);
     assert.ok(!html.includes('theme.css'), `${url} must not take the operator theme`);
   }

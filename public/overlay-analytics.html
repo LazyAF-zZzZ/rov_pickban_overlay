@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <title>ROV Analytics Overlay</title>
+    <!-- เสิร์ฟที่ /overlay-analytics ไม่ใช่ /analytics
+         /analytics เป็นหน้าสถิติของคนคุมงานไปแล้ว (Phase 8)
+
+         ไม่โหลดธีมของหน้าคนคุมงาน และไม่โหลดตัวแปลภาษา ตั้งใจทั้งคู่
+         นี่คือกราฟิกที่คนดูเห็น หน้าตามาจากหน้า Design และตัวหนังสือเป็นอังกฤษเสมอ
+         (เทสต์เช็คด้วยการหาชื่อไฟล์ในหน้า การเอ่ยชื่อไฟล์ตรงนี้จะทำให้เทสต์ตกทันที) -->
+    <link rel="stylesheet" href="/css/fonts.css">
+    <link rel="stylesheet" href="/css/overlay-analytics.css">
+</head>
+<body>
+    <div class="an-stage" id="stage">
+        <div class="an-head" id="head">
+            <div class="an-titles">
+                <div class="an-title" id="title"></div>
+                <div class="an-sub" id="subtitle"></div>
+            </div>
+            <div class="an-meta" id="meta"></div>
+        </div>
+
+        <div class="an-board" id="board"></div>
+        <div class="an-note" id="note" hidden></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- overlay-analytics.js ประกาศ socket ไว้ ต้องมาก่อน overlay-size.js ที่ไปอ่านตัวนั้น -->
+    <script src="/js/overlay-analytics.js"></script>
+    <script src="/js/overlay-size.js"></script>
+</body>
+</html>
