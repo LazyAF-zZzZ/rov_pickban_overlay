@@ -23,7 +23,8 @@ import {
   HOTKEY_DEFAULTS,
   sanitizeOverlaySize,
   sanitizeTheme,
-  sanitizeHotkeys
+  sanitizeHotkeys,
+  sanitizeSfx
 } from '../domain/settings';
 import { deepClone } from '../lib/json';
 import { getState, emitState, pushUndo, popUndo } from '../store/live-state';
@@ -199,6 +200,15 @@ export function registerHandlers(socket: Socket): void {
     if (!data || typeof data !== 'object') return;
     const state = getState();
     state.hotkeys = sanitizeHotkeys({ ...state.hotkeys, ...(data as Payload) });
+    emitState();
+  });
+
+  // ระดับเสียงต่อเหตุการณ์ ส่งมาเป็นก้อนบางส่วนได้ เช่น { pick: 0.4 }
+  // overlay ที่เปิดค้างอยู่ใน OBS จะได้ค่าใหม่ผ่าน stateUpdate ทันที ไม่ต้อง Refresh
+  rawEvent(socket, 'updateSfx', (data) => {
+    if (!data || typeof data !== 'object') return;
+    const state = getState();
+    state.sfx = sanitizeSfx({ ...state.sfx, ...(data as Payload) });
     emitState();
   });
 

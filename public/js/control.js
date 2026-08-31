@@ -45,6 +45,7 @@ async function boot() {
   uiBuilt = true;
   bindLogoInputs();
   loadTeamOptions();
+  buildSfxControls();
 
   if (latestState) {
     loadState(latestState);
@@ -62,6 +63,133 @@ function valueOf(result) {
 // นี่คือทางที่มาแทนพรีเซ็ต ทะเบียนทีมเก็บชื่อ ผู้เล่น และโลโก้ไว้ให้อยู่แล้ว
 // ต่างกันตรงที่ทะเบียนมีทีมชุดเดียวใช้ร่วมกับทุกทัวร์นาเมนต์ ไม่ใช่สำเนาแยกใบ
 const TEAM_LOAD_UI = { teamBlue: 'blueTeamLoad', teamRed: 'redTeamLoad' };
+
+// ระดับเสียงเอฟเฟกต์ ปรับได้ทีละเหตุการณ์ ---------------------------------
+//
+// ค่าอยู่ใน state ไม่ใช่ใน URL ปรับแล้ว overlay ที่เปิดค้างใน OBS ได้ค่าใหม่ทันที
+// ผ่าน stateUpdate ไม่ต้องไปแก้ URL ของ browser source แล้ว Refresh กลางรายการ
+//
+// ปุ่ม TEST เล่นเสียงที่หน้านี้เอง ไม่ได้ยิงไปที่ overlay
+// ตั้งระดับเสียงโดยไม่ได้ยินคือการเดา และการเดาผิดจะไปโผล่ตอนออกอากาศ
+const SFX_ROWS = [
+  { key: 'pick', label: 'Pick', note: 'when a hero is picked' },
+  { key: 'ban', label: 'Ban', note: 'when a hero is banned' },
+  { key: 'timer', label: 'Timer', note: 'each of the last 10 seconds' }
+];
+
+let sfxCtx = null;
+const sfxBuffers = {};
+let sfxUrls = null;
+
+// โหลดไฟล์มา decode ไว้ครั้งเดียวตอนกดฟังครั้งแรก
+// ไม่โหลดตั้งแต่เปิดหน้า เพราะหน้านี้ส่วนใหญ่เปิดทิ้งไว้ทั้งวันโดยไม่ได้แตะเสียงเลย
+async function sfxPreviewBuffer(key) {
+  if (sfxBuffers[key]) return sfxBuffers[key];
+
+  if (!sfxUrls) {
+    sfxUrls = (await fetchJson('/api/sounds')).sounds || {};
+  }
+  const info = sfxUrls[key];
+  if (!info) return null;
+
+  if (!sfxCtx) {
+    const Ctor = window.AudioContext || window.webkitAudioContext;
+    if (!Ctor) return null;
+    sfxCtx = new Ctor();
+  }
+
+  const res = await fetch(info.url);
+  if (!res.ok) return null;
+  sfxBuffers[key] = await sfxCtx.decodeAudioData(await res.arrayBuffer());
+  return sfxBuffers[key];
+}
+
+async function previewSfx(key) {
+  try {
+    const buffer = await sfxPreviewBuffer(key);
+    if (!buffer) {
+      showToast(`No ${key} sound file found`, 'red');
+      return;
+    }
+
+    // ห้ามรอผลของ resume() มันค้างได้บนบางเครื่อง (ดู overlay-sfx.js)
+    if (sfxCtx.state !== 'running') sfxCtx.resume().catch(() => { /* ขอไว้เฉยๆ */ });
+
+    const level = Number(sfxLevelInput(key)?.value);
+    const gain = sfxCtx.createGain();
+    gain.gain.value = Number.isFinite(level) ? level / 100 : 1;
+    gain.connect(sfxCtx.destination);
+
+    const source = sfxCtx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(gain);
+    source.start();
+  } catch (error) {
+    showToast('Could not play that sound', 'red');
+  }
+}
+
+function sfxLevelInput(key) {
+  return /** @type {HTMLInputElement} */ (document.getElementById(`sfx_${key}`));
+}
+
+function buildSfxControls() {
+  const wrap = document.getElementById('sfxLevels');
+  if (!wrap) return;
+  wrap.textContent = '';
+
+  SFX_ROWS.forEach((row) => {
+    const line = document.createElement('div');
+    line.className = 'sfx-row';
+
+    const label = document.createElement('div');
+    label.className = 'sfx-label';
+    label.textContent = row.label;
+    label.title = row.note;
+
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.id = `sfx_${row.key}`;
+    slider.min = '0';
+    slider.max = '100';
+    slider.step = '5';
+    slider.value = '100';
+
+    const value = document.createElement('span');
+    value.className = 'sfx-value';
+    value.id = `sfx_${row.key}_value`;
+    value.textContent = '100%';
+
+    // ส่งค่าไปทุกครั้งที่ลาก overlay จะได้ขยับตามให้ฟังได้ทันที
+    slider.addEventListener('input', () => {
+      value.textContent = `${slider.value}%`;
+      socket.emit('updateSfx', { [row.key]: Number(slider.value) / 100 });
+    });
+
+    const test = document.createElement('button');
+    test.type = 'button';
+    test.className = 'tlink';
+    test.textContent = 'TEST';
+    test.addEventListener('click', () => previewSfx(row.key));
+
+    line.append(label, slider, value, test);
+    wrap.appendChild(line);
+  });
+}
+
+// state บอกค่าจริง แต่ห้ามกระตุกสไลเดอร์ที่มือกำลังลากอยู่
+function renderSfxLevels(sfx) {
+  if (!sfx) return;
+  SFX_ROWS.forEach((row) => {
+    const input = sfxLevelInput(row.key);
+    const value = document.getElementById(`sfx_${row.key}_value`);
+    if (!input || document.activeElement === input) return;
+
+    const percent = Math.round((Number(sfx[row.key]) || 0) * 100);
+    input.value = String(percent);
+    if (value) value.textContent = `${percent}%`;
+  });
+}
 
 async function loadTeamOptions() {
   let teams = [];
@@ -532,6 +660,7 @@ function loadState(state) {
   if (td && state.draftLabel !== 'coming soon') td.textContent = state.timer || '--';
   renderOverlaySize(state.overlaySize);
   renderOverlayVisible(state.overlayVisible);
+  renderSfxLevels(state.sfx);
   applyHotkeys(state.hotkeys);
 }
 

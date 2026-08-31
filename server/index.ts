@@ -9,9 +9,10 @@ import express, { Express } from 'express';
 import { Server as SocketServer } from 'socket.io';
 import cors from 'cors';
 
-import { PORT, HOST, CONTROL_TOKEN, PUBLIC_DIR, USER_MEDIA_DIR } from './config';
+import { PORT, HOST, CONTROL_TOKEN, PUBLIC_DIR, USER_MEDIA_DIR, USER_SOUND_DIR } from './config';
 import { attachIo } from './store/live-state';
 import { pageRoutes } from './http/pages';
+import { ensureSoundDir } from './domain/media';
 import { stateRoutes } from './http/api-state';
 import { mediaRoutes } from './http/api-media';
 import { tournamentRoutes } from './http/api-tournaments';
@@ -52,6 +53,9 @@ export function createApp(): Express {
   // หน้าเว็บจึงไม่ต้องรู้ว่าไฟล์จริงย้ายออกไปนอก asar แล้ว
   app.use('/images/team-logos', express.static(path.join(USER_MEDIA_DIR, 'team-logos')));
   app.use('/images/skins', express.static(path.join(USER_MEDIA_DIR, 'skins')));
+  // เสียงเอฟเฟกต์ของ overlay ไม่มีก็ไม่เป็นไร express.static บนโฟลเดอร์ที่ยังไม่มี
+  // จะปล่อยผ่านไป 404 เฉยๆ ไม่ได้ทำให้เซิร์ฟเวอร์พัง
+  app.use('/sounds', express.static(USER_SOUND_DIR));
 
   app.use(express.static(PUBLIC_DIR));
 
@@ -96,6 +100,10 @@ export function start(
   const host = options.host ?? HOST;
   const { server, io } = createServer();
 
+  // โฟลเดอร์เสียงต้องมีอยู่ก่อนที่ผู้ใช้จะไปหา และต้องบอกที่อยู่เต็มๆ ด้วย
+  // มันอยู่คนละที่กันระหว่างรันจาก source กับรันจาก .exe ที่ติดตั้งแล้ว
+  const soundDir = ensureSoundDir();
+
   server.listen(port, host, () => {
     console.log('===========================================');
     console.log('ROV Overlay Tool Server Running');
@@ -105,6 +113,10 @@ export function start(
     console.log(`Overlay 1920x1080: http://${host}:${port}/overlay`);
     console.log(`Overlay 2560x1440: http://${host}:${port}/overlay-1440`);
     console.log(`Result: http://${host}:${port}/result`);
+    console.log('===========================================');
+    console.log('Sound effects (optional): put pick.mp3 / ban.mp3 / timer-warning.mp3 in');
+    console.log(`  ${soundDir}`);
+    console.log(`then use  http://${host}:${port}/overlay?sfx=1  as the browser source URL`);
     console.log('===========================================');
     if (CONTROL_TOKEN) {
       console.log('Control token protection is enabled.');

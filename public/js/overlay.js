@@ -122,6 +122,16 @@ function renderTeamLogo(el, team, logo) {
     el.hidden = false;
 }
 
+// วินาทีล่าสุดที่เล่นเสียงติ๊กไปแล้ว
+//
+// เสียงเตือนดังทุกวินาทีในสิบวินาทีสุดท้าย (10, 9, ... , 1) ไม่ใช่ครั้งเดียวตอนข้ามเส้น
+// ต้องจำ "วินาทีที่เล่นไปแล้ว" ไม่ใช่แค่ธงว่าอยู่ในช่วงเตือนหรือยัง
+// เพราะ state ถูกส่งมาทุกครั้งที่มีอะไรเปลี่ยน ไม่ใช่วินาทีละครั้งเป๊ะๆ
+// กด pick ระหว่างนับถอยหลังจะได้ state เพิ่มมาในวินาทีเดียวกัน
+// ถ้าเล่นทุกครั้งที่ state มา เสียงจะรัวซ้อนกันตอนคนคุมงานกำลังกรอกดราฟต์
+// null = ยังไม่อยู่ในช่วงเตือน หรือเฟสจบไปแล้ว
+let lastTickSecond = null;
+
 // "00:09" -> 9. รองรับกรณีส่งมาเป็นวินาทีล้วนด้วย
 function timerToSeconds(timer) {
     if (!timer) return 0;
@@ -146,6 +156,9 @@ function updateOverlay(state) {
 
     applyTheme(state.theme);
 
+    // ระดับเสียงมากับ state ปรับจากหน้า Control แล้วมีผลทันทีโดยไม่ต้อง Refresh source
+    RovSfx.setLevels(state.sfx);
+
     // Update team logos
     renderTeamLogo(document.getElementById('blueTeamLogo'), 'teamBlue', state.teamBlue.logo);
     renderTeamLogo(document.getElementById('redTeamLogo'), 'teamRed', state.teamRed.logo);
@@ -166,10 +179,22 @@ function updateOverlay(state) {
         if (state.draftLabel === 'coming soon') {
             timerEl.textContent = '';
             timerEl.classList.remove('urgent');
+            lastTickSecond = null;
         } else {
             timerEl.textContent = state.timer || '';
             const seconds = timerToSeconds(state.timer);
-            timerEl.classList.toggle('urgent', seconds > 0 && seconds <= 10);
+            const urgent = seconds > 0 && seconds <= 10;
+            timerEl.classList.toggle('urgent', urgent);
+
+            // ติ๊กหนึ่งครั้งต่อหนึ่งวินาที ตลอดสิบวินาทีสุดท้าย
+            //
+            // ไม่นับ 0 ตั้งใจ: หน้าจอที่ยังไม่ได้เริ่มจับเวลาก็ขึ้น 00:00 เหมือนกัน
+            // ถ้าติ๊กที่ 0 ด้วย การกด RESET MATCH จะมีเสียงเตือนดังขึ้นมาเฉยๆ
+            if (urgent && seconds !== lastTickSecond) {
+                RovSfx.play('timer');
+                lastTickSecond = seconds;
+            }
+            if (!urgent) lastTickSecond = null;
         }
     }
     if (draftLabelEl) {
@@ -207,6 +232,11 @@ function updateOverlay(state) {
     // Update picks
     updatePicks('teamBlue', state.teamBlue.picks);
     updatePicks('teamRed', state.teamRed.picks);
+
+    // state ก้อนแรกคือ "กระดานตอนนี้" ไม่ใช่ "มีอะไรเพิ่งเกิดขึ้น"
+    // ทุก pick/ban ที่มีอยู่แล้วเพิ่งถูกนับเป็นการเปลี่ยนแปลงไปเมื่อกี้
+    // ปลดล็อกเสียงหลังจากนั้น เปิด source กลางเกมจะได้ไม่มีเสียงรัวทั้งกระดาน
+    RovSfx.arm();
 }
 
 function updateActiveSlots(activeSlots) {
@@ -267,6 +297,7 @@ function updateBans(team, bans) {
         // จึงแตะ DOM เฉพาะตอนฮีโร่เปลี่ยนจริงเท่านั้น
         if (slot.dataset.hero === (hero || '')) return;
         slot.dataset.hero = hero || '';
+        if (hero) RovSfx.play('ban');
 
         const oldImg = slot.querySelector('.ban-icon');
         if (oldImg) oldImg.remove();
@@ -323,6 +354,7 @@ function updatePicks(team, picks) {
                 const nextImage = `url("${imageUrl('heroes', hero)}")`;
                 if (slot.dataset.hero !== hero) {
                     slot.dataset.hero = hero;
+                    RovSfx.play('pick');
                     // รอให้รูปโหลดเสร็จก่อนค่อยเริ่มอนิเมชัน
                     // ไม่งั้นกล่องเปล่าจะขยับก่อน แล้วรูปเด้งขึ้นมากลางทาง
                     // ทำให้ดูสะดุด ถ้ารูปอยู่ใน cache แล้วจะเริ่มทันที

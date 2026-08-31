@@ -200,6 +200,13 @@ function buildMenu() {
         },
         { type: 'separator' },
         {
+          // ผู้ใช้ต้องเอาไฟล์เสียงมาวางเอง โฟลเดอร์อยู่คนละที่กันระหว่างรันจาก
+          // source กับรันจากตัวติดตั้ง เปิดให้เลยง่ายกว่าบอกเป็น path ให้ไปหาเอง
+          label: 'Open Sounds Folder',
+          click: () => shell.openPath(path.join(app.getPath('userData'), 'media', 'sounds'))
+        },
+        { type: 'separator' },
+        {
           label: 'Open In Browser',
           click: () => shell.openExternal(BASE_URL)
         },

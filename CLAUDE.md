@@ -143,6 +143,61 @@ strings and **not** re-sanitized against the live roster.
 **OBS freezes browser sources that are off-scene**, so `animationend` may never fire. Any
 entrance animation needs a timer fallback — see `public/js/overlay.js`.
 
+**Overlay sound is opt-in per source, and silent until the first state is drawn.**
+`public/js/overlay-sfx.js` loads before `overlay.js` (which calls `RovSfx` on the first
+state — without the tag the overlay throws mid-render and freezes on air, so a test asserts
+the order). Two rules it exists to enforce: only the one source carrying `?sfx=1` plays,
+because the 1080p overlay, the 1440p overlay and the result screen all receive the same
+state and would otherwise echo each other; and `play()` swallows everything until
+`RovSfx.arm()` is called at the end of the first `updateOverlay`, because that first state
+is the whole board arriving at once — without the gate, refreshing the source mid-draft
+fires a pick sound for every hero already on screen. Files live in the user's media
+directory (`USER_SOUND_DIR`), served at `/sounds`, with fixed names from a table in the
+module — never from user text, same rule as `domain/media.ts`. `/sfx-test` is the diagnostic:
+it reports which files the server can see and whether the browser allows autoplay, printed on
+the page rather than logged, because it is meant to be opened as a browser source inside OBS
+where there is no console. Keep it working when the folder is empty — that is the only state
+in which anyone opens it.
+
+**Sound levels are per event and live in state, not in the URL.** `state.sfx` holds a 0..1
+level for `pick`, `ban` and `timer`, sanitized by `sanitizeSfx` and listed in
+`CARRIED_OVER_KEYS`, so RESET MATCH and putting the next match on air leave them alone —
+the same treatment as theme and hotkeys. State was the right home rather than a URL
+parameter because the operator adjusts levels mid-event: the value rides the existing
+`stateUpdate`, so an overlay already running in OBS follows instantly, where a URL change
+would mean editing the browser source and refreshing it mid-broadcast. The overlay keeps one
+GainNode per event so lowering one does not touch the others, and an invalid level falls
+back to the default rather than to 0 — silence is indistinguishable from a fault.
+
+**Read URL parameters with a null check, never bare `Number()`.** `params.get('vol')`
+returns `null` when absent and `Number(null)` is `0`, which passes a `0..1` range check — the
+overlay's gain node sat at zero and every sound played silently. The `/sfx-test` page hid it
+by bypassing that gain node, so the diagnostic worked while the real thing did not.
+
+**Overlay sound plays at full scale by default; attenuate in a mixer, not in the app.**
+Level is already multiplied down by the Windows Volume Mixer, the system master and the OBS
+mixer. A fourth reduction inside the app is invisible and turns "too quiet to notice" into
+"broken" — one real case measured 19% (Chrome in the mixer) x 47% (master) x 0.7 (the app)
+and read as silence. `&vol=` still exists for deliberate trimming.
+
+**Overlay sound uses Web Audio, never `<audio>`, and that is not a style preference.**
+On a real user machine `<audio>` hung at `readyState 0` forever — no error, no playback,
+`networkState` stuck at LOADING — while `fetch` returned the same file fine and playing from
+an in-memory blob hung identically, ruling out the network and Range requests. The same file
+decoded through `AudioContext.decodeAudioData` and played, with the context clock advancing.
+So `overlay-sfx.js` fetches and decodes each sound once at startup and plays a fresh
+`BufferSource` per event. `sfx-test.js` must use Web Audio for the same reason — a
+diagnostic built on the broken API reports the opposite of the truth on the one machine that
+needs it. Web Audio is better here anyway: overlapping sounds are free, and decoding up front
+removes the first-play delay.
+
+The same module handles the browser-versus-OBS split for autoplay. A normal browser
+refuses to play audio on a page nobody has clicked, so when a play is rejected the overlay
+shows a "Click to enable sound" chip and calls `AudioContext.resume()` from the resulting
+gesture handler — the call must start inside that handler or the gesture expires and the
+unlock silently fails. That chip must never appear in OBS: obs-browser lifts the
+restriction, and nobody is there to click, so it would sit on the broadcast forever. The
+check is `window.obsstudio`, which obs-browser injects and a normal browser does not have.
 **No escape sequences for control characters in source.** Writing them as backslash-u
 escapes through some tooling turns them into real bytes in the file. `lib/sanitize.js`
 compares char codes instead, and `npm run check` fails the build if raw control bytes

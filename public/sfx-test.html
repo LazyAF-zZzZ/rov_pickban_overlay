@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROV Sound Check</title>
+<link rel="stylesheet" href="/css/theme.css">
+<style>
+/* หน้านี้ถูกเปิดเป็น browser source ใน OBS ด้วย ตัวหนังสือจึงต้องใหญ่พอ
+   ที่จะอ่านออกจากหน้าต่าง OBS เล็กๆ โดยไม่ต้องซูม */
+.wrap{max-width:720px;}
+.verdict{border:1px solid var(--border2);border-radius:var(--r);padding:20px 22px;margin-bottom:18px;}
+.verdict.good{border-color:var(--gold);background:var(--gold-soft);}
+.verdict.bad{border-color:var(--red);background:rgba(221,128,128,0.12);}
+.verdict-head{font-size:22px;font-weight:700;margin-bottom:8px;}
+.verdict.good .verdict-head{color:var(--gold);}
+.verdict.bad .verdict-head{color:var(--red);}
+.verdict p{font-size:13px;line-height:1.7;color:var(--muted2);margin-top:6px;}
+.srow{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);}
+.srow:last-child{border-bottom:none;}
+.sname{flex:0 0 190px;font-family:var(--mono);font-size:13px;color:var(--text);}
+.sstate{flex:1;font-size:12px;color:var(--muted2);}
+.sstate.missing{color:var(--red);}
+.path{font-family:var(--mono);font-size:12px;color:var(--muted2);word-break:break-all;
+  border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;margin-top:8px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">ROV <span>|</span> SOUND CHECK</div>
+  <a class="tlink" href="/" style="margin-left:auto" data-i18n>BACK</a>
+</div>
+
+<div class="wrap">
+
+  <!-- คำตอบต้องอ่านได้จากบนหน้าจอ ไม่ใช่จาก console
+       เพราะจุดประสงค์คือเอาไปเปิดเป็น browser source ใน OBS ซึ่งไม่มี console ให้ดู -->
+  <div class="verdict" id="verdict">
+    <div class="verdict-head" id="verdictHead">Checking…</div>
+    <div id="verdictBody"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><div class="section-title" data-i18n>Sound files</div></div>
+    <div class="panel">
+      <div class="panel-body" id="fileList"></div>
+    </div>
+    <div class="path" id="folderPath"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><div class="section-title" data-i18n>How to read this</div></div>
+    <div class="hint" style="margin-top:0">
+      Open this page <b>as a browser source inside OBS</b> to test what OBS can do,
+      and in a normal browser to test that. The answers can differ.
+      <br><br>
+      <b>Sound is working here</b> means the files decoded and the audio output is live.
+      If the overlay is still silent after that, its URL is missing <b>?sfx=1</b>, or the
+      source needs a right-click → Refresh.
+      <br><br>
+      <b>Waiting for a click</b> is normal in a browser and never happens in OBS: no page
+      may make sound until you have clicked it once. Press any PLAY button and it clears.
+      <br><br>
+      <b>found but could not be decoded</b> means the file is not really the format its
+      name claims. Re-export it as a plain MP3 or WAV.
+      <br><br>
+      If a PLAY button is silent while this page says everything is fine, the sound is not
+      reaching your ears rather than not playing: in OBS tick <b>Control audio via OBS</b>
+      in the source Properties and check the Audio Mixer, and in Windows check that the
+      browser is not muted in the Volume Mixer.
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast_el"></div>
+
+<script src="/js/lib/i18n.js"></script>
+<script src="/js/sfx-test.js"></script>
+</body>
+</html>

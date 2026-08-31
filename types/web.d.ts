@@ -9,6 +9,20 @@
 // ตอนนั้น tournament.js อ้าง controlToken โดยไม่ได้ดึงออกมาจาก window.RovClient
 // ถ้าไฟล์นี้ประกาศ controlToken ไว้ ตัวตรวจจะเงียบ แล้วบั๊กเดิมก็หลุดไปอีกรอบ
 
+// เสียงเอฟเฟกต์ของ overlay (public/js/overlay-sfx.js)
+//
+// ประกาศเป็น global ไม่ใช่แค่บน Window เพราะ overlay.js เรียกชื่อตรงๆ
+// แบบเดียวกับ io() ไม่ได้ดึงออกมาจาก window เหมือน RovClient
+interface RovSfxApi {
+  enabled: boolean;
+  /** เล่นเสียงของเหตุการณ์หนึ่ง เงียบไว้จนกว่าจะ arm() */
+  play(name: 'pick' | 'ban' | 'timer'): void;
+  /** ปลดล็อกเสียง เรียกหลังวาด state ก้อนแรกเสร็จ */
+  arm(): void;
+  /** ตั้งระดับเสียงต่อเหตุการณ์ จาก state.sfx */
+  setLevels(levels: unknown): void;
+}
+declare const RovSfx: RovSfxApi;
 // socket.io client ที่มาจาก /socket.io/socket.io.js
 declare function io(options?: any): RovSocket;
 
@@ -75,6 +89,11 @@ interface RovHotkeyUtilsApi {
 
 interface Window {
   RovClient: RovClientApi;
+  RovSfx: RovSfxApi;
+  /** obs-browser ฝังไว้ให้เฉพาะตอนหน้าถูกเปิดเป็น browser source ใน OBS */
+  obsstudio?: { pluginVersion?: string; [key: string]: unknown };
+  /** ชื่อเก่าของ AudioContext ยังต้องรองรับเผื่อ CEF รุ่นเก่าใน OBS */
+  webkitAudioContext?: typeof AudioContext;
   RovTeamUI: RovTeamUiApi;
   RovTournamentUI: RovTournamentUiApi;
   HotkeyUtils: RovHotkeyUtilsApi;

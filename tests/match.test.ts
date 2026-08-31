@@ -1,10 +1,39 @@
 import test from 'node:test';
 import assert from 'node:assert';
 import { defaultState, sanitizeState, isHeroTaken, dropDuplicateHeroes } from '../server/domain/match';
-import { carryOverSettings, CARRIED_OVER_KEYS } from '../server/domain/settings';
+import { carryOverSettings, CARRIED_OVER_KEYS, sanitizeSfx, SFX_DEFAULTS } from '../server/domain/settings';
 import { heroesData } from '../server/domain/heroes';
 
 const [HERO_A, HERO_B] = heroesData.heroes;
+
+// ระดับเสียงต่อเหตุการณ์เป็นการตั้งค่าเครื่องมือ ไม่ใช่ข้อมูลของแมตช์
+//
+// หรี่เสียง pick ไว้ตอนซ้อม แล้วกด RESET MATCH หรือเปิดแมตช์ถัดไปขึ้นจอ
+// ค่าต้องอยู่เหมือนเดิม ไม่ใช่เด้งกลับไปดังเต็มกลางรายการ
+test('sound levels survive a reset the way theme and hotkeys do', () => {
+  assert.ok(
+    (CARRIED_OVER_KEYS as readonly string[]).includes('sfx'),
+    'sfx is carried over, not reset with the match'
+  );
+
+  const next = carryOverSettings(
+    { sfx: { pick: 1, ban: 1, timer: 1 } },
+    { sfx: { pick: 0.2, ban: 0.5, timer: 0.9 } }
+  );
+  assert.deepStrictEqual(next.sfx, { pick: 0.2, ban: 0.5, timer: 0.9 });
+});
+
+// ค่าที่ใช้ไม่ได้ต้องถอยไปที่ค่าเริ่มต้น ไม่ใช่ศูนย์
+// ศูนย์คือเงียบ ซึ่งแยกไม่ออกจากของเสีย และเคยเป็นบั๊กจริงมาแล้ว
+test('sound levels clamp to 0..1 and fall back to the default, never to silence', () => {
+  assert.deepStrictEqual(sanitizeSfx({ pick: 0.5, ban: 0, timer: 1 }), { pick: 0.5, ban: 0, timer: 1 });
+  assert.deepStrictEqual(sanitizeSfx({ pick: 5, ban: -2, timer: 0.3 }), { pick: 1, ban: 0, timer: 0.3 });
+
+  // ไม่ได้ส่งมาเลย / ส่งขยะมา -> ค่าเริ่มต้น
+  assert.deepStrictEqual(sanitizeSfx({}), SFX_DEFAULTS);
+  assert.deepStrictEqual(sanitizeSfx(null), SFX_DEFAULTS);
+  assert.deepStrictEqual(sanitizeSfx({ pick: 'loud' }), SFX_DEFAULTS);
+});
 
 test('sanitizeState fills every missing key from defaults (old save files still load)', () => {
   // ไฟล์ state.json รุ่นเก่าไม่มี theme / hotkeys / skin / overlaySize / logo

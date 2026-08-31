@@ -1,6 +1,6 @@
 // การตั้งค่าเครื่องมือ: ธีม, คีย์ลัด, ขนาดจอ
 //
-// ต่างจากข้อมูลแมตช์ตรงที่ "ไม่หาย" เวลาโหลดพรีเซ็ตหรือกด RESET MATCH
+// ต่างจากข้อมูลแมตช์ตรงที่ "ไม่หาย" เวลาเปิดแมตช์ใหม่ขึ้นจอหรือกด RESET MATCH
 // ดูที่ CARRIED_OVER_KEYS ท้ายไฟล์
 
 import { deepClone } from '../lib/json';
@@ -137,6 +137,31 @@ export function sanitizeHotkeys(value: unknown): Hotkeys {
   return hotkeys;
 }
 
+// ระดับเสียงของเอฟเฟกต์แต่ละเหตุการณ์ 0 ถึง 1
+//
+// เก็บใน state ไม่ใช่ใน URL ตั้งใจ: ปรับแล้วต้องมีผลกับ overlay ที่เปิดค้างอยู่
+// ใน OBS ทันที โดยไม่ต้องไปแก้ URL ของ browser source แล้ว Refresh ใหม่
+// ซึ่งกลางรายการทำไม่ได้ ค่าเดินทางไปกับ stateUpdate เหมือนธีมกับคีย์ลัด
+export const SFX_KEYS = ['pick', 'ban', 'timer'] as const;
+export type SfxKey = typeof SFX_KEYS[number];
+export type SfxLevels = Record<SfxKey, number>;
+
+// เริ่มที่ดังเต็ม ให้ไปหรี่เอาเองถ้าดังไป
+// เงียบโดยไม่รู้ตัวหาสาเหตุยากกว่าดังเกินไปมาก (บทเรียนจากบั๊ก vol=0)
+export const SFX_DEFAULTS: SfxLevels = { pick: 1, ban: 1, timer: 1 };
+
+export function sanitizeSfx(value: unknown): SfxLevels {
+  const source = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>;
+  const levels = {} as SfxLevels;
+  SFX_KEYS.forEach((key) => {
+    const n = Number(source[key]);
+    // ค่าที่ใช้ไม่ได้ให้ถอยไปที่ค่าเริ่มต้น ไม่ใช่ 0
+    // Number(undefined) เป็น NaN ตรงนี้จึงปลอดภัย ต่างจาก Number(null) ที่เป็น 0
+    levels[key] = Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : SFX_DEFAULTS[key];
+  });
+  return levels;
+}
+
 // ค่าที่เป็น "การตั้งค่าเครื่องมือ" ไม่ใช่ข้อมูลของแมตช์
 //
 // โหลดพรีเซ็ตหรือกด RESET MATCH คือการเปลี่ยน "แมตช์" ไม่ใช่การล้างค่าที่
@@ -146,7 +171,7 @@ export function sanitizeHotkeys(value: unknown): Hotkeys {
 // ตอนทำโหมดทัวร์นาเมนต์ การกดเลือกแมตช์ก็คือการเปลี่ยนแมตช์เหมือนกัน
 // ให้ใช้ทางนี้ อย่าเขียนทับ state ทั้งก้อน
 export const CARRIED_OVER_KEYS = [
-  'overlayVisible', 'overlaySize', 'theme', 'hotkeys', 'skin'
+  'overlayVisible', 'overlaySize', 'theme', 'hotkeys', 'skin', 'sfx'
 ] as const;
 
 export type CarriedOverKey = typeof CARRIED_OVER_KEYS[number];

@@ -51,3 +51,8 @@ __difftest*/
 data/tournament.db
 data/tournament.db-shm
 data/tournament.db-wal
+
+# Sound effects and the README explaining them are generated into the media
+# folder when the server starts (ensureSoundDir), and the sound files themselves
+# are the user own. None of it is project source.
+public/images/sounds/

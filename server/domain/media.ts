@@ -12,7 +12,101 @@
 
 import fs from 'fs';
 import path from 'path';
-import { USER_MEDIA_DIR } from '../config';
+import { USER_MEDIA_DIR, USER_SOUND_DIR } from '../config';
+
+// ชื่อไฟล์เสียงที่ overlay มองหา ตายตัวสามชื่อ ตรงกับตารางใน public/js/overlay-sfx.js
+// ผู้ใช้เอาไฟล์มาวางเอง ไม่มีหน้าอัปโหลด จึงต้องมีที่เดียวที่บอกว่าชื่ออะไรบ้าง
+export const SOUND_FILES = ['pick', 'ban', 'timer-warning'] as const;
+
+// สร้างโฟลเดอร์ให้ตั้งแต่เปิดแอพ ไม่ใช่รอให้ผู้ใช้สร้างเอง
+//
+// โฟลเดอร์นี้อยู่คนละที่กันระหว่างรันจาก source กับรันจากตัวติดตั้ง
+// ถ้าไม่สร้างให้ ผู้ใช้ต้องเดาเองว่าต้องไปสร้างที่ไหน ซึ่งเดาผิดแน่นอน
+// ใบ README ข้างในบอกชื่อไฟล์ที่ต้องใช้ เขียนทับทุกครั้งที่เปิดแอพไม่ได้
+// เพราะผู้ใช้อาจแก้ไว้ จึงเขียนเฉพาะตอนที่ยังไม่มี
+export function ensureSoundDir(): string {
+  try {
+    fs.mkdirSync(USER_SOUND_DIR, { recursive: true });
+
+    const readme = path.join(USER_SOUND_DIR, 'README.txt');
+    if (!fs.existsSync(readme)) {
+      fs.writeFileSync(readme, SOUND_README, 'utf8');
+    }
+  } catch (error) {
+    // สร้างไม่ได้ก็ไม่เป็นไร แค่ไม่มีเสียง ส่วนที่เหลือของแอพต้องเปิดได้ตามปกติ
+  }
+  return USER_SOUND_DIR;
+}
+
+const SOUND_README = [
+  'Overlay sound effects',
+  '=====================',
+  '',
+  'Put your own sound files in THIS folder, using exactly these names:',
+  '',
+  '    pick.mp3            when a hero is picked',
+  '    ban.mp3             when a hero is banned',
+  '    timer-warning.mp3   every second through the last 10 (10, 9, ... 1)',
+  '',
+  '.wav works too (pick.wav, ban.wav, timer-warning.wav).',
+  'You do not need all three - whatever is missing simply stays silent.',
+  '',
+  'Then add ?sfx=1 to the end of the browser source URL of the ONE source',
+  'that should have sound, and restart / refresh that source:',
+  '',
+  '    http://127.0.0.1:3000/overlay?sfx=1',
+  '',
+  'In OBS: source Properties -> tick "Control audio via OBS" so viewers hear it,',
+  'and leave "Shutdown source when not visible" unticked. The overlay has to stay',
+  'running for sound to play, and OBS only mixes audio from sources in the scene',
+  'you are broadcasting - so the overlay must be in that scene, not just in another.',
+  '',
+  'Testing in a normal browser instead of OBS? Chrome will not let any page make',
+  'sound until you click on it once, so the overlay shows a "Click to enable',
+  'sound" button. Click anywhere on the page and it works from then on.',
+  'That button never appears inside OBS, which does not have that restriction.',
+  '',
+'If you get no sound, open the sound check page - it tells you which of the',
+  'three possible causes it is:',
+  '',
+  '    http://127.0.0.1:3000/sfx-test',
+  '',
+  'Open that same page as a browser source INSIDE OBS to test what OBS itself',
+  'can do. It prints the verdict on screen, because OBS has no console.',
+  ''
+].join('\r\n');
+
+// นามสกุลที่ overlay เล่นได้ เรียงตามลำดับที่จะเลือกใช้ถ้ามีทั้งคู่
+// ตรงกับ EXTS ใน public/js/overlay-sfx.js
+const SOUND_EXTS = ['mp3', 'wav'] as const;
+
+export interface FoundSound {
+  file: string;
+  url: string;
+  bytes: number;
+}
+
+// ไฟล์เสียงที่มีอยู่จริงตอนนี้ อ่านจากดิสก์ทุกครั้ง ไม่แคช
+// ผู้ใช้เอาไฟล์มาวางระหว่างที่แอพเปิดอยู่ได้ตลอด ไม่ต้องปิดเปิดใหม่
+export function findSounds(): Record<string, FoundSound> {
+  const found: Record<string, FoundSound> = {};
+
+  ([['pick', 'pick'], ['ban', 'ban'], ['timer', 'timer-warning']] as const).forEach(([key, file]) => {
+    for (const ext of SOUND_EXTS) {
+      const full = path.join(USER_SOUND_DIR, `${file}.${ext}`);
+      try {
+        const stat = fs.statSync(full);
+        if (!stat.isFile()) continue;
+        found[key] = { file: `${file}.${ext}`, url: `/sounds/${file}.${ext}`, bytes: stat.size };
+        return;
+      } catch (error) {
+        // ไม่มีไฟล์นามสกุลนี้ ลองอันถัดไป
+      }
+    }
+  });
+
+  return found;
+}
 
 // ภาพพื้นหลังที่ผู้ใช้ออกแบบเอง แยกเป็นส่วนบน/ส่วนล่าง และแยกตามขนาดจอ
 // overlay: บน = แถบ ban/score/timer, ล่าง = การ์ด pick

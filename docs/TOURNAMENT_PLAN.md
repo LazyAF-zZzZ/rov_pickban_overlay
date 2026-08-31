@@ -69,6 +69,12 @@ later ones depend on earlier ones.
    `store/presets.ts` and `data/presets.json` are all gone; the registry team
    picker on the Control Panel replaced what they were for. They are not coming
    back.
+
+5. **Overlay sound effects.** `public/js/overlay-sfx.js`, Web Audio rather than
+   `<audio>` — see §9 for why that was not a style choice. Opt-in per source
+   with `?sfx=1`, one `GainNode` per event, files dropped into
+   `USER_SOUND_DIR` by fixed name. Per-event levels (pick / ban / timer) live in
+   `state.sfx`, ride `CARRIED_OVER_KEYS`, and have sliders on the Control
 **The team registry has its own pages now.** `/teams` lists every team ever
 created with a search box and a one-form create; `/teams/:id` is the profile —
 roster editing, logo, the tournaments entered, and match history across all of
@@ -595,6 +601,20 @@ pattern already in `public/js/overlay.js`.
 
 ## 8. Open items
 
+- **Overlay sound effects: files are still drop-in, but levels are now proper settings.**
+  `state.sfx` carries a per-event level (pick / ban / timer) through `CARRIED_OVER_KEYS`, and
+  the Control Panel has sliders that reach a running overlay through `stateUpdate`. What is
+  still missing is the upload path — see below.
+- **Overlay sound effects are the minimal version.** Added 2026-08-29: fixed filenames
+  dropped into `USER_SOUND_DIR`, opt-in per source with `?sfx=1`, hooked to pick, ban and
+  the ten-second timer warning. There is no UI — no upload slots on the Design page, no
+  volume sliders, no per-event enable, and the file names cannot be changed. Deliberate: the
+  open question was whether OBS's browser would play audio at all without a user gesture, and
+  that is cheap to answer with files on disk and expensive to answer after building an upload
+  flow. Promote it to the media pattern (slot table in `domain/media.ts`, magic-byte
+  validation, a `v` counter in state, `sfx` added to `CARRIED_OVER_KEYS` and to the
+  `sanitizeState` whitelist) once it has been used on a real broadcast.
+
 - **A relative asset path on a nested page breaks silently** — see §9. `/tournament/:id`, `/tournament/:id/bracket` and now `/teams/:id` are all affected. Any new nested page must use absolute `/js/` and `/css/` paths; tests cover the tournament and team pages.
 - **A match played without going on air has no team snapshot.** Scores can be typed straight into the tournament page, which never creates a game record. If an opponent is deleted later, that row loses its name for good — see §4. Creating the snapshot at draw time would close the gap.
 - **`public/js/` is now type-checked, though still `.js`.** `npm run typecheck:web`
@@ -803,6 +823,20 @@ Each of these cost real debugging time. They are also in `CLAUDE.md`.
   depending on which page it was on. Colours live in `css/theme.css` only. A page that
   needs a colour uses a token; a page that needs a *new* colour is a design decision, not a
   local edit.
+- **`Number(params.get('x'))` is 0 when the parameter is absent, not NaN.** The overlay's
+  sound volume read `Number(params.get('vol'))` and range-checked the result, so with no
+  `&vol=` in the URL the gain node was set to **zero** and every sound played at silence.
+  It survived several rounds of debugging because the `/sfx-test` page connects straight to
+  `ctx.destination` and never touches that gain node — so the diagnostic was audible while
+  the overlay was not, which read as 'the overlay is broken' rather than 'the volume is 0'.
+  Check for `null` before converting, always.
+- **`<audio>` can hang forever with no error, so overlay sound uses Web Audio.** On the
+  user's own machine every `<audio>` element stalled at `readyState 0` — no `error`, no
+  event, `play()` returning a promise that neither resolved nor rejected — while the same
+  file fetched fine over HTTP and played through `decodeAudioData`. Two rounds of debugging
+  went into autoplay policy and OBS settings before the API itself turned out to be the
+  culprit. Both `overlay-sfx.js` and the `/sfx-test` diagnostic use `AudioContext`; a
+  diagnostic written against the broken API is worse than none.
 - **Deleting a tournament is a hard delete, and `PRAGMA foreign_keys = ON` is what
   makes it one.** `DELETE FROM tournaments` only removes one row; the bracket, its
   games and their draft slots go with it because of the `ON DELETE CASCADE` chain in

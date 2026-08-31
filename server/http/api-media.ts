@@ -19,12 +19,21 @@ import {
   removeSkinFiles,
   removeLogoFiles
 } from '../domain/media';
+import { findSounds, ensureSoundDir } from '../domain/media';
 import { getState, emitState } from '../store/live-state';
 import { requireControl } from './auth';
 import { validateUpload, rawImage } from './upload';
 
 export function mediaRoutes(): Router {
   const router = express.Router();
+
+  // ไฟล์เสียงมีอะไรบ้าง และโฟลเดอร์อยู่ที่ไหน
+  //
+  // หน้า /sfx-test ใช้ตอบคำถาม "ทำไมไม่มีเสียง" ให้ได้โดยไม่ต้องเปิด console
+  // ซึ่งใน OBS เปิดไม่ได้อยู่แล้ว จึงต้องมี endpoint ที่บอก path จริงกลับไป
+  router.get('/api/sounds', (_req, res) => {
+    res.json({ dir: ensureSoundDir(), sounds: findSounds() });
+  });
 
   router.post('/api/skin/:slot', requireControl, rawImage(SKIN_MAX_BYTES), (req, res) => {
     const slot = req.params.slot;

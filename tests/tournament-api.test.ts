@@ -192,6 +192,50 @@ test('status flips without sending the whole form', async () => {
   assert.strictEqual(junk.body.tournament.status, 'active', 'junk falls back to active');
 });
 
+// หน้าตรวจเสียงต้องเปิดได้เสมอ แม้ตอนที่ยังไม่มีไฟล์เสียงสักไฟล์
+//
+// มันคือเครื่องมือที่ใช้ตอน "ไม่มีเสียง" ถ้ามันพังตอนโฟลเดอร์ว่าง
+// มันก็พังในสถานการณ์เดียวที่คนต้องใช้มันจริงๆ
+test('the sound check page and its report work with no sound files at all', async () => {
+  const page = await request('GET', '/sfx-test');
+  assert.strictEqual(page.status, 200);
+  assert.ok(String(page.body).includes('/js/sfx-test.js'), 'serves its own script');
+  assert.ok(String(page.body).includes('/css/theme.css'), 'uses the shared theme');
+
+  const report = await request('GET', '/api/sounds');
+  assert.strictEqual(report.status, 200);
+  assert.ok(report.body.dir, 'reports where the folder is');
+  assert.deepStrictEqual(report.body.sounds, {}, 'no files yet, and that is not an error');
+});
+
+// overlay ต้องโหลด overlay-sfx.js ก่อน overlay.js เสมอ
+//
+// overlay.js เรียก RovSfx ตั้งแต่ state ก้อนแรกที่มาถึง ลืมแท็กนี้แล้วจะได้
+// ReferenceError กลางฟังก์ชันที่วาดกระดาน ผลไม่ใช่ "ไม่มีเสียง" แต่คือ overlay
+// ค้างอยู่กับภาพเดิมทั้งเกม ซึ่งเป็นความพังที่เห็นกันทั้งสตรีม
+//
+// และต้องเงียบเป็นค่าเริ่มต้น เสียงเปิดด้วย ?sfx=1 ที่ URL ของ source เท่านั้น
+// ไม่ใช่ของที่ติดมากับหน้า ไม่งั้นคนที่อัปเดตแอพจะมีเสียงโผล่กลางรายการ
+test('the overlay loads its sound module first and stays silent unless asked', async () => {
+  for (const url of ['/overlay', '/overlay-1440']) {
+    const html = String((await request('GET', url)).body);
+
+    const sfxAt = html.indexOf('js/overlay-sfx.js');
+    assert.ok(sfxAt > -1, `${url} loads overlay-sfx.js`);
+    assert.ok(sfxAt < html.indexOf('js/overlay.js'), `${url} loads it before overlay.js`);
+    assert.ok(!html.includes('sfx=1'), `${url} does not turn sound on by itself`);
+  }
+
+  // หน้าที่ออกอากาศอันอื่นไม่มีเสียง เปิดพร้อมกันแล้วจะได้ยินซ้อนกัน
+  for (const url of ['/result', '/overlay-teams']) {
+    const html = String((await request('GET', url)).body);
+    assert.ok(!html.includes('overlay-sfx.js'), `${url} must not play sound too`);
+  }
+
+  // โฟลเดอร์เสียงยังไม่มีไฟล์ ต้องได้ 404 เปล่าๆ ไม่ใช่ 500
+  assert.strictEqual((await request('GET', '/sounds/pick.mp3')).status, 404);
+});
+
 // เส้นแบ่งระหว่าง "หน้าคนคุมงาน" กับ "กราฟิกออกอากาศ" เป็นเรื่องของธีมด้วย
 //
 // หน้าคนคุมงานใช้ธีมกลางร่วมกันหมด ส่วนหน้าที่ออกอากาศมีหน้าตาของตัวเอง

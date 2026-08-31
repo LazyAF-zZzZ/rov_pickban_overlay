@@ -37,9 +37,13 @@ export const TOURNAMENT_DB_PATH = path.join(DATA_DIR, 'tournament.db');
 //
 // ตอนแพ็กเป็น .exe โค้ดทั้งก้อนอยู่ใน app.asar ซึ่งเป็น "ไฟล์" ไม่ใช่โฟลเดอร์
 // เขียนไฟล์ลง __dirname/public/... จึงพังด้วย ENOTDIR
-// เหมือนกับ state/presets ที่ย้ายไป ROV_USER_DATA_DIR ภาพก็ต้องออกมาอยู่นอก
+// เหมือนกับ state.json ที่ย้ายไป ROV_USER_DATA_DIR ภาพก็ต้องออกมาอยู่นอก
 // asar เช่นกัน ตอนรันจาก source (ไม่ได้ตั้ง env) ใช้ public/images ตามเดิม
 // ของเก่าที่มีอยู่แล้วจะได้ยังใช้ได้
 export const USER_MEDIA_DIR = process.env.ROV_USER_MEDIA_DIR || path.join(PUBLIC_DIR, 'images');
 
 export const HERO_IMAGE_DIR = path.join(PUBLIC_DIR, 'images', 'heroes');
+
+// เสียงเอฟเฟกต์ที่ผู้ใช้เอามาวางเอง อยู่ใต้โฟลเดอร์ media เดียวกับโลโก้และภาพพื้นหลัง
+// เพราะเป็นของผู้ใช้ ไม่ใช่ของที่มากับตัวแอพ จึงต้องอยู่นอก asar เหมือนกัน
+export const USER_SOUND_DIR = path.join(USER_MEDIA_DIR, 'sounds');

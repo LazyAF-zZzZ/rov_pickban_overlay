@@ -27,6 +27,12 @@ export const PAGES: Record<string, string> = {
   // หน้าตั้งค่าภาพพื้นหลัง แยกจาก Control Panel เพราะเป็นงานก่อนแข่ง
   '/design': 'design.html',
   '/hotkeys': 'hotkeys.html',
+  // คู่มือผู้ใช้ ไทย/อังกฤษ อยู่ในแอพเพื่อให้เปิดอ่านได้ตอนไม่มีเน็ต
+  // และตอนที่กำลังงงอยู่หน้างาน ซึ่งเป็นเวลาที่ไม่มีใครไปเปิดไฟล์ใน docs/
+  '/guide': 'guide.html',
+  // หน้าตรวจเสียง เปิดเป็น browser source ใน OBS ได้ ไม่ได้อยู่ในแถบเมนู
+  // เพราะเป็นเครื่องมือแก้ปัญหา ไม่ใช่หน้าที่ใช้ระหว่างคุมงาน
+  '/sfx-test': 'sfx-test.html'
 };
 
 export function pageRoutes(): Router {

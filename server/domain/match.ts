@@ -16,14 +16,16 @@ import { clampNumber, sanitizeText, normalizeArray } from '../lib/sanitize';
 import { sanitizeHero } from './heroes';
 import type { TeamKey, SlotType } from './draft';
 import { DRAFT_SEQUENCE, PICK_COUNT, BAN_COUNT, isSlotId, sanitizeTimer } from './draft';
-import type { OverlaySize, Theme, Hotkeys } from './settings';
+import type { OverlaySize, Theme, Hotkeys, SfxLevels } from './settings';
 import {
   DEFAULT_OVERLAY_SIZE,
   THEME_DEFAULTS,
   HOTKEY_DEFAULTS,
+  SFX_DEFAULTS,
   sanitizeOverlaySize,
   sanitizeTheme,
-  sanitizeHotkeys
+  sanitizeHotkeys,
+  sanitizeSfx
 } from './settings';
 import type { Logo, Skin, SkinSlot } from './media';
 import { SKIN_SLOTS, sanitizeLogo, sanitizeSkin } from './media';
@@ -55,6 +57,7 @@ export interface GameState {
   overlayVisible: boolean;
   theme: Theme;
   hotkeys: Hotkeys;
+  sfx: SfxLevels;
   skin: Skin;
   matchInfo: MatchInfo;
 }
@@ -109,6 +112,7 @@ export const defaultState: GameState = {
   overlayVisible: true,
   theme: { ...THEME_DEFAULTS },
   hotkeys: deepClone(HOTKEY_DEFAULTS),
+  sfx: { ...SFX_DEFAULTS },
   skin: emptySkin(),
   matchInfo: {
     title: 'BLUE VS RED',
@@ -201,6 +205,7 @@ export function sanitizeState(state: unknown): GameState {
     overlayVisible: source.overlayVisible !== false,
     theme: sanitizeTheme(source.theme),
     hotkeys: sanitizeHotkeys(source.hotkeys),
+    sfx: sanitizeSfx(source.sfx),
     skin: sanitizeSkin(source.skin),
     matchInfo: {
       title: sanitizeText(matchInfo.title, 80) || defaultState.matchInfo.title,
