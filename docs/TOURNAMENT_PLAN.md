@@ -11,9 +11,9 @@ conversation history, everything needed to continue is here or in `CLAUDE.md`.
 
 ## 0. Where things stand
 
-**Last updated 2026-08-12.** Everything up to `014bafe` is committed **and
-pushed**. Everything after it is committed on the branch `tournament-phases-6-7-8`
-and **not yet merged or pushed**.
+**Last updated 2026-08-31.** The branch is `main` and the last commit is
+`fa2655c`. Everything described under "The 2026-08-31 session" below is
+committed, one commit per numbered item, and the table below carries the ids.
 
 | Commit | What |
 |---|---|
@@ -32,8 +32,18 @@ and **not yet merged or pushed**.
 | `23bd837` | Teams section on the tournament page: foldable and compact |
 | `23bd837` | Phase 8 — `/analytics`, per-game winner capture, live room |
 | `23bd837` | Phase 7 — `/overlay-teams` team list with staggered slide-in |
+| `b50f62e` | Esc goes back a page |
+| `a793e8b` | Deleting a tournament is a hard delete, with the damage reported |
+| `8031612` | One design system for every operator page |
+| `008fe36` | Presets removed; the team registry replaces them |
+| `8de6d54` | Overlay sound effects |
+| `78b6b95` | One shared list of OBS browser-source URLs |
+| `c52a591` | The user guide ships in the app at `/guide` |
+| `5a4f35c` | Thai, and Thai is the default |
+| `e4c363b` | The operator's own data leaves the repository |
+| `fa2655c` | Bulk team delete |
 
-Current state: **0 type errors under `strict`, 159 tests passing.** Creating a
+Current state: **0 type errors under `strict`, 177 tests passing.** Creating a
 tournament, adding a team with its players in one form, uploading logos,
 drawing single/double elimination, round robin and group brackets, recording
 Bo3/Bo5 results, opening a match in the control panel and having its draft
@@ -41,7 +51,7 @@ recorded all work end to end in the browser.
 
 ### The 2026-08-31 session
 
-Eleven changes, none committed. Listed in the order they were asked for, because
+Ten changes, one commit each, listed in the order they were asked for because
 later ones depend on earlier ones.
 
 1. **Esc goes back a page.** `goBack()` in `public/js/lib/app-client.js`, on a
@@ -98,6 +108,18 @@ later ones depend on earlier ones.
 10. **Bulk team delete.** Tick teams, delete once.
     `POST /api/teams/bulk-delete` — one endpoint, one `notifyData`, logo files
     included. See `CLAUDE.md` for why it is not N single deletes.
+
+**The state at the end of that session.** `npm run check`, `npm run typecheck`,
+`npm run typecheck:web` and `npm test` (177) are all clean on `fa2655c`. Nothing
+is pushed yet — the ten commits above sit on local `main`.
+
+Two notes for anyone reading the history. The commits reconstruct the session
+after the fact, so a few lines land one commit away from the topic they belong
+to: the `/guide` route in `pages.ts` arrives with the sound commit, and the
+`.tcard-del` and bulk-select rules arrive with the theme rewrite that rewrote
+that stylesheet wholesale. And one bug was fixed while splitting: `deleteButton(t)`
+in `home.js` shadowed the i18n `t()`, so `t('DELETE')` threw and no tournament
+card rendered.
 
 **The team registry has its own pages now.** `/teams` lists every team ever
 created with a search box and a one-form create; `/teams/:id` is the profile —

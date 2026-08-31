@@ -214,6 +214,7 @@ opt-in per URL, and the copyable URL is where it opts in — leaving the operato
 defends against two real machine faults: `navigator.clipboard.writeText` can hang forever
 without settling, so it is raced against a 600 ms timeout and falls back to `execCommand`,
 and clicking the URL text selects it so `Ctrl+C` still works when both fail.
+
 **Read URL parameters with a null check, never bare `Number()`.** `params.get('vol')`
 returns `null` when absent and `Number(null)` is `0`, which passes a `0..1` range check — the
 overlay's gain node sat at zero and every sound played silently. The `/sfx-test` page hid it
@@ -243,6 +244,7 @@ gesture handler — the call must start inside that handler or the gesture expir
 unlock silently fails. That chip must never appear in OBS: obs-browser lifts the
 restriction, and nobody is there to click, so it would sit on the broadcast forever. The
 check is `window.obsstudio`, which obs-browser injects and a normal browser does not have.
+
 **No escape sequences for control characters in source.** Writing them as backslash-u
 escapes through some tooling turns them into real bytes in the file. `lib/sanitize.js`
 compares char codes instead, and `npm run check` fails the build if raw control bytes
