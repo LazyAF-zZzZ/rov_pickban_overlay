@@ -95,6 +95,10 @@ later ones depend on earlier ones.
    data still exists in `%APPDATA%\rov-overlay-tool\`, untouched — only the
    repo copies went.
 
+10. **Bulk team delete.** Tick teams, delete once.
+    `POST /api/teams/bulk-delete` — one endpoint, one `notifyData`, logo files
+    included. See `CLAUDE.md` for why it is not N single deletes.
+
 **The team registry has its own pages now.** `/teams` lists every team ever
 created with a search box and a one-form create; `/teams/:id` is the profile —
 roster editing, logo, the tournaments entered, and match history across all of

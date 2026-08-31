@@ -7,7 +7,7 @@
 // ประกอบด้วย textContent ทั้งหมด ไม่มีการต่อ innerHTML
 // ชื่อทีมกับชื่อผู้เล่นเป็นข้อความที่ผู้ใช้พิมพ์เอง
 
-const { socket, fetchJson, withToken, showToast, onDataChange } = window.RovClient;
+const { socket, fetchJson, withToken, showToast, onDataChange, confirmBox } = window.RovClient;
 const { badge, buildPlayerRows, logoImage, sendLogo, hiddenFilePicker, on } = window.RovTeamUI;
 
 let teams = [];
@@ -67,6 +67,15 @@ function teamCard(team) {
 
   id.append(name, sub);
 
+  // ช่องติ๊กอยู่ซ้ายสุด ก่อนโลโก้ ตำแหน่งเดียวกับที่ตารางทั่วไปวางไว้
+  const tick = document.createElement('input');
+  tick.type = 'checkbox';
+  tick.className = 'team-tick';
+  tick.checked = selected.has(team.id);
+  tick.title = t('Select for bulk delete');
+  tick.setAttribute('aria-label', `${t('Select')} ${team.name}`);
+  tick.addEventListener('change', () => toggleSelected(team.id, tick.checked));
+
   const actions = document.createElement('div');
   actions.className = 'team-actions';
 
@@ -83,7 +92,7 @@ function teamCard(team) {
   removeBtn.addEventListener('click', () => deleteTeam(team));
 
   actions.append(profile, removeBtn);
-  row.append(logoImage(team), id, actions);
+  row.append(tick, logoImage(team), id, actions);
   card.appendChild(row);
 
   return card;
@@ -93,8 +102,11 @@ function render() {
   const body = document.getElementById('teamsList');
   body.textContent = '';
 
+  pruneSelection();
   const shown = teams.filter(matchesFilter);
   renderCount(shown.length);
+  renderBulkBar();
+  syncSelectAll();
 
   if (shown.length === 0) {
     const empty = document.createElement('div');
@@ -107,6 +119,146 @@ function render() {
   }
 
   shown.forEach((team) => body.appendChild(teamCard(team)));
+}
+
+// เลือกหลายทีมแล้วลบทีเดียว ----------------------------------------------
+//
+// เก็บเป็น id ไม่ใช่ตัว checkbox เพราะรายการถูกวาดใหม่ทุกครั้งที่พิมพ์ในช่องค้นหา
+// ถ้าผูกกับ element ที่ถูกทิ้งไปแล้ว การเลือกจะหายทุกครั้งที่กรอง
+// คนเลือกทีมจากหลายคำค้นแล้วค่อยลบทีเดียวได้ ซึ่งเป็นวิธีที่คนใช้จริง
+const selected = new Set();
+
+function selectionCount() {
+  return selected.size;
+}
+
+// ทีมที่ถูกเลือกแต่หายไปจากทะเบียนแล้ว (คนอื่นลบตัดหน้า) ต้องไม่ค้างอยู่ในชุด
+// ไม่งั้นตัวเลขบนแถบจะบอกจำนวนที่ลบไม่ได้จริง
+function pruneSelection() {
+  const alive = new Set(teams.map((team) => team.id));
+  [...selected].forEach((id) => {
+    if (!alive.has(id)) selected.delete(id);
+  });
+}
+
+function toggleSelected(id, on) {
+  if (on) selected.add(id);
+  else selected.delete(id);
+  // ไม่วาดรายการใหม่ทั้งชุด แค่ติ๊กทีมเดียวไม่ควรทำให้ทั้งหน้ากระพริบ
+  // แต่สองอย่างนี้ต้องตามให้ทัน ไม่งั้นตัวเลขกับปุ่มเลือกทั้งหมดจะโกหก
+  renderBulkBar();
+  syncSelectAll();
+}
+
+// ปุ่มเลือกทั้งหมดสะท้อนสถานะจริงของรายการที่มองเห็นอยู่
+// ครึ่งๆ (indeterminate) คือเลือกบางส่วน ซึ่งเป็นสถานะที่พบบ่อยที่สุด
+function syncSelectAll() {
+  const all = /** @type {HTMLInputElement} */ (document.getElementById('selectAll'));
+  if (!all) return;
+
+  const shown = teams.filter(matchesFilter);
+  const chosen = shown.filter((team) => selected.has(team.id)).length;
+  all.checked = shown.length > 0 && chosen === shown.length;
+  all.indeterminate = chosen > 0 && chosen < shown.length;
+  all.disabled = shown.length === 0;
+}
+
+function clearSelection() {
+  selected.clear();
+  render();
+}
+
+// เลือกเฉพาะทีมที่มองเห็นอยู่ตอนนี้ ไม่ใช่ทั้งทะเบียน
+// ถ้ากรองคำว่า "FW" ไว้แล้วกดเลือกทั้งหมด แล้วมันไปเลือกทีมที่มองไม่เห็นด้วย
+// การกดลบครั้งถัดไปจะลบของที่ไม่ได้ตั้งใจ
+function selectAllShown(on) {
+  teams.filter(matchesFilter).forEach((team) => {
+    if (on) selected.add(team.id);
+    else selected.delete(team.id);
+  });
+  render();
+}
+
+function renderBulkBar() {
+  const bar = document.getElementById('bulkBar');
+  if (!bar) return;
+
+  const count = selectionCount();
+  bar.hidden = count === 0;
+
+  // ล้างข้อความทุกครั้ง ไม่ใช่เฉพาะตอนมีของให้แสดง
+  // ถ้าซ่อนเฉยๆ โดยไม่ล้าง ตัวเลขเก่าจะค้างอยู่ข้างใน แล้วโผล่มาวาบหนึ่ง
+  // ตอนเลือกใหม่ครั้งถัดไปก่อนจะถูกเขียนทับ
+  bar.textContent = '';
+  if (count === 0) return;
+
+  const label = document.createElement('div');
+  label.className = 'bulk-count';
+  label.textContent = `${count} ${t('selected', 'selected')}`;
+
+  const spacer = document.createElement('div');
+  spacer.className = 'spacer';
+
+  const clearBtn = document.createElement('button');
+  clearBtn.type = 'button';
+  clearBtn.className = 'tlink';
+  clearBtn.textContent = t('CLEAR SELECTION');
+  clearBtn.addEventListener('click', clearSelection);
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.type = 'button';
+  deleteBtn.className = 'tlink danger';
+  deleteBtn.textContent = `${t('DELETE SELECTED')} (${count})`;
+  deleteBtn.addEventListener('click', deleteSelected);
+
+  bar.append(label, spacer, clearBtn, deleteBtn);
+}
+
+// สรุปว่าการลบครั้งนี้กินอะไรไปบ้าง ก่อนถามยืนยัน
+// บอกจำนวนทัวร์นาเมนต์ที่กระทบด้วย เพราะนั่นคือผลที่มองไม่เห็นจากหน้านี้
+function selectionSummary() {
+  const chosen = teams.filter((team) => selected.has(team.id));
+  const entered = chosen.reduce((sum, team) => sum + (summaries.get(team.id)?.tournaments || 0), 0);
+  return { chosen, entered };
+}
+
+async function deleteSelected() {
+  const { chosen, entered } = selectionSummary();
+  if (chosen.length === 0) return;
+
+  // โชว์ชื่อจริงไม่เกินห้าทีม ที่เหลือบอกเป็นจำนวน
+  // รายชื่อยาวสามสิบบรรทัดในกล่องยืนยันไม่มีใครอ่าน และดันปุ่มตกจอ
+  const names = chosen.slice(0, 5).map((team) => team.name).join(', ');
+  const more = chosen.length > 5 ? ` ${t('and')} ${chosen.length - 5} ${t('more')}` : '';
+
+  const body = [
+    `${t('Delete these teams from the registry?')} (${chosen.length})`,
+    names + more
+  ];
+  if (entered > 0) {
+    body.push(t('They are dropped from every tournament they entered. Match history keeps the names as they were on the day.'));
+  }
+
+  const sure = await confirmBox({
+    title: t('Delete selected teams'),
+    body,
+    confirmLabel: t('DELETE FOREVER'),
+    danger: true
+  });
+  if (!sure) return;
+
+  try {
+    const result = await fetchJson('/api/teams/bulk-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: chosen.map((team) => team.id) })
+    });
+    selected.clear();
+    await reload();
+    showToast(`${t('Teams deleted')} (${result.removed})`, 'blue');
+  } catch (error) {
+    showToast(error.message || t('Could not delete the teams'), 'red');
+  }
 }
 
 // ACTIONS ------------------------------------------------------------
@@ -190,15 +342,23 @@ async function createTeam() {
 
 async function deleteTeam(team) {
   const stat = summaries.get(team.id);
-  const entered = stat?.tournaments
-    ? `\n\nIt is in ${stat.tournaments} tournament${stat.tournaments === 1 ? '' : 's'}, and will be dropped from all of them.`
-    : '';
-  if (!window.confirm(`Delete "${team.name}" from the registry?${entered}`)) return;
+  const body = [`${t('Delete this team from the registry?')} "${team.name}"`];
+  if (stat?.tournaments) {
+    body.push(t('It is dropped from every tournament it entered. Match history keeps the name as it was on the day.'));
+  }
+
+  const sure = await confirmBox({
+    title: t('Delete team'),
+    body,
+    confirmLabel: t('DELETE FOREVER'),
+    danger: true
+  });
+  if (!sure) return;
 
   try {
     await fetchJson(`/api/teams/${encodeURIComponent(team.id)}`, { method: 'DELETE' });
     await reload();
-    showToast('Team deleted', 'blue');
+    showToast(t('Team deleted'), 'blue');
   } catch (error) {
     showToast(error.message || 'Could not delete the team', 'red');
   }
@@ -209,6 +369,9 @@ async function deleteTeam(team) {
 function boot() {
   const playersBox = document.getElementById('newTeamPlayers');
   if (playersBox) newTeamPlayers = buildPlayerRows(playersBox, [], 'captain-new-team');
+
+  // ติ๊กเลือกทั้งหมด มีผลเฉพาะทีมที่ตัวกรองแสดงอยู่ตอนนั้น
+  on('selectAll', 'change', (event) => selectAllShown(event.target.checked));
 
   const logoPicker = hiddenFilePicker(setPendingLogo);
   on('newTeamLogoBtn', 'click', () => logoPicker.click());

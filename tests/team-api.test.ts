@@ -153,6 +153,68 @@ test('the presets feature is gone, page and API alike', async () => {
   assert.ok(!home.includes('/presets'), 'no page still links to it');
 });
 
+// ลบหลายทีมพร้อมกัน
+//
+// ที่ต้องมีเทสต์คือ "ลบเฉพาะที่เลือก" ถ้าพลาดตรงนี้คือลบทะเบียนทีมทิ้งทั้งชุด
+// ซึ่งกู้คืนไม่ได้ และคนจะรู้ตัวตอนเปิดทัวร์นาเมนต์ถัดไปแล้วทีมหายหมด
+test('bulk delete removes exactly the teams asked for, and nothing else', async () => {
+  const made: string[] = [];
+  for (const name of ['Bulk A', 'Bulk B', 'Bulk C', 'Bulk D']) {
+    made.push((await send('POST', '/api/teams', { name })).body.team.id);
+  }
+
+  const doomed = [made[0], made[2]];
+  const result = await send('POST', '/api/teams/bulk-delete', { ids: doomed });
+  assert.strictEqual(result.status, 200);
+  assert.strictEqual(result.body.removed, 2);
+  assert.strictEqual(result.body.missing, 0);
+
+  const left = (await send('GET', '/api/teams')).body.teams.map((t: any) => t.id);
+  assert.ok(!left.includes(made[0]), 'the first chosen team is gone');
+  assert.ok(!left.includes(made[2]), 'the second chosen team is gone');
+  assert.ok(left.includes(made[1]), 'a team that was not chosen survives');
+  assert.ok(left.includes(made[3]), 'and so does the other one');
+});
+
+// id ที่หาไม่เจอไม่ใช่ความผิดพลาด อีกจอหนึ่งอาจลบตัดหน้าไปแล้ว
+// เป้าหมายคือ "ทีมพวกนี้ต้องไม่อยู่" ซึ่งก็บรรลุอยู่ดี
+test('bulk delete counts ids that were already gone instead of failing', async () => {
+  const team = (await send('POST', '/api/teams', { name: 'Half Gone' })).body.team;
+
+  const result = await send('POST', '/api/teams/bulk-delete', { ids: [team.id, 'nope', 'also-nope'] });
+  assert.strictEqual(result.status, 200);
+  assert.strictEqual(result.body.removed, 1);
+  assert.strictEqual(result.body.missing, 2);
+});
+
+test('bulk delete refuses an empty selection rather than doing nothing quietly', async () => {
+  assert.strictEqual((await send('POST', '/api/teams/bulk-delete', { ids: [] })).status, 400);
+  assert.strictEqual((await send('POST', '/api/teams/bulk-delete', {})).status, 400);
+  assert.strictEqual((await send('POST', '/api/teams/bulk-delete', { ids: 'all' })).status, 400);
+});
+
+// ลบทีมทิ้งต้องพาออกจากทัวร์นาเมนต์ที่ลงไว้ด้วย เหมือนการลบทีละใบ
+test('teams deleted in bulk also leave the tournaments they had entered', async () => {
+  const cup = (await send('POST', '/api/tournaments', {
+    name: 'Bulk Cup', format: 'single_elim', bestOf: 3
+  })).body.tournament;
+
+  const ids: string[] = [];
+  for (const name of ['Roster One', 'Roster Two']) {
+    const team = (await send('POST', '/api/teams', { name })).body.team;
+    ids.push(team.id);
+    await send('POST', `/api/tournaments/${cup.id}/teams`, { teamId: team.id });
+  }
+  assert.strictEqual((await send('GET', `/api/tournaments/${cup.id}/teams`)).body.teams.length, 2);
+
+  await send('POST', '/api/teams/bulk-delete', { ids });
+  assert.strictEqual(
+    (await send('GET', `/api/tournaments/${cup.id}/teams`)).body.teams.length,
+    0,
+    'the roster empties with them'
+  );
+});
+
 test('a team needs a name', async () => {
   const res = await send('POST', '/api/teams', { name: '  ' });
   assert.strictEqual(res.status, 400);

@@ -110,6 +110,50 @@ export function teamRoutes(): Router {
     res.json({ ok: true });
   });
 
+  // ลบหลายทีมในคำขอเดียว
+  //
+  // ไม่ให้หน้าเว็บยิง DELETE ทีละใบ เพราะลบยี่สิบทีมจะกลายเป็นยี่สิบรอบ
+  // และ notifyData ยี่สิบครั้ง ทำให้ทุกหน้าที่เปิดค้างอยู่วาดใหม่ยี่สิบรอบติดกัน
+  // ทางนี้ส่งสัญญาณครั้งเดียวตอนจบ และตอบกลับว่าลบได้จริงกี่ทีม
+  //
+  // id ที่หาไม่เจอไม่ถือเป็นความผิดพลาด คนอื่นอาจลบไปแล้วระหว่างที่เรากำลังเลือกอยู่
+  // จุดหมายคือ "ทีมพวกนี้ต้องไม่อยู่แล้ว" ซึ่งบรรลุอยู่ดี
+  router.post('/api/teams/bulk-delete', requireControl, (req, res) => {
+    const body = (req.body || {}) as { ids?: unknown };
+    const ids = Array.isArray(body.ids)
+      ? body.ids.filter((id): id is string => typeof id === 'string' && id.length > 0)
+      : [];
+
+    if (ids.length === 0) {
+      res.status(400).json({ error: 'No teams selected' });
+      return;
+    }
+
+    const { teams } = getStores();
+    const removed: string[] = [];
+    const missing: string[] = [];
+
+    // ไล่ลบทีละใบด้วยเส้นทางเดียวกับการลบเดี่ยว รวมถึงการลบไฟล์โลโก้
+    // ถ้าเขียน SQL ลบทีเดียวจะได้เร็วขึ้นนิดเดียว แต่ไฟล์โลโก้จะกลายเป็นขยะกำพร้า
+    ids.forEach((id) => {
+      if (!teams.get(id)) {
+        missing.push(id);
+        return;
+      }
+      removeTeamLogoFiles(id);
+      const result = teams.remove(id);
+      if (result.error === undefined) removed.push(id);
+      else missing.push(id);
+    });
+
+    if (removed.length > 0) {
+      notifyData({ topic: 'teams' });
+      notifyData({ topic: 'roster' });
+    }
+
+    res.json({ ok: true, removed: removed.length, missing: missing.length });
+  });
+
   router.post('/api/teams/:id/logo', requireControl, rawImage(LOGO_MAX_BYTES), (req, res) => {
     const { teams } = getStores();
     const id = req.params.id;
