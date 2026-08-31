@@ -169,6 +169,15 @@ would mean editing the browser source and refreshing it mid-broadcast. The overl
 GainNode per event so lowering one does not touch the others, and an invalid level falls
 back to the default rather than to 0 — silence is indistinguishable from a fault.
 
+**The OBS source list lives in `public/js/lib/obs-sources.js`, and the overlay URLs it
+hands out already carry `?sfx=1`.** Both the Control Panel and `/tournament/:id` render it,
+so the list, the paths and the copy behaviour have one home; a page that shows it loads the
+module after `app-client.js` and before its own script, and a test asserts that. Sound is
+opt-in per URL, and the copyable URL is where it opts in — leaving the operator to remember
+`?sfx=1` makes the failure mode silence, which is indistinguishable from a bug. Copying
+defends against two real machine faults: `navigator.clipboard.writeText` can hang forever
+without settling, so it is raced against a 600 ms timeout and falls back to `execCommand`,
+and clicking the URL text selects it so `Ctrl+C` still works when both fail.
 **Read URL parameters with a null check, never bare `Number()`.** `params.get('vol')`
 returns `null` when absent and `Number(null)` is `0`, which passes a `0..1` range check — the
 overlay's gain node sat at zero and every sound played silently. The `/sfx-test` page hid it

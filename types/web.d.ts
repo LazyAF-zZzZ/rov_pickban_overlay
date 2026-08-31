@@ -60,6 +60,13 @@ interface RovTournamentUiApi {
   confirmAndDelete(tournament: { id: string; name: string }): Promise<boolean>;
 }
 
+interface RovObsSourcesApi {
+  SOURCES: { name: string; path: string; size: string; sfx?: boolean; perTournament?: boolean }[];
+  /** วาดรายการ URL ของ browser source ลงใน container ที่ให้มา */
+  render(container: HTMLElement | null, options?: { tournamentId?: string }): void;
+  copyUrl(url: string): Promise<void>;
+}
+
 interface RovTeamUiApi {
   ROSTER_SIZE: number;
   LOGO_MAX_BYTES: number;
@@ -96,6 +103,7 @@ interface Window {
   webkitAudioContext?: typeof AudioContext;
   RovTeamUI: RovTeamUiApi;
   RovTournamentUI: RovTournamentUiApi;
+  RovObsSources: RovObsSourcesApi;
   HotkeyUtils: RovHotkeyUtilsApi;
   // overlay-size.js ตั้งไว้ให้หน้าอื่นเรียก
   applyOverlaySize(size: string): void;

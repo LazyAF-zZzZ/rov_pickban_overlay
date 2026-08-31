@@ -75,6 +75,11 @@ later ones depend on earlier ones.
    with `?sfx=1`, one `GainNode` per event, files dropped into
    `USER_SOUND_DIR` by fixed name. Per-event levels (pick / ban / timer) live in
    `state.sfx`, ride `CARRIED_OVER_KEYS`, and have sliders on the Control
+6. **OBS browser sources on the Control Panel.** `public/js/lib/obs-sources.js`,
+   one shared list, overlays default to the `?sfx=1` variant. Copy-to-clipboard
+   races a 600ms timeout and falls back to `execCommand`, and clicking the URL
+   selects it — see §9.
+
 **The team registry has its own pages now.** `/teams` lists every team ever
 created with a search box and a one-form create; `/teams/:id` is the profile —
 roster editing, logo, the tournaments entered, and match history across all of

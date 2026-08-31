@@ -169,7 +169,7 @@ function buildSfxControls() {
     const test = document.createElement('button');
     test.type = 'button';
     test.className = 'tlink';
-    test.textContent = 'TEST';
+    test.textContent = t('TEST');
     test.addEventListener('click', () => previewSfx(row.key));
 
     line.append(label, slider, value, test);

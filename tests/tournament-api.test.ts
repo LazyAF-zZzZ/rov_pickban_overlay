@@ -258,6 +258,28 @@ test('operator pages share the theme and broadcast pages keep their own look', a
   }
 });
 
+// หน้าที่แสดงรายการ browser source ต้องโหลด obs-sources.js ก่อนสคริปต์ของตัวเอง
+//
+// ทั้งสองหน้าเรียก window.RovObsSources ตอนวาดหน้า ลืมแท็กนี้ = หน้าตายทั้งหน้า
+// และตัวโมดูลเองอ่าน window.RovClient ตอนโหลด จึงต้องมาหลัง app-client.js ด้วย
+test('every page that lists OBS sources loads the shared module in the right order', async () => {
+  const pages = [
+    { url: '/control', script: 'js/control.js' },
+    { url: '/tournament/anything', script: '/js/tournament.js' }
+  ];
+
+  for (const page of pages) {
+    const html = String((await request('GET', page.url)).body);
+    const libAt = html.indexOf('/js/lib/obs-sources.js');
+    assert.ok(libAt > -1, `${page.url} loads obs-sources.js`);
+    assert.ok(libAt < html.indexOf(page.script), `${page.url} loads it before its own script`);
+    assert.ok(
+      html.indexOf('lib/app-client.js') < libAt,
+      `${page.url} loads app-client.js first, which obs-sources.js reads at load time`
+    );
+  }
+});
+
 // หน้าที่ลบทัวร์นาเมนต์ได้ต้องโหลด tournament-ui.js ก่อนสคริปต์ของตัวเอง
 // ลืมแท็กนี้ = หน้าตายตั้งแต่บรรทัด destructure โดยไม่มีอะไรบอกว่าเพราะอะไร
 // (กฎเดียวกับ team-ui.js ที่ team-api.test.ts เฝ้าอยู่)

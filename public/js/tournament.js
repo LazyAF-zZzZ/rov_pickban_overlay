@@ -11,6 +11,9 @@ const { socket, fetchJson, absoluteUrl, withToken, showToast, onDataChange, defe
 // การลบใช้ร่วมกับหน้าแรก คำเตือนจึงเป็นชุดเดียวกันทั้งสองที่
 const { confirmAndDelete } = window.RovTournamentUI;
 
+// รายการ browser source ใช้ร่วมกับหน้า Control
+const { render: renderObsSources } = window.RovObsSources;
+
 // ช่องผู้เล่น โลโก้ และตัวอัปโหลด ใช้ร่วมกับหน้า /teams และ /teams/:id
 // อย่าก็อปกลับมาไว้ในไฟล์นี้อีก — สองชุดที่แก้คนละที่คือที่มาของบั๊กเดิม
 const { badge, buildPlayerRows, logoImage, sendLogo, hiddenFilePicker, on } = window.RovTeamUI;
@@ -24,16 +27,6 @@ let roster = [];      // ทีมที่ลงแข่งในทัวร�
 let registry = [];    // ทีมทั้งหมดในทะเบียนกลาง ไว้ใส่ใน dropdown
 let newTeamPlayers = null; // ตัวอ่านค่าช่องผู้เล่นในฟอร์มสร้างทีมใหม่
 let pendingLogo = null;    // ไฟล์โลโก้ที่เลือกไว้ รออัปโหลดหลังทีมถูกสร้าง
-
-// ขนาดหน้าจอเลือกที่ control panel หน้านี้แค่บอกว่า URL ไหนคู่กับขนาดไหน
-const SOURCES = [
-  { name: 'Overlay 1080p', path: '/overlay', size: '1920 x 1080' },
-  { name: 'Overlay 1440p', path: '/overlay-1440', size: '2560 x 1440' },
-  { name: 'Result', path: '/result', size: 'matches overlay size' },
-  // รายชื่อทีมของทัวร์นาเมนต์นี้ ต้องแนบ id ไปกับ URL ด้วย
-  // ไม่งั้น overlay จะเดาเอาจากแมตช์ที่ออกอากาศ ซึ่งไม่ใช่สิ่งที่คนก๊อป URL จากหน้านี้ตั้งใจ
-  { name: 'Team list', path: '/overlay-teams', size: 'matches overlay size', perTournament: true }
-];
 
 // HELPERS ------------------------------------------------------------
 
@@ -321,69 +314,7 @@ function buildEditor(editor, team) {
 }
 
 function renderSources() {
-  const wrap = document.getElementById('sources');
-  wrap.textContent = '';
-
-  SOURCES.forEach((source) => {
-    // บาง source ต้องรู้ว่าเป็นทัวร์นาเมนต์ไหน ไม่ใช่ URL ตายตัวเหมือนอันอื่น
-    const path = source.perTournament
-      ? `${source.path}?tournament=${encodeURIComponent(tournamentId)}`
-      : source.path;
-    const url = absoluteUrl(path);
-
-    const row = document.createElement('div');
-    row.className = 'src';
-
-    const name = document.createElement('div');
-    name.className = 'src-name';
-    name.textContent = source.name;
-
-    const urlEl = document.createElement('div');
-    urlEl.className = 'src-url';
-    urlEl.textContent = url;
-    urlEl.title = `${url}  (${source.size})`;
-
-    const actions = document.createElement('div');
-    actions.className = 'src-actions';
-
-    const copy = document.createElement('button');
-    copy.type = 'button';
-    copy.className = 'tlink';
-    copy.textContent = 'COPY URL';
-    copy.addEventListener('click', () => copyUrl(url));
-
-    const open = document.createElement('a');
-    open.className = 'tlink';
-    open.href = withToken(path);
-    open.target = '_blank';
-    open.rel = 'noopener';
-    open.textContent = 'OPEN';
-
-    actions.append(copy, open);
-    row.append(name, urlEl, actions);
-    wrap.appendChild(row);
-  });
-}
-
-async function copyUrl(url) {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(url);
-    } else {
-      const input = document.createElement('input');
-      input.value = url;
-      input.setAttribute('readonly', '');
-      input.style.position = 'fixed';
-      input.style.left = '-9999px';
-      document.body.appendChild(input);
-      input.select();
-      document.execCommand('copy');
-      input.remove();
-    }
-    showToast('URL copied', 'green');
-  } catch {
-    showToast('Copy failed', 'red');
-  }
+  renderObsSources(document.getElementById('sources'), { tournamentId });
 }
 
 function showMissing(message) {
