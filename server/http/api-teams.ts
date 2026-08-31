@@ -13,6 +13,7 @@ import { getStores } from '../store/index';
 import { requireControl } from './auth';
 import { validateUpload, rawImage } from './upload';
 import { notifyData } from '../services/sync';
+import { loadTeamIntoSide } from '../services/live-match';
 
 const NOT_FOUND = /not found/i;
 
@@ -55,6 +56,20 @@ export function teamRoutes(): Router {
   // แยก endpoint จาก GET /api/teams/:id ตั้งใจ
   // หน้าไหนที่ต้องการแค่ชื่อกับรายชื่อผู้เล่น (เช่น dropdown เลือกทีม)
   // จะได้ไม่ต้องลากตารางแข่งทั้งกองมาด้วยทุกครั้ง
+  // เอาทีมนี้ขึ้นช่องน้ำเงินหรือแดงของ overlay เลย ไม่ต้องผ่านทัวร์นาเมนต์
+  //
+  // คู่กับ POST /api/matches/:matchId/live ซึ่งเอาขึ้นทั้งสองฝั่งพร้อมกัน
+  // ทางนี้ไว้สำหรับแมตช์เดี่ยว: เลือกทีมทีละฝั่งจากหน้า Control
+  router.post('/api/teams/:id/live', requireControl, (req, res) => {
+    const body = (req.body || {}) as { team?: unknown };
+    const result = loadTeamIntoSide(body.team, req.params.id);
+    if (result.error !== undefined) {
+      res.status(/not found/i.test(result.error) ? 404 : 400).json({ error: result.error });
+      return;
+    }
+    res.json({ ok: true, state: result.state });
+  });
+
   router.get('/api/teams/:id/history', (req, res) => {
     const { teams, history } = getStores();
     const team = teams.get(req.params.id);

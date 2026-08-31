@@ -202,7 +202,6 @@
     <a class="tlink" href="/">HOME</a>
     <a class="tlink" href="/teams">TEAMS</a>
     <a class="tlink active" href="/control" aria-current="page">CONTROL</a>
-    <a class="tlink" href="/presets">PRESETS</a>
     <a class="tlink" href="/design">DESIGN</a>
     <a class="tlink" href="/hotkeys">HOTKEYS</a>
   </nav>
@@ -229,6 +228,12 @@
     <div class="panel-body">
       <div class="team-meta">
         <div class="field"><label>Team Name</label><input id="blueTeamName" value="BLUE"></div>
+        <div class="field">
+          <label for="blueTeamLoad" data-i18n>From registry</label>
+          <select class="team-load" id="blueTeamLoad" title="Fill this side from a saved team">
+            <option value="">Choose a team…</option>
+          </select>
+        </div>
         <span class="save-state" id="blueSaved">Auto-saves</span>
       </div>
       <div class="logo-row">
@@ -272,6 +277,12 @@
     <div class="panel-body">
       <div class="team-meta">
         <div class="field"><label>Team Name</label><input id="redTeamName" value="RED"></div>
+        <div class="field">
+          <label for="redTeamLoad" data-i18n>From registry</label>
+          <select class="team-load" id="redTeamLoad" title="Fill this side from a saved team">
+            <option value="">Choose a team…</option>
+          </select>
+        </div>
         <span class="save-state" id="redSaved">Auto-saves</span>
       </div>
       <div class="logo-row">
@@ -349,7 +360,7 @@
 <!-- Confirmation for the two destructive bottom-bar actions.
      In-page rather than window.confirm(): the native dialog is modal to the
      whole renderer in Electron and can leave the window unable to take
-     keyboard input after it closes. Same dialog as the Presets page. -->
+     keyboard input after it closes. Same dialog as RovClient.confirmBox(). -->
 <div class="modal-backdrop" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" hidden>
   <div class="modal">
     <div class="modal-title" id="confirmTitle"></div>

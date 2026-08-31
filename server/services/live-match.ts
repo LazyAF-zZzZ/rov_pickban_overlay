@@ -1,7 +1,7 @@
 // เชื่อมแมตช์ในตารางแข่งเข้ากับ overlay ที่กำลังออกอากาศ
 //
 // "เปิดแมตช์" = เอาทีมของแมตช์นั้นขึ้น overlay + จำว่ากำลังออกอากาศคู่ไหน
-// ใช้ทางเดียวกับการโหลดพรีเซ็ต (carryOverSettings) ตั้งใจ:
+// ผ่าน carryOverSettings ตั้งใจ:
 // ธีม คีย์ลัด ภาพพื้นหลัง และขนาดจอ ต้องไม่เปลี่ยนตอนสลับแมตช์กลางงาน
 //
 // ตัวบันทึกดราฟต์เกาะอยู่กับ subscribe() ของ live-state
@@ -9,7 +9,7 @@
 // ไม่ต้องรอให้ใครกดเซฟ และไม่มีขั้นตอน "ปิดงาน" ให้ลืม
 
 import { deepClone } from '../lib/json';
-import { defaultState, sanitizeState } from '../domain/match';
+import { defaultState, sanitizeState, sanitizeTeam, isTeamKey } from '../domain/match';
 import type { GameState } from '../domain/match';
 import { carryOverSettings } from '../domain/settings';
 import { getState, setState, emitState, subscribe } from '../store/live-state';
@@ -32,6 +32,10 @@ export interface LiveInfo {
 }
 
 export type GoLiveResult = { live: LiveInfo; error?: undefined } | { error: string; live?: undefined };
+
+export type LoadTeamResult =
+  | { state: GameState; error?: undefined }
+  | { error: string; state?: undefined };
 
 // เขียนช่องที่บันทึกไว้กลับลง state
 //
@@ -154,6 +158,33 @@ export function goLive(matchId: string): GoLiveResult {
   notifyData({ topic: 'live', tournamentId: match.tournamentId });
 
   return { live: describeLive() };
+}
+
+// เอาทีมจากทะเบียนมาใส่ฝั่งหนึ่งของ overlay โดยไม่ต้องมีทัวร์นาเมนต์
+//
+// ใช้กับแมตช์เดี่ยวที่ไม่ได้อยู่ในสายการแข่ง เป็นทางที่มาแทนพรีเซ็ตเดิม
+// ต่างจาก goLive() ตรงที่แตะแค่ฝั่งเดียว: ชื่อ ผู้เล่น โลโก้
+// คะแนน ดราฟต์ที่กรอกไปแล้ว และอีกฝั่งต้องไม่ขยับ
+// คนคุมงานเลือกทีมทีละฝั่ง และมักเลือกตอนที่อีกฝั่งกรอกไว้แล้ว
+export function loadTeamIntoSide(teamKey: unknown, teamId: string): LoadTeamResult {
+  if (!isTeamKey(teamKey)) return { error: 'Unknown side' };
+
+  const team = getStores().teams.get(teamId);
+  if (!team) return { error: 'Team not found' };
+
+  const state = getState();
+  // โลโก้ของทีมในทะเบียนอยู่ไฟล์ <teamId>.<ext> ไม่ใช่ blue-team.<ext>
+  // ต้องบอก src ไปด้วย ไม่งั้น overlay จะไปเปิดภาพที่ค้างอยู่ในช่องของฝั่งนั้น
+  // ซึ่งเป็นของทีมอื่น เหตุผลเดียวกับใน goLive()
+  state[teamKey] = sanitizeTeam({
+    ...state[teamKey],
+    name: team.name,
+    logo: { ...team.logo, src: team.id },
+    players: team.players.map((player, i) => player.name || `Player ${i + 1}`)
+  }, defaultState[teamKey]);
+
+  emitState();
+  return { state: getState() };
 }
 
 export function clearLive(): LiveInfo {

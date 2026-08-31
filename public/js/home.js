@@ -235,7 +235,7 @@ async function renderList() {
   if (tournaments.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'empty';
-    empty.textContent = 'No tournaments yet. Create one to get started.';
+    empty.textContent = t('No tournaments yet. Create one to get started.');
     wrap.appendChild(empty);
     return;
   }

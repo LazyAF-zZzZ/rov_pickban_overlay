@@ -65,6 +65,10 @@ later ones depend on earlier ones.
    means "happening now" and nothing else; blue and red mean team sides only.
    Broadcast pages were deliberately left out — see the rule in `CLAUDE.md`.
 
+4. **Presets removed.** `presets.html`, `presets.js`, `api-presets.ts`,
+   `store/presets.ts` and `data/presets.json` are all gone; the registry team
+   picker on the Control Panel replaced what they were for. They are not coming
+   back.
 **The team registry has its own pages now.** `/teams` lists every team ever
 created with a search box and a one-form create; `/teams/:id` is the profile —
 roster editing, logo, the tournaments entered, and match history across all of
@@ -223,7 +227,7 @@ Decided with the user. Do not re-open without a reason.
 | Storage | Local only, SQLite | Matches the free non-commercial license; no ops cost |
 | Round robin size | Capped 24 teams; group stage above that | 128-team RR is 8,128 matches — unusable as one bracket |
 | Concurrent matches | One live match at a time | There is one overlay; other matches keep their own saved drafts |
-| Existing presets | Kept as standalone quick-match | Still useful outside tournaments; nothing migrated |
+| Existing presets | **Removed 2026-08-28** | The team registry does the same job better; see §2 |
 | Teams | Global registry + per-game snapshot | See §4 |
 | Team logos | Global, keyed by server-generated team id | Never named from user-typed team names |
 | 128 limit | Per-tournament roster, not the registry | The directory may hold hundreds over time |
@@ -258,6 +262,28 @@ JavaScript, served as classic `<script>` tags with no bundler. See §8.
 
 ---
 
+### Presets, and why they are gone
+
+Presets were a saved copy of a whole match state — team names, players, score and the
+draft — kept in `presets.json` under a name the operator typed. They predate the team
+registry, and once the registry existed they were the second, worse place the same
+information lived: a preset held a frozen copy of a lineup, while a registered team is
+one record shared by every tournament, carries a logo and accumulates match history.
+
+Removed on 2026-08-28: the page, `api-presets.ts`, `store/presets.ts`, `presets.json`
+and the nav link. Nothing was migrated — the user's presets file was empty.
+
+The one thing presets did that tournaments did not is now on the Control Panel itself.
+**`POST /api/teams/:id/live` with `{ team: 'teamBlue' | 'teamRed' }` loads a registered
+team into one side of the overlay**, and each team panel has a "From registry" picker
+that calls it. It fills the name, the roster and the logo, and deliberately touches
+**one side only** — the other side, the score and any draft already typed must survive,
+because the operator picks the second team while the first is already set up. A one-off
+match outside any tournament is now: open Control, pick both teams, go.
+
+`carryOverSettings` survives the removal. It was shared with preset loading, but its
+real job is putting a match on air without resetting the theme, hotkeys or overlay size.
+
 ### The operator theme
 
 `public/css/theme.css` holds every colour, the type scale and the chrome each operator
@@ -288,7 +314,6 @@ be able to alter what viewers see mid-broadcast.
 ```
 DATA_DIR/
   state.json       live broadcast match   (existing, unchanged)
-  presets.json     quick-match presets    (existing, unchanged)
   tournament.db    SQLite: tournaments, teams, rosters, matches, games, drafts
 ```
 
@@ -422,8 +447,8 @@ existing one, because saved matches will reference it.
 table below is implemented in `server/domain/analytics.ts` (pure maths) over
 `server/store/analytics.ts` (one grouped query). Recompute-on-read, as planned.
 
-**Capture continuously, not at the end.** Today every RESET MATCH and preset load
-destroys the current pick/ban data. Mirror each pick and ban into the game record
+**Capture continuously, not at the end.** Every RESET MATCH and every match put on air
+replaces the current pick/ban data. Mirror each pick and ban into the game record
 as it happens, so nothing is lost if the operator forgets to save, and
 "real time" needs no extra machinery.
 
@@ -640,7 +665,7 @@ Each of these cost real debugging time. They are also in `CLAUDE.md`.
 - **`require('./server/index')` never `require('./server')`.** Node resolves
   files before folders, so the short form loads `server.js` into itself.
 - **`getState()`/`setState()`, never a captured reference.** State is replaced
-  wholesale on preset load and reset.
+  wholesale on RESET MATCH and when a match is put on air.
 - **No escape sequences for control characters in source.** Some tooling turns
   them into real bytes, including NUL. `npm run check` fails the build if raw
   control bytes appear anywhere.

@@ -182,10 +182,6 @@ function buildMenu() {
           click: () => openToolWindow('Control Panel', '/control', 1280, 900)
         },
         {
-          label: 'Presets',
-          click: () => openToolWindow('Presets', '/presets', 1150, 900)
-        },
-        {
           label: 'Overlay 1080p',
           click: () => openToolWindow('Overlay 1920x1080', '/overlay', 1920, 1080)
         },

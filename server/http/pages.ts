@@ -27,7 +27,6 @@ export const PAGES: Record<string, string> = {
   // หน้าตั้งค่าภาพพื้นหลัง แยกจาก Control Panel เพราะเป็นงานก่อนแข่ง
   '/design': 'design.html',
   '/hotkeys': 'hotkeys.html',
-  '/presets': 'presets.html'
 };
 
 export function pageRoutes(): Router {

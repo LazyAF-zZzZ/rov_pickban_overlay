@@ -26,7 +26,6 @@ socket.on('stateUpdate', (state) => {
   }
 });
 
-// พรีเซ็ตย้ายไปหน้า /presets แล้ว หน้านี้จึงไม่ต้องโหลดรายการมาอีก
 async function boot() {
   const [heroesResult, draftResult, stateResult] = await Promise.allSettled([
     fetchJson('/api/heroes'),
@@ -45,6 +44,7 @@ async function boot() {
   buildAllUI();
   uiBuilt = true;
   bindLogoInputs();
+  loadTeamOptions();
 
   if (latestState) {
     loadState(latestState);
@@ -55,6 +55,68 @@ async function boot() {
 function valueOf(result) {
   return result.status === 'fulfilled' ? result.value : null;
 }
+
+// เลือกทีมจากทะเบียนมาใส่ฝั่งน้ำเงิน/แดง ----------------------------------
+//
+// แมตช์ที่ไม่ได้อยู่ในทัวร์นาเมนต์ก็ยังหยิบทีมที่เคยกรอกไว้มาใช้ได้
+// นี่คือทางที่มาแทนพรีเซ็ต ทะเบียนทีมเก็บชื่อ ผู้เล่น และโลโก้ไว้ให้อยู่แล้ว
+// ต่างกันตรงที่ทะเบียนมีทีมชุดเดียวใช้ร่วมกับทุกทัวร์นาเมนต์ ไม่ใช่สำเนาแยกใบ
+const TEAM_LOAD_UI = { teamBlue: 'blueTeamLoad', teamRed: 'redTeamLoad' };
+
+async function loadTeamOptions() {
+  let teams = [];
+  try {
+    teams = (await fetchJson('/api/teams')).teams || [];
+  } catch (error) {
+    return;   // ทะเบียนอ่านไม่ได้ก็แค่ไม่มีรายการให้เลือก ส่วนอื่นของหน้ายังทำงานปกติ
+  }
+
+  Object.values(TEAM_LOAD_UI).forEach((id) => {
+    const select = /** @type {HTMLSelectElement} */ (document.getElementById(id));
+    if (!select) return;
+
+    select.textContent = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = teams.length ? 'Choose a team…' : 'No saved teams yet';
+    select.appendChild(placeholder);
+
+    // ชื่อทีมมาจากผู้ใช้ ใช้ textContent เสมอ
+    teams.forEach((team) => {
+      const option = document.createElement('option');
+      option.value = team.id;
+      option.textContent = team.tag ? `${team.name} (${team.tag})` : team.name;
+      select.appendChild(option);
+    });
+  });
+}
+
+// เลือกแล้วให้ช่องเด้งกลับไปที่ข้อความตั้งต้นทันที
+//
+// ช่องนี้เป็นปุ่มสั่งงาน ไม่ใช่ช่องที่จำว่าเลือกอะไรไว้
+// ทีมที่โหลดมาแล้วยังแก้ต่อในช่องชื่อได้ ค่าที่ค้างอยู่ในช่องเลือกจะกลายเป็นคำโกหกทันที
+async function applyTeamFromRegistry(team, select) {
+  const teamId = select.value;
+  select.selectedIndex = 0;
+  if (!teamId) return;
+
+  try {
+    await fetchJson(`/api/teams/${encodeURIComponent(teamId)}/live`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ team })
+    });
+    showToast('Team loaded', 'green');
+  } catch (error) {
+    showToast(error.message || 'Could not load that team', 'red');
+  }
+}
+
+Object.entries(TEAM_LOAD_UI).forEach(([team, id]) => {
+  document.getElementById(id)?.addEventListener('change', (event) => {
+    applyTeamFromRegistry(team, /** @type {HTMLSelectElement} */ (event.target));
+  });
+});
 
 
 // TEAM LOGOS ---------------------------------------------------------
@@ -686,7 +748,7 @@ function switchTeams() {
 }
 
 // CONFIRM DIALOG ------------------------------------------------------
-// เหมือนหน้า Presets ไม่ใช้ window.confirm() เพราะใน Electron dialog ของ
+// ไม่ใช้ window.confirm() เพราะใน Electron dialog ของ
 // ระบบเป็น modal ของทั้ง renderer ปิดแล้วหน้าต่างรับคีย์บอร์ดไม่ได้
 let confirmResolve = null;
 
@@ -1065,4 +1127,6 @@ onDataChange((change) => {
   if (change.topic === 'live' || change.topic === 'games' || change.topic === 'matches') {
     renderLiveBar();
   }
+  // ทีมถูกเพิ่มหรือเปลี่ยนชื่อจากอีกหน้า รายการที่นี่ต้องตามให้ทัน
+  if (change.topic === 'teams') loadTeamOptions();
 });

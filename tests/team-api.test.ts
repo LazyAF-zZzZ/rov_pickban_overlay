@@ -110,6 +110,49 @@ test('a team round-trips through the API with its roster', async () => {
   assert.strictEqual(updated.body.team.players[1].name, 'NEW GUY');
 });
 
+// ทางที่มาแทนพรีเซ็ต: หยิบทีมจากทะเบียนขึ้นจอทีละฝั่ง โดยไม่ต้องมีทัวร์นาเมนต์
+//
+// ที่ต้องมีเทสต์คือ "แตะแค่ฝั่งเดียว" ถ้าเผลอเขียนทับทั้ง state
+// คนคุมงานจะเลือกทีมฝั่งที่สองแล้วเห็นฝั่งแรกกับดราฟต์ที่กรอกไว้หายไปกลางงาน
+test('a registry team can be loaded onto one side without touching the other', async () => {
+  const blue = (await send('POST', '/api/teams', {
+    name: 'Talon', players: [{ name: 'ZHAN' }, { name: 'WETZ' }]
+  })).body.team;
+  const red = (await send('POST', '/api/teams', { name: 'Bacon Time' })).body.team;
+
+  const first = await send('POST', `/api/teams/${blue.id}/live`, { team: 'teamBlue' });
+  assert.strictEqual(first.status, 200);
+  assert.strictEqual(first.body.state.teamBlue.name, 'Talon');
+  assert.deepStrictEqual(
+    first.body.state.teamBlue.players.slice(0, 2),
+    ['ZHAN', 'WETZ'],
+    'the roster comes with the name'
+  );
+
+  const second = await send('POST', `/api/teams/${red.id}/live`, { team: 'teamRed' });
+  assert.strictEqual(second.status, 200);
+  assert.strictEqual(second.body.state.teamRed.name, 'Bacon Time');
+  assert.strictEqual(second.body.state.teamBlue.name, 'Talon', 'the other side is untouched');
+});
+
+test('loading a team onto the overlay refuses a bad side or a missing team', async () => {
+  const team = (await send('POST', '/api/teams', { name: 'Buriram' })).body.team;
+  assert.strictEqual((await send('POST', `/api/teams/${team.id}/live`, { team: 'teamGreen' })).status, 400);
+  assert.strictEqual((await send('POST', '/api/teams/nope/live', { team: 'teamBlue' })).status, 404);
+});
+
+// พรีเซ็ตถูกถอดออกแล้ว ทะเบียนทีมทำหน้าที่นี้แทน
+// เทสต์นี้กันการเผลอเอากลับมาครึ่งทาง: หน้าเว็บหาย แต่ API ยังเปิดอยู่เงียบๆ
+test('the presets feature is gone, page and API alike', async () => {
+  assert.strictEqual((await send('GET', '/presets')).status, 404);
+  assert.strictEqual((await send('GET', '/api/presets')).status, 404);
+  assert.strictEqual((await send('POST', '/api/presets', { name: 'x' })).status, 404);
+  assert.strictEqual((await send('POST', '/api/presets/load', { name: 'x' })).status, 404);
+
+  const home = String((await send('GET', '/')).body);
+  assert.ok(!home.includes('/presets'), 'no page still links to it');
+});
+
 test('a team needs a name', async () => {
   const res = await send('POST', '/api/teams', { name: '  ' });
   assert.strictEqual(res.status, 400);

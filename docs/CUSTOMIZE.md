@@ -50,7 +50,7 @@ public/css/result.css
 
 ## สำรองข้อมูลรายการ
 
-ถ้าใช้แบบ source code ข้อมูล state/preset จะอยู่ใน:
+ถ้าใช้แบบ source code ข้อมูลแมตช์กับทัวร์นาเมนต์จะอยู่ใน:
 
 ```text
 data/

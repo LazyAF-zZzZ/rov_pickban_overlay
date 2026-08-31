@@ -158,7 +158,7 @@ export function isHeroTaken(
   ));
 }
 
-// Presets and hand-edited state files can still contain duplicates.
+// A hand-edited state file can still contain duplicates.
 // Keep the first occurrence and drop the rest so the invariant always holds.
 export function dropDuplicateHeroes(state: GameState): GameState {
   const seen = new Set<string>();

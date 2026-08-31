@@ -42,7 +42,7 @@ The real code is in `server/`:
 | `config.js` | ports, token, all directory paths | nothing |
 | `lib/` | `json`, `sanitize` — no app knowledge | nothing |
 | `domain/` | `heroes`, `draft`, `match`, `settings`, `media` — pure rules | `lib` |
-| `store/` | `live-state`, `presets` — things with state | `domain` |
+| `store/` | `live-state`, teams, tournaments, matches — things with state | `domain` |
 | `services/` | `draft-engine` — the running clock | `store` |
 | `http/`, `sockets/` | transport only, no rules | everything |
 
@@ -54,6 +54,14 @@ IIFE-plus-global pattern: `public/js/lib/app-client.js` exports `window.RovClien
 `public/js/lib/team-ui.js` exports `window.RovTeamUI`, `public/js/hotkey-utils.js` exports
 `window.HotkeyUtils`. New control pages load `socket.io.js`, then `app-client.js`, then their
 own script.
+
+**A quick match outside any tournament is built from the team registry, not from saved
+copies.** Presets were removed on 2026-08-28 — the registry holds team names, rosters and
+logos in one place, shared by every tournament. `POST /api/teams/:id/live` with
+`{ team: 'teamBlue' | 'teamRed' }` loads one registered team into one side of the overlay
+and is what the Control Panel's "From registry" picker calls. It must keep touching **one
+side only**: the other side, the score and any draft already entered have to survive,
+because the second team is always picked while the first is already set up.
 
 **Every operator page links `public/css/theme.css` first, and colours live only there.**
 It holds the tokens, the type scale and the shared chrome (top bar, nav, `.tlink`, panels,
@@ -119,7 +127,8 @@ are dropped on the next save. Old save files upgrade themselves for free — but
 with an older build would erase it.
 
 **`getState()` / `setState()`, never a captured reference.** State is *replaced* wholesale on
-preset load and reset. A module holding the old object keeps mutating a detached copy: the UI
+RESET MATCH and on putting a match on air. A module holding the old object keeps mutating a
+detached copy: the UI
 updates while the file on disk quietly goes stale.
 
 **Media filenames never come from user text.** `domain/media.js` maps fixed slot names to

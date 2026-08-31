@@ -13,7 +13,6 @@ import { PORT, HOST, CONTROL_TOKEN, PUBLIC_DIR, USER_MEDIA_DIR } from './config'
 import { attachIo } from './store/live-state';
 import { pageRoutes } from './http/pages';
 import { stateRoutes } from './http/api-state';
-import { presetRoutes } from './http/api-presets';
 import { mediaRoutes } from './http/api-media';
 import { tournamentRoutes } from './http/api-tournaments';
 import { teamRoutes } from './http/api-teams';
@@ -58,7 +57,6 @@ export function createApp(): Express {
 
   app.use(pageRoutes());
   app.use(stateRoutes());
-  app.use(presetRoutes());
   app.use(mediaRoutes());
   app.use(tournamentRoutes());
   app.use(teamRoutes());
@@ -104,7 +102,6 @@ export function start(
     console.log('===========================================');
     console.log(`Home: http://${host}:${port}`);
     console.log(`Control Panel: http://${host}:${port}/control`);
-    console.log(`Presets: http://${host}:${port}/presets`);
     console.log(`Overlay 1920x1080: http://${host}:${port}/overlay`);
     console.log(`Overlay 2560x1440: http://${host}:${port}/overlay-1440`);
     console.log(`Result: http://${host}:${port}/result`);

@@ -25,9 +25,8 @@ export const DATA_DIR = process.env.ROV_USER_DATA_DIR || APP_DATA_DIR;
 export const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 
 export const STATE_PATH = path.join(DATA_DIR, 'state.json');
-export const PRESETS_PATH = path.join(DATA_DIR, 'presets.json');
 
-// ข้อมูลทัวร์นาเมนต์กับทีมอยู่ใน SQLite แยกจาก state.json / presets.json
+// ข้อมูลทัวร์นาเมนต์กับทีมอยู่ใน SQLite แยกจาก state.json
 //
 // ที่ไม่ยัดรวมใน state.json เพราะ sanitizeState เก็บเฉพาะคีย์ที่รู้จัก
 // คีย์แปลกปลอมถูกทิ้งตอนเซฟรอบถัดไป เปิดด้วยเวอร์ชันเก่าทีเดียวข้อมูลหายหมด
