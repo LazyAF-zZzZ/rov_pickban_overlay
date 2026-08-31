@@ -55,6 +55,16 @@ IIFE-plus-global pattern: `public/js/lib/app-client.js` exports `window.RovClien
 `window.HotkeyUtils`. New control pages load `socket.io.js`, then `app-client.js`, then their
 own script.
 
+**Every operator page links `public/css/theme.css` first, and colours live only there.**
+It holds the tokens, the type scale and the shared chrome (top bar, nav, `.tlink`, panels,
+fields, badges, modal, toast); each page's own CSS holds only what is unique to it. The
+theme is black, white and gold: gold marks *what is happening now* (current page, primary
+action, focused field, the match on air) and nothing else, blue and red mean *team sides*
+(red also means destructive), and there is no green or purple to reach for. Never link
+`theme.css` from `overlay`, `overlay-1440`, `result` or `overlay-teams` — those are
+broadcast graphics the user themes from the Design page, and operator styling must not be
+able to change what viewers see mid-match.
+
 **Any page that can delete a tournament loads `tournament-ui.js` before its own script.**
 Same rule and same failure as `team-ui.js`: the page destructures `window.RovTournamentUI`
 on its first line and dies blank without it. It holds `confirmAndDelete`, the one copy of

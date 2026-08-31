@@ -1,369 +1,197 @@
-/* เปลือกหน้าเว็บที่ใช้ร่วมกัน: แถบบน, การ์ด, ฟอร์ม, ปุ่ม, toast
+/* ส่วนที่เป็นของหน้ารายการ: หน้าแรก ทัวร์นาเมนต์ ทะเบียนทีม โปรไฟล์ทีม สาย สถิติ
  *
- * เดิม CSS ก้อนนี้ฝังอยู่ใน home.html ไฟล์เดียว พอมีหน้าทัวร์นาเมนต์เพิ่ม
- * จึงแยกออกมาไว้ที่เดียว หน้าใหม่ (ทีม, สถิติ) ให้ลิงก์ไฟล์นี้แล้วเขียนเฉพาะ
- * ส่วนที่ต่างของตัวเองพอ
+ * เปลือกที่ใช้ร่วมกันทุกหน้า (สี ตัวอักษร แถบบน ปุ่ม แผง ฟอร์ม กล่องยืนยัน toast)
+ * ย้ายไปอยู่ที่ css/theme.css แล้ว ไฟล์นี้เหลือเฉพาะของที่หน้าพวกนี้ใช้เท่านั้น
+ * ต้องโหลด theme.css ก่อนไฟล์นี้เสมอ
  *
- * หมายเหตุ: control.css / overlay.css เป็นคนละระบบ ไม่เกี่ยวกับไฟล์นี้ */
+ * หมายเหตุ: overlay.css / result.css เป็นคนละระบบ ไม่เกี่ยวกับไฟล์นี้ */
 
-:root {
-  --bg: #0b0c14;
-  --s1: #111220;
-  --s2: #181929;
-  --s3: #1e2035;
-  --border: rgba(255, 255, 255, 0.07);
-  --border2: rgba(255, 255, 255, 0.13);
-  --blue: #3b82f6;
-  --red: #ef4444;
-  --gold: #f59e0b;
-  --green: #10b981;
-  --purple: #8b5cf6;
-  --text: #e2e8f0;
-  --muted: #4a5568;
-  --muted2: #64748b;
-  --hf: 'Arial Narrow', 'Segoe UI Condensed', 'Segoe UI', Arial, sans-serif;
-  --bf: 'Segoe UI', Arial, sans-serif;
-}
+/* หน้าพวกนี้ใช้ .panel เป็นกล่องมีขอบในธรรมดา ไม่มีหัวแผงกับตัวแผงแยกกัน
+   เหมือนหน้า Control / Presets จึงต้องมี padding ในตัวเอง */
+.panel { padding: 18px; }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
-body {
-  font-family: var(--bf);
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-}
-
-/* TOP BAR ---------------------------------------------------------- */
-
-.topbar {
-  background: var(--s1);
-  border-bottom: 1px solid var(--border);
-  padding: 0 18px;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.logo {
-  font-family: var(--hf);
-  font-size: 18px;
-  font-weight: 900;
-  letter-spacing: 3px;
-  color: var(--blue);
-  white-space: nowrap;
-}
-.logo span { color: rgba(255, 255, 255, 0.3); }
-
-/* PAGE NAV - identical markup, order and styling on every page, so the
-   same button is always in the same place. The current page is marked rather
-   than removed, so the row never changes width as you move between pages. */
-.topnav {
-  margin-left: auto;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-}
-.topnav .tlink.active {
-  background: var(--s1);
-  color: var(--text);
-  border-color: var(--blue);
-  cursor: default;
-}
-.topnav .tlink.active:hover { color: var(--text); border-color: var(--blue); }
-
-.tlink {
-  padding: 5px 13px;
-  border-radius: 6px;
-  font-family: var(--hf);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  cursor: pointer;
-  border: 1px solid var(--border2);
-  background: var(--s3);
-  color: var(--muted2);
-  transition: all 0.2s;
-  text-decoration: none;
-  white-space: nowrap;
-}
-.tlink:hover { color: var(--blue); border-color: var(--blue); }
-.tlink.danger:hover { color: var(--red); border-color: var(--red); }
-.tlink.primary { color: #bfdbfe; border-color: rgba(59, 130, 246, 0.5); }
-.tlink.primary:hover { color: #fff; border-color: var(--blue); background: rgba(59, 130, 246, 0.16); }
-
-.wrap { max-width: 1080px; margin: 0 auto; padding: 22px 14px 60px; }
-
-/* LIVE STATUS ------------------------------------------------------ */
+/* แถบสถานะ ------------------------------------------------------------- */
 
 .status {
   background: var(--s1);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 18px;
-  margin-bottom: 22px;
+  border-radius: var(--r);
+  padding: 15px 18px;
+  margin-bottom: 26px;
   display: flex;
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
 }
-.status-dot { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
-.status.online .status-dot { background: var(--green); box-shadow: 0 0 8px rgba(16, 185, 129, 0.7); }
+.status-dot {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.status.online .status-dot { background: var(--gold); }
 .status.offline .status-dot { background: var(--red); }
 .status-label {
-  font-family: var(--hf);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 1.5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--muted2);
+  color: var(--muted);
 }
 .status-match {
   flex: 1;
   min-width: 200px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-family: var(--hf);
-  font-size: 16px;
-  font-weight: 900;
-  letter-spacing: 0.5px;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 600;
 }
-.sm-blue { color: #7dd3fc; }
-.sm-red { color: #fca5a5; }
-.sm-score { color: var(--text); }
-.status-tags { display: flex; gap: 7px; flex-wrap: wrap; }
+.sm-blue { color: var(--blue); }
+.sm-red { color: var(--red); }
+.sm-score { color: var(--text); font-weight: 700; }
+.status-tags { display: flex; gap: 6px; flex-wrap: wrap; }
 .stag {
   padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid var(--border2);
-  background: var(--s3);
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
+  font-weight: 600;
   color: var(--muted2);
 }
-.stag.on { color: var(--green); border-color: rgba(16, 185, 129, 0.45); }
-.stag.off { color: var(--red); border-color: rgba(239, 68, 68, 0.45); }
+.stag.on { color: var(--gold); border-color: var(--gold-line); }
+.stag.off { color: var(--muted); }
 
-/* SECTIONS --------------------------------------------------------- */
+/* รายการทัวร์นาเมนต์ ---------------------------------------------------- */
 
-.section { margin-bottom: 26px; }
-.section-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 0 0 11px 2px;
-  flex-wrap: wrap;
-}
-.section-title {
-  font-family: var(--hf);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 2.5px;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.section-head .spacer { margin-left: auto; }
-
-/* TOURNAMENT LIST -------------------------------------------------- */
-
-.tlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
+.tlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
 
 .tcard {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 11px;
   background: var(--s1);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: var(--r);
+  padding: 16px 18px;
   text-decoration: none;
   color: inherit;
-  transition: border-color 0.18s, transform 0.18s;
-  position: relative;
-  overflow: hidden;
+  transition: border-color 0.15s, background 0.15s;
 }
-.tcard::before {
-  content: '';
+.tcard:hover { border-color: var(--gold-line); background: var(--s2); }
+.tcard.finished { opacity: 0.72; }
+
+.tcard-wrap { position: relative; display: flex; }
+.tcard-wrap > .tcard { flex: 1; }
+
+/* ปุ่มลบวางทับมุมขวาบนของการ์ด ไม่ได้อยู่ข้างใน
+   การ์ดทั้งใบเป็น <a> ปุ่มที่ซ้อนอยู่ข้างในจะกดทีเดียวเด้งเข้าหน้าทัวร์นาเมนต์ */
+.tcard-del {
   position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: var(--green);
-  transition: background 0.18s;
+  top: 13px;
+  right: 14px;
+  z-index: 2;
+  padding: 3px 9px;
+  border-radius: var(--r-sm);
+  border: 1px solid transparent;
+  background: none;
+  color: var(--muted);
+  font-family: var(--bf);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
-.tcard.finished::before { background: var(--muted); }
-.tcard:hover { border-color: var(--border2); transform: translateY(-2px); }
-.tcard-top { display: flex; align-items: flex-start; gap: 10px; }
+.tcard-wrap:hover .tcard-del { border-color: var(--border2); }
+.tcard-del:hover { color: var(--red); border-color: var(--red); background: rgba(221, 128, 128, 0.1); }
+.tcard-del:disabled { opacity: 0.5; cursor: default; }
+
+/* เว้นที่ให้ปุ่มลบ ชื่อทัวร์นาเมนต์ยาวๆ จะได้ไม่ไหลไปอยู่ใต้ปุ่ม */
+.tcard-top { display: flex; align-items: flex-start; gap: 10px; padding-right: 62px; }
 .tcard-name {
-  font-family: var(--hf);
   font-size: 17px;
-  font-weight: 900;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: #dbeafe;
-  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--text);
+  line-height: 1.3;
   word-break: break-word;
 }
 .tcard.finished .tcard-name { color: var(--muted2); }
-.tcard-meta { display: flex; gap: 7px; flex-wrap: wrap; }
-.tcard-note { font-size: 12px; line-height: 1.6; color: var(--muted2); }
+.tcard-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+.tcard-note { font-size: 12px; line-height: 1.65; color: var(--muted2); }
 .tcard-foot {
   display: flex;
   gap: 7px;
   flex-wrap: wrap;
   border-top: 1px solid var(--border);
-  padding-top: 9px;
-  margin-top: 2px;
+  padding-top: 11px;
 }
 
-.badge {
-  padding: 3px 9px;
-  border-radius: 999px;
-  border: 1px solid var(--border2);
-  background: var(--s3);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-  color: var(--muted2);
-  white-space: nowrap;
-}
-.badge.active { color: var(--green); border-color: rgba(16, 185, 129, 0.45); }
-.badge.finished { color: var(--muted2); }
-.badge.count { color: #c4b5fd; border-color: rgba(139, 92, 246, 0.4); }
-.badge.full { color: var(--gold); border-color: rgba(245, 158, 11, 0.5); }
-
-/* FORMS ------------------------------------------------------------ */
-
-.panel {
-  background: var(--s1);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 18px;
-}
-
-.frow { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-.fld { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 170px; }
-.fld.wide { flex-basis: 100%; }
-.fld label {
-  font-family: var(--hf);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 1.4px;
-  text-transform: uppercase;
+.foot {
+  margin-top: 34px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
   color: var(--muted);
-}
-.fld input, .fld select, .fld textarea {
-  background: var(--s3);
-  border: 1px solid var(--border2);
-  border-radius: 7px;
-  padding: 9px 11px;
-  color: var(--text);
-  font-family: var(--bf);
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.18s;
-}
-.fld input:focus, .fld select:focus, .fld textarea:focus { border-color: var(--blue); }
-.fld textarea { resize: vertical; min-height: 62px; }
-.fld .hint { font-size: 11px; color: var(--muted); }
-
-.empty {
-  background: var(--s1);
-  border: 1px dashed var(--border2);
-  border-radius: 12px;
-  padding: 34px 18px;
-  text-align: center;
-  color: var(--muted2);
-  font-size: 13px;
-  line-height: 1.7;
+  line-height: 1.8;
 }
 
-/* OBS SOURCE ROWS -------------------------------------------------- */
+/* เลือกหลายทีมแล้วลบทีเดียว --------------------------------------------- */
 
-.src {
+.bulk-bar {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--s1);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 11px 14px;
-  margin-bottom: 8px;
   flex-wrap: wrap;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  border: 1px solid var(--gold-line);
+  background: var(--gold-soft);
+  border-radius: var(--r-sm);
 }
-.src-name { flex: 0 0 130px; font-family: var(--hf); font-size: 13px; font-weight: 800; letter-spacing: 1px; }
-.src-url {
-  flex: 1;
-  min-width: 180px;
-  font-family: Consolas, 'Courier New', monospace;
+.bulk-bar[hidden] { display: none; }
+.bulk-count { font-size: 13px; font-weight: 600; color: var(--gold); }
+.bulk-bar .spacer { margin-left: auto; }
+
+.select-all {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px 2px;
   font-size: 12px;
   color: var(--muted2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  width: fit-content;
 }
-.src-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.select-all input { accent-color: var(--gold); cursor: pointer; }
 
-.foot {
-  margin-top: 30px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-  font-size: 11px;
-  color: var(--muted);
-  line-height: 1.7;
-}
-
-/* TOAST ------------------------------------------------------------ */
-
-.toast {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%) translateY(80px);
-  background: var(--s2);
-  border: 1px solid var(--border2);
-  border-left: 3px solid var(--green);
-  color: var(--text);
-  padding: 11px 18px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  opacity: 0;
-  transition: all 0.25s;
-  z-index: 300;
-  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55);
-  pointer-events: none;
-}
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-@media (max-width: 640px) {
-  .topbar { flex-wrap: wrap; height: auto; padding: 8px 12px; }
-  .topnav { margin-left: 0; width: 100%; }
-  .src-name { flex: 1 1 100%; }
+.team-tick {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--gold);
+  cursor: pointer;
 }
 
-/* TEAM CARDS ------------------------------------------------------- */
+/* การ์ดทีม -------------------------------------------------------------- */
 
 .team {
   background: var(--s1);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--r);
   padding: 13px 15px;
-  margin-bottom: 9px;
+  margin-bottom: 8px;
 }
-.team-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.team-row { display: flex; align-items: center; gap: 13px; flex-wrap: wrap; }
 
 .team-logo {
   flex: 0 0 auto;
   width: 40px;
   height: 40px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: var(--s3);
   border: 1px solid var(--border2);
   object-fit: contain;
@@ -373,30 +201,27 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--hf);
-  font-size: 14px;
-  font-weight: 900;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--muted);
-  letter-spacing: 0.5px;
 }
+.team-logo.big { width: 66px; height: 66px; font-size: 18px; }
 
-.team-id { flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 4px; }
+.team-id { flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 5px; }
 .team-name {
-  font-family: var(--hf);
   font-size: 16px;
-  font-weight: 900;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: #dbeafe;
+  font-weight: 700;
+  color: var(--text);
   word-break: break-word;
 }
 .team-sub { display: flex; gap: 6px; flex-wrap: wrap; }
 .team-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.team-head { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 
 .team-edit {
   border-top: 1px solid var(--border);
-  margin-top: 12px;
-  padding-top: 12px;
+  margin-top: 13px;
+  padding-top: 13px;
 }
 
 /* แถวทีมแบบแน่น ใช้บนหน้าทัวร์นาเมนต์
@@ -409,13 +234,13 @@ body {
  * แต่ที่นั่นแต่ละแถวมี badge มากกว่า (จำนวนทัวร์นาเมนต์ แพ้ชนะ)
  * และไม่ได้ยาวเท่า เพราะมีช่องค้นหาคัดให้ก่อนแล้ว */
 .team.compact {
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   padding: 6px 10px;
   margin-bottom: 5px;
 }
 .team.compact .team-row { gap: 9px; flex-wrap: nowrap; }
 .team.compact .team-logo { width: 26px; height: 26px; border-radius: 5px; }
-.team.compact .team-logo.placeholder { font-size: 9px; letter-spacing: 0; }
+.team.compact .team-logo.placeholder { font-size: 9px; }
 
 /* ชื่อกับ badge อยู่บรรทัดเดียวกัน แทนที่จะซ้อนกันสองบรรทัด
    นี่คือจุดที่ลดความสูงได้มากที่สุด */
@@ -430,7 +255,6 @@ body {
   flex: 0 1 auto;
   min-width: 0;
   font-size: 13px;
-  letter-spacing: 0.7px;
   /* ชื่อยาวต้องตัดด้วย ... ไม่ใช่ตัดคำขึ้นบรรทัดใหม่ ซึ่งจะทำให้แถวสูงไม่เท่ากัน */
   word-break: normal;
   white-space: nowrap;
@@ -438,7 +262,7 @@ body {
   text-overflow: ellipsis;
 }
 .team.compact .team-sub { flex: 0 0 auto; gap: 5px; flex-wrap: nowrap; }
-.team.compact .team-sub .badge { font-size: 9px; padding: 1px 5px; }
+.team.compact .team-sub .badge { font-size: 9px; padding: 1px 6px; }
 .team.compact .team-actions { flex: 0 0 auto; gap: 4px; flex-wrap: nowrap; }
 .team.compact .team-actions .tlink { font-size: 10px; padding: 3px 8px; }
 /* ปุ่มเอาทีมออก เหลือแค่กากบาท ข้อความเต็มอยู่ที่ title และ aria-label
@@ -446,7 +270,7 @@ body {
 .team.compact .team-actions .tlink.icon {
   font-size: 12px;
   line-height: 1;
-  padding: 3px 7px;
+  padding: 3px 8px;
 }
 .team.compact .team-edit { margin-top: 9px; padding-top: 9px; }
 
@@ -461,186 +285,146 @@ body {
   flex: 0 0 auto;
   width: 30px;
   text-align: center;
-  padding: 4px 0;
+  padding: 5px 0;
   font-size: 11px;
 }
+
+/* ช่องผู้เล่น ------------------------------------------------------------ */
+
 .player-row { display: flex; gap: 8px; align-items: center; margin-bottom: 7px; flex-wrap: wrap; }
 .player-row .slot {
   flex: 0 0 22px;
-  font-family: var(--hf);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--muted);
   text-align: center;
 }
 .player-row input[type="text"] {
   background: var(--s3);
   border: 1px solid var(--border2);
-  border-radius: 6px;
-  padding: 7px 9px;
+  border-radius: var(--r-sm);
+  padding: 7px 10px;
   color: var(--text);
   font-family: var(--bf);
   font-size: 13px;
   outline: none;
+  transition: border-color 0.15s;
 }
 .player-row input.pname { flex: 1; min-width: 130px; }
 .player-row input.prole { flex: 0 0 110px; }
-.player-row input[type="text"]:focus { border-color: var(--blue); }
+.player-row input[type="text"]:focus { border-color: var(--gold); }
 .player-row label.cap {
   display: flex;
   align-items: center;
   gap: 5px;
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
+  font-weight: 600;
   color: var(--muted2);
   cursor: pointer;
   white-space: nowrap;
 }
+.player-row label.cap input { accent-color: var(--gold); }
 
-/* MATCHES ---------------------------------------------------------- */
+/* แมตช์ ----------------------------------------------------------------- */
 
 .round-head {
-  font-family: var(--hf);
   font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 2px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--muted);
-  margin: 16px 0 8px 2px;
+  margin: 20px 0 9px;
 }
 .round-head:first-child { margin-top: 0; }
+a.round-head { text-decoration: none; display: block; }
+a.round-head:hover { color: var(--gold); }
 
 .match {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   background: var(--s1);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 13px;
-  margin-bottom: 7px;
+  border-radius: var(--r-sm);
+  padding: 11px 14px;
+  margin-bottom: 6px;
   flex-wrap: wrap;
 }
-.match.complete { border-color: rgba(16, 185, 129, 0.3); }
-.match.bye { opacity: 0.6; }
+.match.complete { border-color: var(--border2); }
+.match.bye { opacity: 0.55; }
 
 .match-side {
   flex: 1;
   min-width: 120px;
-  font-family: var(--hf);
   font-size: 14px;
-  font-weight: 800;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
+  font-weight: 600;
   color: var(--text);
   word-break: break-word;
 }
 .match-side.right { text-align: right; }
-.match-side.tbd { color: var(--muted); font-style: italic; text-transform: none; letter-spacing: 0; }
-.match-side.winner { color: #6ee7b7; }
+.match-side.tbd { color: var(--muted); font-style: italic; font-weight: 400; }
+.match-side.winner { color: var(--gold); font-weight: 700; }
 
-.match-score {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
+.match-score { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
 .match-score input {
   width: 42px;
   text-align: center;
   background: var(--s3);
   border: 1px solid var(--border2);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   padding: 5px 4px;
   color: var(--text);
-  font-family: var(--hf);
+  font-family: var(--bf);
   font-size: 15px;
-  font-weight: 900;
+  font-weight: 700;
   outline: none;
 }
-.match-score input:focus { border-color: var(--blue); }
+.match-score input:focus { border-color: var(--gold); }
 .match-score input:disabled { opacity: 0.4; cursor: not-allowed; }
-.match-score .dash { color: var(--muted); font-weight: 700; }
+.match-score .dash { color: var(--muted); }
 
-.tlink.live-now {
-  color: #6ee7b7;
-  border-color: rgba(16, 185, 129, 0.6);
-  background: rgba(16, 185, 129, 0.14);
-}
+.tlink.live-now { color: var(--gold); border-color: var(--gold); background: var(--gold-soft); }
 
-/* แถบบอกว่ากำลังคุมแมตช์ไหนอยู่ บนหน้า Control Panel */
+/* แถบบอกว่ากำลังคุมแมตช์ไหนอยู่ ขึ้นบนหน้า Control Panel */
 .live-bar {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  border-radius: 10px;
-  padding: 9px 14px;
-  margin: 10px 14px 0;
-  font-family: var(--hf, 'Segoe UI'), sans-serif;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.8px;
-  color: #6ee7b7;
-}
-.live-bar .muted { color: #64748b; font-weight: 600; letter-spacing: 0.4px; }
-.live-bar a { margin-left: auto; }
-
-/* ทะเบียนทีมและโปรไฟล์ทีม (Phase 6) ------------------------------- */
-
-/* ลิงก์ที่อยู่ในเนื้อหา ไม่ใช่ปุ่ม .tlink
- * ขีดเส้นใต้ตอนชี้เท่านั้น รายการยาวๆ ที่ขีดเส้นใต้ทุกบรรทัดอ่านยาก */
-.link { color: inherit; text-decoration: none; }
-.link:hover { color: var(--blue); text-decoration: underline; }
-
-.team-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-.team-logo.big { width: 66px; height: 66px; font-size: 18px; }
-
-/* แถวประวัติใช้โครงเดียวกับ .match แต่คนละคอลัมน์
- * .match เป็นคู่แข่งซ้าย-คะแนน-ขวา ส่วนตรงนี้มองจากทีมเดียวออกไป
- * จึงเป็น รอบ / คู่แข่ง / คะแนน / จำนวนเกม / ผล */
-.hist-round {
-  flex: 0 0 150px;
-  font-family: var(--hf);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  color: var(--muted2);
-}
-.hist-opp {
-  flex: 1;
-  min-width: 130px;
-  font-family: var(--hf);
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.6px;
-}
-.hist-opp.tbd {
-  color: var(--muted);
-  font-style: italic;
+  background: var(--gold-soft);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--r-sm);
+  padding: 10px 14px;
+  margin: 12px 14px 0;
   font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0;
+  color: var(--gold);
 }
+.live-bar .muted { color: var(--muted2); font-weight: 400; }
+.live-bar a { margin-left: auto; }
+
+/* ประวัติของทีม --------------------------------------------------------- */
+/* ใช้โครงเดียวกับ .match แต่คนละคอลัมน์
+ * .match เป็นคู่แข่งซ้าย-คะแนน-ขวา ส่วนตรงนี้มองจากทีมเดียวออกไป
+ * จึงเป็น รอบ / คู่แข่ง / คะแนน / จำนวนเกม / ผล */
+
+.hist-round {
+  flex: 0 0 150px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.hist-opp { flex: 1; min-width: 130px; font-size: 15px; font-weight: 600; }
+.hist-opp.tbd { color: var(--muted); font-style: italic; font-size: 13px; font-weight: 400; }
 /* ทีมที่ถูกลบไปแล้ว ชื่อมาจากสำเนาแช่แข็ง ไม่ใช่ทะเบียน จึงกดไม่ได้
  * ทำให้ดูจางลงและมี cursor เป็น help เพื่อบอกว่ามีคำอธิบายอยู่ที่ tooltip */
 .hist-opp.gone { color: var(--muted2); cursor: help; }
-.hist-score {
-  flex: 0 0 62px;
-  text-align: center;
-  font-family: var(--hf);
-  font-size: 17px;
-  font-weight: 800;
-  color: var(--text);
-}
+.hist-score { flex: 0 0 62px; text-align: center; font-size: 16px; font-weight: 700; color: var(--text); }
 .hist-bo { flex: 0 0 40px; font-size: 11px; color: var(--muted); text-align: center; }
 .hist-outcome { flex: 0 0 96px; display: flex; justify-content: flex-end; }
 
-.badge.loss { color: #fca5a5; border-color: rgba(239, 68, 68, 0.4); }
-
-a.round-head { text-decoration: none; }
-a.round-head:hover { color: var(--blue); }
+@media (max-width: 640px) {
+  .src-name { flex: 1 1 100%; }
+}

@@ -60,6 +60,11 @@ later ones depend on earlier ones.
    The confirmation lives in one place, `public/js/lib/tournament-ui.js`, and
    adds an extra line when that tournament is on air right now.
 
+3. **Every operator page redesigned.** `public/css/theme.css` is the new design
+   system: black, white and gold, one system font, no glow and no neon. Gold
+   means "happening now" and nothing else; blue and red mean team sides only.
+   Broadcast pages were deliberately left out — see the rule in `CLAUDE.md`.
+
 **The team registry has its own pages now.** `/teams` lists every team ever
 created with a search box and a one-form create; `/teams/:id` is the profile —
 roster editing, logo, the tournaments entered, and match history across all of
@@ -224,6 +229,7 @@ Decided with the user. Do not re-open without a reason.
 | 128 limit | Per-tournament roster, not the registry | The directory may hold hundreds over time |
 | Operator UI stack | Stay on Electron/Node + HTML | See Appendix A |
 | Language | TypeScript, `strict` | The id graph ahead is where types earn their keep |
+| Operator UI look | Black, white and gold, one token file | Decided 2026-08-28; see §2 |
 
 ---
 
@@ -249,6 +255,31 @@ describes Express 5 — the project runs Express 4.22.
 
 **Only `server/` and `tests/` are TypeScript.** `public/js/` is still plain
 JavaScript, served as classic `<script>` tags with no bundler. See §8.
+
+---
+
+### The operator theme
+
+`public/css/theme.css` holds every colour, the type scale and the chrome each operator
+page repeats (top bar, nav, buttons, panels, fields, badges, the confirm box, the toast).
+Each page's own stylesheet keeps only what is unique to it, and every operator page links
+`theme.css` first. The three pages that carry their styles inline — Control, Design,
+Hotkeys — link it too and their `<style>` blocks now start below the shared layer.
+
+The palette is black through dark grey, near-white text, and gold as the single accent.
+**Gold means "this is what is happening now"**: the current page in the nav, the primary
+action in a form, the focused field, the match on air, the draft slot whose turn it is.
+Spread it wider than that and it stops meaning anything.
+
+Blue and red survive as **team sides**, never as decoration — the blue panel on the Control
+Panel, the side chips in Analytics, the two sides of a match row. Red doubles as the
+colour of destructive actions, which reads as a different context and does not collide.
+There is no green and no purple; every "positive" or "live" state is gold now.
+
+The broadcast pages are deliberately outside this system. `overlay`, `overlay-1440`,
+`result` and `overlay-teams` keep their own look, which the user edits from the Design
+page, and they must never link `theme.css` — a theme change on the operator side must not
+be able to alter what viewers see mid-broadcast.
 
 ---
 
@@ -741,6 +772,12 @@ Each of these cost real debugging time. They are also in `CLAUDE.md`.
   while every team was still playing. It takes the `elimination` flag now. The
   bug predates the match-session split but was invisible while the flat list,
   which said `Round N`, was the view people used.
+- **One colour token block per app, not one per page.** The palette used to be copied into
+  `app.css` and into four inline `<style>` blocks. Nobody kept them in step: each page's
+  logo had drifted to a different colour, and the same button had two focus colours
+  depending on which page it was on. Colours live in `css/theme.css` only. A page that
+  needs a colour uses a token; a page that needs a *new* colour is a design decision, not a
+  local edit.
 - **Deleting a tournament is a hard delete, and `PRAGMA foreign_keys = ON` is what
   makes it one.** `DELETE FROM tournaments` only removes one row; the bracket, its
   games and their draft slots go with it because of the `ON DELETE CASCADE` chain in

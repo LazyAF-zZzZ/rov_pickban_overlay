@@ -4,196 +4,174 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ROV Control Panel</title>
+<link rel="stylesheet" href="/css/theme.css">
 <style>
-:root{--bg:#0b0c14;--s1:#111220;--s2:#181929;--s3:#1e2035;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--blue:#3b82f6;--red:#ef4444;--gold:#f59e0b;--purple:#8b5cf6;--green:#10b981;--text:#e2e8f0;--muted:#4a5568;--muted2:#64748b;--hf:'Arial Narrow','Segoe UI Condensed','Segoe UI',Arial,sans-serif;--bf:'Segoe UI',Arial,sans-serif;}
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:var(--bf);background:var(--bg);color:var(--text);min-height:100vh;}
+/* เฉพาะของหน้า Control Panel
+   เปลือกที่ใช้ร่วมกับหน้าอื่น (สี ตัวอักษร แถบบน ปุ่ม แผง ช่องกรอก กล่องยืนยัน
+   toast) อยู่ใน /css/theme.css ซึ่งโหลดไว้ก่อนหน้านี้แล้ว */
 
-/* TOP BAR */
-/* The bar wraps instead of forcing everything onto one row. Its children
-   used to carry fixed pixel widths inside containers that were allowed to
-   shrink, so below roughly 1400px they could not give way and simply drew
-   on top of each other. Everything here is flex-basis with a floor now. */
-.topbar{background:var(--s1);border-bottom:1px solid var(--border);padding:7px 18px;min-height:50px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;position:sticky;top:0;z-index:100;}
-.logo{font-family:var(--hf);font-size:18px;font-weight:900;letter-spacing:3px;color:var(--blue);white-space:nowrap;}
-.logo span{color:rgba(255,255,255,0.3);}
+/* แถบบนของหน้านี้ต้องขึ้นบรรทัดใหม่ได้ เพราะมีทั้งชื่อแมตช์ สวิตช์ออกอากาศ
+   และเมนู ของเดิมเคยตรึงความสูงไว้แล้วมันชนกันเองที่จอต่ำกว่าราว 1400px */
+.topbar{height:auto;min-height:52px;flex-wrap:wrap;padding:8px 20px;gap:10px 16px;}
 .match-inputs{display:flex;align-items:center;gap:8px;flex:1 1 340px;min-width:0;}
-.match-inputs input{background:var(--s3);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:5px 10px;font-family:var(--bf);font-size:13px;font-weight:600;transition:border-color 0.2s;}
-.match-inputs input:focus{outline:none;border-color:var(--blue);}
-.match-inputs input{min-width:0;}
+.match-inputs input{background:var(--s3);border:1px solid var(--border2);color:var(--text);border-radius:var(--r-sm);padding:6px 10px;font-family:var(--bf);font-size:13px;min-width:0;transition:border-color 0.15s;}
+.match-inputs input:focus{outline:none;border-color:var(--gold);}
 .match-inputs input:nth-child(1){flex:1 1 150px;}
 .match-inputs input:nth-child(2){flex:1.5 1 200px;}
-.tlink{padding:5px 13px;border-radius:6px;font-family:var(--hf);font-size:12px;font-weight:800;letter-spacing:1px;cursor:pointer;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);transition:all 0.2s;text-decoration:none;}
-.tlink:hover{color:var(--blue);border-color:var(--blue);}
 
-/* PAGE NAV - identical markup, order and styling on all four pages, so the
-   same button is always in the same place. The current page is marked rather
-   than removed, so the row never changes width as you move between pages. */
-.topnav{margin-left:auto;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
-.topnav .tlink.active{background:var(--s1);color:var(--text);border-color:var(--blue);cursor:default;}
-.topnav .tlink.active:hover{color:var(--text);border-color:var(--blue);}
+/* สวิตช์ที่ถูกแตะระหว่างออกอากาศ อยู่รวมกันและแยกจากเมนู
+   ลิงก์เปลี่ยนหน้าจะได้ไม่มาอยู่ติดปุ่มที่มีผลกับสิ่งที่คนดูเห็น */
 .live-switches{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
-
-/* Size switch: one choice, applied to every overlay and result screen */
-.size-switch{display:flex;align-items:center;gap:4px;padding:3px 6px 3px 9px;background:var(--s3);border:1px solid var(--border2);border-radius:7px;}
-.size-switch-label{font-family:var(--hf);font-size:10px;font-weight:800;letter-spacing:1.5px;color:var(--muted);margin-right:2px;}
-.size-btn{padding:4px 11px;border-radius:5px;border:1px solid transparent;background:none;color:var(--muted2);font-family:var(--hf);font-size:12px;font-weight:800;letter-spacing:0.8px;cursor:pointer;transition:all 0.15s;}
+.size-switch{display:flex;align-items:center;gap:3px;padding:3px 5px 3px 10px;border:1px solid var(--border2);border-radius:var(--r-sm);}
+.size-switch-label{font-size:9px;font-weight:700;letter-spacing:0.16em;color:var(--muted);margin-right:4px;}
+.size-btn{padding:4px 11px;border-radius:4px;border:1px solid transparent;background:none;color:var(--muted2);font-family:var(--bf);font-size:12px;font-weight:600;cursor:pointer;transition:color 0.15s,background 0.15s;}
 .size-btn:hover{color:var(--text);}
-.size-btn.active{background:var(--blue);border-color:var(--blue);color:#fff;}
-/* Red when the banner is hidden - "off air" should not look like every other active state. */
-.size-btn.hide-btn.active{background:var(--red);border-color:var(--red);color:#fff;}
+.size-btn.active{background:var(--gold);color:#141209;}
+/* ปิดแบนเนอร์ไม่ใช่สถานะเดียวกับ "อันนี้ถูกเลือกอยู่" มันคือไม่ได้ออกอากาศ */
+.size-btn.hide-btn.active{background:var(--red);color:#141209;}
 
-/* MAIN GRID */
-.main{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px;max-width:1600px;margin:0 auto;}
+/* โครงหลัก -------------------------------------------------------------- */
 
-/* PANEL */
-.panel{background:var(--s1);border-radius:12px;border:1px solid var(--border);overflow:hidden;}
-.panel.blue-panel{border-top:3px solid var(--blue);}
-.panel.red-panel{border-top:3px solid var(--red);}
+.main{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px;max-width:1600px;margin:0 auto;}
 .panel.full{grid-column:1/-1;}
-.panel.draft-panel{border-top:3px solid var(--purple);}
-.panel-head{display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--s2);border-bottom:1px solid var(--border);}
-.panel-title{font-family:var(--hf);font-size:15px;font-weight:900;letter-spacing:2px;text-transform:uppercase;}
-.score-badge{margin-left:auto;display:flex;align-items:center;gap:8px;}
-.score-badge label{font-size:10px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;}
-.score-input{width:52px;text-align:center;font-family:var(--hf);font-size:20px;font-weight:900;padding:3px 4px;background:var(--s3);border:1px solid var(--border2);color:var(--text);border-radius:6px;}
-.score-input:focus{outline:none;border-color:var(--blue);}
-.panel-body{padding:12px 14px;}
+/* ฝั่งทีมใช้สีของฝั่งเป็นเส้นบางๆ ไม่ใช่แถบหนา หน้าที่ของมันคือบอกว่าใครเป็นใคร
+   ไม่ใช่การตกแต่ง */
+.panel.blue-panel{border-top:2px solid var(--blue);}
+.panel.red-panel{border-top:2px solid var(--red);}
+.panel.draft-panel{border-top:2px solid var(--gold-line);}
+.score-badge{margin-left:auto;display:flex;align-items:center;gap:9px;}
+.score-badge label{font-size:10px;color:var(--muted);letter-spacing:0.14em;text-transform:uppercase;}
+.score-input{width:52px;text-align:center;font-family:var(--bf);font-size:19px;font-weight:700;padding:3px 4px;background:var(--s3);border:1px solid var(--border2);color:var(--text);border-radius:var(--r-sm);}
+.score-input:focus{outline:none;border-color:var(--gold);}
 
-/* TEAM META */
-.team-meta{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:12px;}
-.field label{display:block;font-size:10px;letter-spacing:1.5px;color:var(--muted2);text-transform:uppercase;margin-bottom:4px;}
-.field input{width:100%;padding:7px 10px;background:var(--s3);border:1px solid var(--border2);color:var(--text);border-radius:7px;font-family:var(--bf);font-size:13px;font-weight:600;transition:border-color 0.2s;}
-.field input:focus{outline:none;border-color:var(--blue);}
+/* ชื่อทีม โลโก้ ผู้เล่น -------------------------------------------------- */
 
-/* TEAM LOGO */
-.logo-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
-.logo-preview{width:52px;height:52px;flex:0 0 52px;border-radius:8px;border:1px dashed var(--border2);background:var(--s3) center/contain no-repeat;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--muted2);text-align:center;cursor:help;}
+.team-meta{display:grid;grid-template-columns:1fr minmax(0,180px) auto;gap:10px;align-items:end;margin-bottom:14px;}
+.team-load{width:100%;height:33px;background:var(--s3);border:1px solid var(--border2);color:var(--text);border-radius:var(--r-sm);padding:0 8px;font-family:var(--bf);font-size:13px;transition:border-color 0.15s;}
+.team-load:focus{outline:none;border-color:var(--gold);}
+.team-load option{background:var(--s2);color:var(--text);}
+@media (max-width:700px){.team-meta{grid-template-columns:1fr;}}
+.logo-row{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.logo-preview{width:52px;height:52px;flex:0 0 52px;border-radius:var(--r-sm);border:1px dashed var(--border2);background:var(--s3) center/contain no-repeat;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:var(--muted);text-align:center;cursor:help;}
 .logo-preview.filled{border-style:solid;font-size:0;}
 .logo-actions{flex:1;min-width:0;}
-.logo-actions label{display:block;font-size:10px;letter-spacing:1.5px;color:var(--muted2);text-transform:uppercase;margin-bottom:4px;}
 .logo-buttons{display:flex;gap:6px;}
-.tlink.danger:hover{color:var(--red);border-color:var(--red);}
 
-/* Replaces the SAVE buttons. Sits in the same slot so the row does not reflow,
-   and flashes green briefly when a field has been written to the server. */
-.save-state{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);white-space:nowrap;transition:color 0.2s;align-self:center;}
-.save-state.saved{color:var(--green);}
+/* แทนที่ปุ่ม SAVE อยู่ในช่องเดียวกันเพื่อไม่ให้แถวขยับ
+   และกะพริบสั้นๆ ตอนค่าถูกเขียนขึ้นเซิร์ฟเวอร์แล้ว */
+.save-state{font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap;transition:color 0.2s;align-self:center;}
+.save-state.saved{color:var(--gold);}
 
-/* PP TABLE */
-.pp-table{width:100%;border-collapse:separate;border-spacing:0 3px;}
-.pp-table thead th{font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;padding:0 4px 5px;font-weight:700;}
+.pp-table{width:100%;border-collapse:separate;border-spacing:0 4px;}
+.pp-table thead th{font-size:10px;letter-spacing:0.14em;color:var(--muted);text-transform:uppercase;padding:0 4px 6px;font-weight:700;text-align:left;}
 .pp-row td{padding:0 3px;}
-.pp-row .player-input{width:100%;padding:7px 10px;background:var(--s3);border:1px solid var(--border2);color:var(--text);border-radius:7px;font-family:var(--bf);font-size:13px;font-weight:600;transition:border-color 0.2s;}
-.pp-row .player-input:focus{outline:none;border-color:var(--blue);}
+.pp-row .player-input{width:100%;padding:7px 10px;background:var(--s3);border:1px solid var(--border2);color:var(--text);border-radius:var(--r-sm);font-family:var(--bf);font-size:13px;transition:border-color 0.15s;}
+.pp-row .player-input:focus{outline:none;border-color:var(--gold);}
 
-/* Hero selector */
+/* ช่องเลือกฮีโร่ --------------------------------------------------------- */
+
 .hero-select-wrap{min-width:110px;}
-.hero-native-select{width:100%;height:33px;background:var(--s3);border:1px solid var(--border2);color:var(--text);border-radius:7px;padding:0 8px;font-family:var(--bf);font-size:13px;font-weight:600;transition:border-color 0.2s;}
-.hero-native-select:focus{outline:none;border-color:var(--blue);}
+.hero-native-select,.hero-search-input{width:100%;height:33px;background:var(--s3);border:1px solid var(--border2);color:var(--text);border-radius:var(--r-sm);font-family:var(--bf);font-size:13px;transition:border-color 0.15s;}
+.hero-native-select{padding:0 8px;}
+.hero-search-input{padding:0 9px;font-weight:600;}
+.hero-native-select:focus,.hero-search-input:focus{outline:none;border-color:var(--gold);}
 .hero-native-select option{background:var(--s2);color:var(--text);}
-.hero-search-input{width:100%;height:33px;background:var(--s3);border:1px solid var(--border2);color:var(--text);border-radius:7px;padding:0 9px;font-family:var(--bf);font-size:13px;font-weight:700;transition:border-color 0.2s,box-shadow 0.2s;}
-.hero-search-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(59,130,246,0.22);}
-.hero-search-input::placeholder{color:var(--muted2);font-weight:600;}
+.hero-search-input::placeholder{color:var(--muted);font-weight:400;}
 
-/* Hero suggestion dropdown */
-/* Tall enough to scan a long list; the rest scrolls. overscroll-behavior
-   keeps the wheel from carrying on into the page once the list bottoms out. */
-.hero-dd{position:absolute;z-index:500;max-height:340px;overflow-y:auto;overscroll-behavior:contain;background:var(--s2);border:1px solid var(--border2);border-radius:8px;box-shadow:0 12px 32px rgba(0,0,0,0.55);padding:4px;}
+/* รายการฮีโร่ที่แนะนำ
+   สูงพอจะกวาดตาทั้งรายการ ที่เหลือเลื่อนเอา overscroll-behavior กันไม่ให้
+   ล้อเมาส์เลื่อนหน้าต่อเมื่อรายการเลื่อนจนสุดแล้ว */
+.hero-dd{position:absolute;z-index:500;max-height:340px;overflow-y:auto;overscroll-behavior:contain;background:var(--s2);border:1px solid var(--border2);border-radius:var(--r-sm);box-shadow:0 14px 34px rgba(0,0,0,0.65);padding:4px;}
 .hero-dd[hidden]{display:none;}
-.hero-dd-item{padding:6px 10px;border-radius:5px;font-family:var(--bf);font-size:13px;font-weight:600;color:var(--text);cursor:pointer;white-space:nowrap;}
-.hero-dd-item.active{background:var(--blue);color:#fff;}
+.hero-dd-item{padding:6px 10px;border-radius:4px;font-family:var(--bf);font-size:13px;color:var(--text);cursor:pointer;white-space:nowrap;}
 .hero-dd-item:hover{background:var(--s3);}
-.hero-dd-item.active:hover{background:var(--blue);}
+.hero-dd-item.active,.hero-dd-item.active:hover{background:var(--gold);color:#141209;}
 .hero-dd::-webkit-scrollbar{width:9px;}
 .hero-dd::-webkit-scrollbar-thumb{background:var(--s3);border-radius:5px;}
 
-/* SWAP button */
-.btn-sw{padding:5px 8px;border-radius:5px;font-family:var(--hf);font-size:11px;font-weight:800;letter-spacing:1px;border:none;cursor:pointer;background:var(--purple);color:#fff;transition:background 0.15s;white-space:nowrap;}
-.btn-sw:hover{background:#7c3aed;}
-.btn-sw.cancel-mode{background:#dc2626;animation:swGlow 0.6s ease-in-out infinite alternate;}
-@keyframes swGlow{from{box-shadow:0 0 0 rgba(220,38,38,0.5);}to{box-shadow:0 0 10px rgba(220,38,38,0.8);}}
-.active-row .player-input{box-shadow:0 0 0 2px var(--gold);border-color:var(--gold) !important;}
+/* ปุ่มสลับ (SW) ---------------------------------------------------------- */
 
-/* BAN SECTION */
-.ban-section{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
-.ban-label-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-.ban-label-row span{font-family:var(--hf);font-size:11px;font-weight:800;letter-spacing:2px;color:var(--red);padding:2px 8px;background:rgba(239,68,68,0.1);border-radius:4px;border:1px solid rgba(239,68,68,0.25);}
-.ban-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
-.ban-slot-wrap{display:flex;flex-direction:column;gap:3px;}
-.ban-slot-label{font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;text-align:center;}
-.ban-select-wrap .hero-native-select{height:30px;color:#fca5a5;font-size:12px;border-radius:6px;padding:0 6px;}
-.ban-select-wrap .hero-search-input{height:30px;color:#fca5a5;font-size:12px;border-radius:6px;padding:0 7px;}
-.ban-clear{font-size:10px;padding:2px 0;background:none;border:none;color:var(--muted);cursor:pointer;font-family:var(--bf);font-weight:600;letter-spacing:1px;text-transform:uppercase;text-align:center;transition:color 0.15s;}
+.btn-sw{padding:5px 9px;border-radius:4px;font-family:var(--bf);font-size:11px;font-weight:600;border:1px solid var(--border2);cursor:pointer;background:none;color:var(--muted2);transition:color 0.15s,border-color 0.15s;white-space:nowrap;}
+.btn-sw:hover{color:var(--text);border-color:var(--muted);}
+/* กำลังรอให้เลือกช่องที่สอง กดอีกครั้งเพื่อยกเลิก */
+.btn-sw.cancel-mode{border-color:var(--red);color:var(--red);}
+.active-row .player-input{border-color:var(--gold) !important;}
+
+/* แบน ------------------------------------------------------------------- */
+
+.ban-section{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.ban-label-row{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+.ban-label-row span{font-size:10px;font-weight:700;letter-spacing:0.16em;color:var(--muted);text-transform:uppercase;}
+.ban-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;}
+.ban-slot-wrap{display:flex;flex-direction:column;gap:4px;}
+.ban-slot-label{font-size:9px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;text-align:center;}
+/* ตัวที่ถูกแบนเขียนด้วยสีจางกว่าตัวที่ถูกเลือก คนละความหมายกัน */
+.ban-select-wrap .hero-native-select,.ban-select-wrap .hero-search-input{height:30px;color:var(--muted2);font-size:12px;padding:0 7px;}
+.ban-clear{font-size:10px;padding:2px 0;background:none;border:none;color:var(--muted);cursor:pointer;font-family:var(--bf);letter-spacing:0.06em;text-transform:uppercase;text-align:center;transition:color 0.15s;}
 .ban-clear:hover{color:var(--red);}
 
-/* DRAFT TIMER */
-.draft-inner{display:grid;grid-template-columns:130px minmax(0,1fr) 276px;gap:14px;align-items:center;padding:12px 16px;}
+/* นาฬิกาดราฟต์ ---------------------------------------------------------- */
+
+.draft-inner{display:grid;grid-template-columns:130px minmax(0,1fr) 276px;gap:16px;align-items:center;padding:14px 16px;}
 .draft-clock{text-align:center;}
-.draft-phase-name{font-family:var(--hf);font-size:12px;font-weight:800;color:var(--purple);letter-spacing:2px;text-transform:uppercase;margin-bottom:2px;}
-.draft-time{font-family:var(--hf);font-size:44px;font-weight:900;color:var(--gold);line-height:1;text-shadow:0 0 20px rgba(245,158,11,0.4);}
-.draft-time.urgent{color:var(--red);text-shadow:0 0 20px rgba(239,68,68,0.6);animation:urgPulse 0.5s ease-in-out infinite alternate;}
-@keyframes urgPulse{from{opacity:1;}to{opacity:0.5;}}
-.draft-prog{font-size:11px;color:var(--muted2);margin-top:3px;}
+.draft-phase-name{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:0.16em;text-transform:uppercase;margin-bottom:4px;}
+.draft-time{font-size:42px;font-weight:300;color:var(--text);line-height:1;font-variant-numeric:tabular-nums;}
+/* ใกล้หมดเวลา เป็นที่เดียวในหน้าที่ตั้งใจให้แย่งสายตา */
+.draft-time.urgent{color:var(--red);animation:urgPulse 0.6s ease-in-out infinite alternate;}
+@keyframes urgPulse{from{opacity:1;}to{opacity:0.45;}}
+.draft-prog{font-size:11px;color:var(--muted);margin-top:5px;}
 .draft-seq{display:flex;flex-wrap:wrap;gap:4px;min-width:0;overflow:hidden;}
-.seq-badge{padding:3px 9px;border-radius:20px;font-family:var(--hf);font-size:11px;font-weight:700;letter-spacing:0.5px;white-space:nowrap;background:var(--s3);color:var(--muted2);border:1px solid var(--border);transition:all 0.2s;}
-.seq-badge.done{background:var(--s2);color:var(--muted);border-color:transparent;}
-.seq-badge.current{background:var(--purple);color:#fff;border-color:var(--purple);box-shadow:0 0 10px rgba(139,92,246,0.4);}
-.draft-controls{display:flex;flex-direction:column;gap:6px;min-width:0;width:100%;}
+.seq-badge{padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap;color:var(--muted);border:1px solid var(--border);transition:color 0.15s,border-color 0.15s,background 0.15s;}
+.seq-badge.done{color:var(--muted);border-color:transparent;opacity:0.5;}
+.seq-badge.current{background:var(--gold);border-color:var(--gold);color:#141209;}
+.draft-controls{display:flex;flex-direction:column;gap:7px;min-width:0;width:100%;}
 .draft-btn-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;width:100%;}
 .draft-btn-row:first-child{grid-template-columns:2fr 1fr;}
-.dbtn{min-width:0;width:100%;padding:8px 6px;border-radius:7px;border:none;cursor:pointer;font-family:var(--hf);font-size:12px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:3px;white-space:nowrap;}
-.dbtn:hover{transform:translateY(-1px);filter:brightness(1.15);}
-.dbtn:active{transform:none;filter:none;}
-.dbtn.start{background:var(--green);color:#fff;flex:2;}
-.dbtn.pause{background:var(--gold);color:#000;}
-.dbtn.resume{background:var(--blue);color:#fff;}
-.dbtn.reset{background:var(--red);color:#fff;}
-.dbtn.nav{background:var(--s3);color:var(--muted2);border:1px solid var(--border2);}
-.dbtn.nav:hover{color:var(--text);}
+.dbtn{min-width:0;width:100%;padding:8px 6px;border-radius:var(--r-sm);border:1px solid var(--border2);background:none;color:var(--muted2);cursor:pointer;font-family:var(--bf);font-size:12px;font-weight:600;letter-spacing:0.04em;transition:color 0.15s,border-color 0.15s,background 0.15s;display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;}
+.dbtn:hover{color:var(--text);border-color:var(--muted);}
+/* ปุ่มเดินเวลาเป็นปุ่มหลักของแผงนี้ จึงเป็นปุ่มเดียวที่ทึบ */
+.dbtn.start,.dbtn.resume{background:var(--gold);border-color:var(--gold);color:#141209;}
+.dbtn.start:hover,.dbtn.resume:hover{background:#e3c07c;color:#141209;}
+.dbtn.pause{color:var(--gold);border-color:var(--gold-line);}
+.dbtn.pause:hover{background:var(--gold-soft);color:var(--gold);}
+.dbtn.reset{color:var(--red);border-color:rgba(221,128,128,0.4);}
+.dbtn.reset:hover{background:rgba(221,128,128,0.12);color:var(--red);border-color:var(--red);}
 
-/* BOTTOM BAR */
+/* ระดับเสียงต่อเหตุการณ์ */
+.sfx-row{display:flex;align-items:center;gap:14px;padding:9px 0;border-bottom:1px solid var(--border);}
+.sfx-row:last-child{border-bottom:none;}
+.sfx-label{flex:0 0 90px;font-size:13px;font-weight:600;color:var(--text);}
+.sfx-row input[type=range]{flex:1;min-width:0;accent-color:var(--gold);cursor:pointer;}
+.sfx-value{flex:0 0 46px;text-align:right;font-size:12px;color:var(--muted2);font-variant-numeric:tabular-nums;}
+
+/* แถบล่าง --------------------------------------------------------------- */
+
 .bottom-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--s1);border-top:1px solid var(--border);position:sticky;bottom:0;z-index:50;max-width:1600px;margin:0 auto;}
-.bbtn{padding:8px 18px;border-radius:7px;border:none;cursor:pointer;font-family:var(--hf);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;transition:all 0.15s;}
-.bbtn:hover{filter:brightness(1.1);transform:translateY(-1px);}
-.bbtn.primary{background:var(--blue);color:#fff;}
-.bbtn.danger{background:var(--red);color:#fff;}
-.bbtn.neutral{background:var(--s3);color:var(--muted2);border:1px solid var(--border2);}
-.bbtn.neutral:hover{color:var(--text);}
-/* Outlined rather than filled: destructive, but not the loudest thing on the bar. */
-.bbtn.danger-soft{background:var(--s3);color:#fca5a5;border:1px solid rgba(239,68,68,0.40);}
-.bbtn.danger-soft:hover{background:var(--red);color:#fff;border-color:var(--red);}
-
-/* CONFIRM DIALOG - matches the Presets page */
-.modal-backdrop{position:fixed;inset:0;background:rgba(3,5,12,0.72);display:flex;align-items:center;justify-content:center;padding:20px;z-index:600;}
-.modal-backdrop[hidden]{display:none;}
-.modal{background:var(--s1);border:1px solid var(--border2);border-radius:12px;max-width:430px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.6);overflow:hidden;}
-.modal-title{padding:14px 18px;background:var(--s2);border-bottom:1px solid var(--border);font-family:var(--hf);font-size:15px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;}
-.modal-body{padding:16px 18px;font-size:13px;line-height:1.65;color:var(--muted2);}
-.modal-actions{display:flex;gap:8px;justify-content:flex-end;padding:0 18px 16px;}
+.bbtn{padding:8px 18px;border-radius:var(--r-sm);border:1px solid var(--border2);background:none;color:var(--muted2);cursor:pointer;font-family:var(--bf);font-size:13px;font-weight:600;letter-spacing:0.03em;transition:color 0.15s,border-color 0.15s,background 0.15s;}
+.bbtn:hover{color:var(--text);border-color:var(--muted);}
+.bbtn.primary{background:var(--gold);border-color:var(--gold);color:#141209;}
+.bbtn.primary:hover{background:#e3c07c;color:#141209;}
+.bbtn.danger,.bbtn.danger-soft{color:var(--red);border-color:rgba(221,128,128,0.4);}
+.bbtn.danger:hover,.bbtn.danger-soft:hover{background:rgba(221,128,128,0.12);border-color:var(--red);color:var(--red);}
 .bb-sep{width:1px;height:24px;background:var(--border);}
-.bb-status{font-size:12px;color:var(--muted2);margin-left:16px;font-family:var(--hf);letter-spacing:1px;white-space:nowrap;}
-.kbd-hint{margin-left:auto;display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--muted);letter-spacing:0.3px;}
-.kbd-hint b{color:var(--muted2);background:var(--s3);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;margin-right:3px;font-family:var(--hf);font-weight:800;letter-spacing:0.5px;}
+.bb-status{font-size:12px;color:var(--muted);margin-left:16px;white-space:nowrap;}
+.kbd-hint{margin-left:auto;display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--muted);}
+.kbd-hint b{color:var(--muted2);border:1px solid var(--border2);border-radius:4px;padding:1px 6px;margin-right:4px;font-weight:600;}
 @media (max-width:1100px){.kbd-hint{display:none;}}
 
-/* Active slot highlight (from draft timer) */
-.slot-active{box-shadow:0 0 0 2px var(--gold) !important;}
-.slot-active .hero-native-select{border-color:var(--gold) !important;box-shadow:0 0 0 2px var(--gold);}
-.slot-active .hero-search-input{border-color:var(--gold) !important;box-shadow:0 0 0 2px var(--gold);}
-
-/* Toast */
-.toast{position:fixed;bottom:66px;right:20px;background:var(--s3);color:var(--text);border:1px solid var(--border2);border-left:3px solid var(--green);padding:10px 18px;border-radius:8px;font-family:var(--hf);font-size:13px;font-weight:700;letter-spacing:0.5px;box-shadow:0 8px 24px rgba(0,0,0,0.4);transform:translateX(130%);opacity:0;transition:all 0.3s cubic-bezier(.175,.885,.32,1.275);z-index:999;}
-.toast.show{transform:translateX(0);opacity:1;}
-@media (max-width:1100px){
-  .topbar{height:auto;min-height:50px;flex-wrap:wrap;padding:8px 12px;}
-  .match-inputs{flex-wrap:wrap;}
-  .main{grid-template-columns:1fr;}
-  .draft-inner{grid-template-columns:1fr;align-items:stretch;}
-}
+/* ช่องที่ดราฟต์กำลังรออยู่ ทองแปลว่า "ตอนนี้ถึงตาช่องนี้" */
+.slot-active .hero-native-select,.slot-active .hero-search-input{border-color:var(--gold) !important;box-shadow:0 0 0 1px var(--gold);}
 
 /* แถบบอกแมตช์ที่กำลังคุมอยู่ ขึ้นเฉพาะตอนเปิดมาจากหน้าทัวร์นาเมนต์ */
-.live-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.4);border-radius:10px;padding:9px 14px;margin:10px 18px 0;font-family:var(--hf);font-size:13px;font-weight:800;letter-spacing:0.8px;color:#6ee7b7;}
+.live-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:var(--r-sm);padding:10px 14px;margin:12px 14px 0;font-size:13px;font-weight:600;color:var(--gold);}
+.live-bar .muted{color:var(--muted2);font-weight:400;}
+.live-bar a{margin-left:auto;}
+
+@media (max-width:1100px){
+  .main{grid-template-columns:1fr;}
+  .draft-inner{grid-template-columns:1fr;align-items:stretch;}
+  .match-inputs{flex-wrap:wrap;}
+}
 </style>
 </head>
 <body>
@@ -241,8 +219,8 @@ body{font-family:var(--bf);background:var(--bg);color:var(--text);min-height:100
   <!-- BLUE TEAM -->
   <div class="panel blue-panel">
     <div class="panel-head">
-      <div style="width:10px;height:10px;border-radius:50%;background:var(--blue);box-shadow:0 0 8px var(--blue);flex-shrink:0"></div>
-      <div class="panel-title" style="color:var(--blue)">Blue Team</div>
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0"></div>
+      <div class="panel-title" style="color:var(--blue)" data-i18n>Blue Team</div>
       <div class="score-badge">
         <label>SCORE</label>
         <input class="score-input" id="blueScore" type="number" value="0" min="0">
@@ -284,8 +262,8 @@ body{font-family:var(--bf);background:var(--bg);color:var(--text);min-height:100
   <!-- RED TEAM -->
   <div class="panel red-panel">
     <div class="panel-head">
-      <div style="width:10px;height:10px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red);flex-shrink:0"></div>
-      <div class="panel-title" style="color:var(--red)">Red Team</div>
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0"></div>
+      <div class="panel-title" style="color:var(--red)" data-i18n>Red Team</div>
       <div class="score-badge">
         <label>SCORE</label>
         <input class="score-input" id="redScore" type="number" value="0" min="0">
@@ -327,8 +305,8 @@ body{font-family:var(--bf);background:var(--bg);color:var(--text);min-height:100
   <!-- DRAFT TIMER -->
   <div class="panel full draft-panel">
     <div class="panel-head">
-      <div style="width:10px;height:10px;border-radius:50%;background:var(--purple);box-shadow:0 0 8px var(--purple);flex-shrink:0"></div>
-      <div class="panel-title" style="color:var(--purple)">Draft Timer</div>
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0"></div>
+      <div class="panel-title" data-i18n>Draft Timer</div>
     </div>
     <div class="draft-inner">
       <div class="draft-clock">

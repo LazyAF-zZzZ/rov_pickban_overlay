@@ -1,0 +1,368 @@
+/* ระบบดีไซน์ของหน้าคนคุมงานทุกหน้า: สี ตัวอักษร และเปลือกที่ทุกหน้าใช้เหมือนกัน
+ *
+ * เดิมชุดตัวแปรสีถูกก็อปไว้ห้าที่ (app.css และ <style> ในหน้า control / presets /
+ * design / hotkeys) แก้สีทีหนึ่งต้องไล่แก้ห้ารอบ และมันเพี้ยนออกจากกันไปแล้วจริงๆ
+ * โลโก้แต่ละหน้าเคยเป็นคนละสี ไม่ใช่เพราะตั้งใจ แต่เพราะไม่มีที่กลางให้ยึด
+ *
+ * หน้าคนคุมงานทุกหน้าโหลดไฟล์นี้ก่อนไฟล์ของตัวเอง
+ * หน้า overlay / overlay-1440 / result / overlay-teams ไม่โหลด เพราะเป็นกราฟิก
+ * ออกอากาศ มีระบบสีของตัวเองที่ผู้ใช้ปรับได้จากหน้า Design คนละเรื่องกัน
+ *
+ * ธีม: ดำ ขาว ทอง
+ *
+ * ทองเป็นสีเน้นสีเดียวของทั้งแอป ใช้กับ "สิ่งที่กำลังเกิดขึ้นตอนนี้" เท่านั้น
+ * หน้าที่เปิดอยู่ ปุ่มหลักของฟอร์ม ช่องที่เคอร์เซอร์อยู่ แมตช์ที่ออกอากาศ
+ * ถ้าแต้มทองไปทั่ว มันจะเลิกหมายถึงอะไรทันที
+ *
+ * น้ำเงินกับแดงยังอยู่ แต่ไม่ใช่ของตกแต่ง มันคือ "ฝั่งน้ำเงิน" กับ "ฝั่งแดง"
+ * ของเกม ห้ามเอาไปใช้กับอย่างอื่น ยกเว้นแดงที่เป็นสีของการลบด้วย
+ * ซึ่งอ่านออกอยู่แล้วว่าคนละบริบทกัน */
+
+:root {
+  /* พื้นหลังไล่จากดำขึ้นมาเป็นเทาเข้ม ไม่มีน้ำเงินผสมเหมือนธีมเดิม */
+  --bg: #0a0a0b;
+  --s1: #121213;
+  --s2: #191919;
+  --s3: #212123;
+  --border: rgba(255, 255, 255, 0.07);
+  --border2: rgba(255, 255, 255, 0.15);
+
+  --gold: #d7b26a;
+  --gold-line: rgba(215, 178, 106, 0.5);
+  --gold-soft: rgba(215, 178, 106, 0.12);
+
+  --text: #f2f1ee;
+  --muted: #76767c;    /* ป้ายกำกับ ตัวเล็ก */
+  --muted2: #a6a6ab;   /* ข้อความรอง อ่านเป็นประโยคได้ */
+
+  /* ฝั่งทีม ไม่ใช่สีตกแต่ง */
+  --blue: #7fa8dd;
+  --red: #dd8080;
+
+  /* ตัวอักษรชุดเดียวทั้งแอป หัวข้อกับเนื้อความต่างกันที่น้ำหนักและขนาด
+   * ไม่ใช่คนละแบบอักษร ของเดิมใช้ Arial Narrow ซึ่งเป็นที่มาของกลิ่นไซไฟ
+   * มากกว่าสีเสียอีก */
+  --bf: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --hf: var(--bf);
+  --mono: Consolas, 'Courier New', monospace;
+
+  --r: 10px;
+  --r-sm: 6px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--bf);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* โฟกัสต้องเห็นชัดเสมอ คนคุมงานเดินด้วย Tab ระหว่างถ่ายทอดสดจริง */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* แถบบน --------------------------------------------------------------- */
+
+.topbar {
+  background: var(--s1);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--text);
+  white-space: nowrap;
+}
+.logo span { color: var(--gold); margin: 0 2px; font-weight: 400; }
+
+/* แถบเมนู มาร์กอัป ลำดับ และหน้าตาเหมือนกันทุกหน้า ปุ่มเดิมจึงอยู่ที่เดิมเสมอ
+   หน้าที่เปิดอยู่ถูกทำเครื่องหมายไว้ ไม่ได้ถูกเอาออก แถวจะได้ไม่ขยับตอนเปลี่ยนหน้า */
+.topnav {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+.topnav .tlink {
+  border-color: transparent;
+  background: none;
+}
+.topnav .tlink:hover { background: var(--s3); color: var(--text); border-color: transparent; }
+.topnav .tlink.active {
+  background: none;
+  color: var(--gold);
+  border-color: var(--gold-line);
+  cursor: default;
+}
+.topnav .tlink.active:hover { background: none; color: var(--gold); }
+
+/* ปุ่ม ----------------------------------------------------------------- */
+
+.tlink {
+  padding: 6px 13px;
+  border-radius: var(--r-sm);
+  font-family: var(--bf);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  border: 1px solid var(--border2);
+  background: none;
+  color: var(--muted2);
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.tlink:hover { color: var(--text); border-color: var(--muted); }
+
+/* ปุ่มหลักของฟอร์ม มีได้อันเดียวต่อหนึ่งกลุ่ม ไม่งั้นก็ไม่มีอันไหนหลักจริง */
+.tlink.primary { color: var(--gold); border-color: var(--gold-line); }
+.tlink.primary:hover { background: var(--gold-soft); color: var(--gold); border-color: var(--gold); }
+
+.tlink.danger { color: var(--muted2); }
+.tlink.danger:hover { color: var(--red); border-color: var(--red); background: rgba(221, 128, 128, 0.1); }
+
+.tlink:disabled { opacity: 0.45; cursor: default; }
+.tlink:disabled:hover { color: var(--muted2); border-color: var(--border2); background: none; }
+
+/* โครงหน้า ------------------------------------------------------------- */
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 26px 16px 64px; }
+
+.section { margin-bottom: 30px; }
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px;
+  flex-wrap: wrap;
+}
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.section-head .spacer, .panel-head .spacer, .bracket-head .spacer { margin-left: auto; }
+
+/* แผง ------------------------------------------------------------------ */
+
+.panel {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--text);
+}
+.panel-note { font-size: 11px; color: var(--muted); }
+.panel-body { padding: 16px; }
+
+/* ฟอร์ม ---------------------------------------------------------------- */
+/* ช่องกรอกหน้าตาเดียวกันทุกหน้า ของเดิมแต่ละหน้ามีขอบมนกับสีขอบโฟกัสของตัวเอง */
+
+.field label, .fld label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.field input, .fld input, .fld select, .fld textarea {
+  width: 100%;
+  padding: 8px 11px;
+  background: var(--s3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-radius: var(--r-sm);
+  font-family: var(--bf);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.field input:focus, .fld input:focus, .fld select:focus, .fld textarea:focus {
+  border-color: var(--gold);
+  outline: none;
+}
+.fld textarea { resize: vertical; min-height: 62px; }
+
+.frow { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.fld { display: flex; flex-direction: column; flex: 1; min-width: 170px; }
+.fld.wide { flex-basis: 100%; }
+.fld .hint { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+/* แถว OBS source ------------------------------------------------------- */
+/* ใช้ทั้งหน้าทัวร์นาเมนต์และหน้า Control จึงอยู่ในธีมกลาง ไม่ใช่ app.css */
+
+.src {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 11px 14px;
+  margin-bottom: 7px;
+  flex-wrap: wrap;
+}
+.src-name { flex: 0 0 130px; font-size: 13px; font-weight: 600; }
+.src-url {
+  flex: 1;
+  cursor: text;
+  min-width: 180px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.src-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ป้าย ----------------------------------------------------------------- */
+
+.badge {
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border2);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted2);
+  white-space: nowrap;
+}
+.badge.active { color: var(--gold); border-color: var(--gold-line); }
+.badge.finished { color: var(--muted); }
+.badge.count { color: var(--muted2); }
+.badge.full { color: var(--gold); border-color: var(--gold-line); }
+.badge.loss { color: var(--red); border-color: rgba(221, 128, 128, 0.4); }
+
+/* ที่ว่าง --------------------------------------------------------------- */
+
+.empty, .empty-state, .bracket-empty {
+  border: 1px dashed var(--border2);
+  border-radius: var(--r);
+  padding: 36px 20px;
+  text-align: center;
+  color: var(--muted2);
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+/* ข้อความประกอบตัวเล็กที่ห้อยท้ายช่องกรอกหรือปุ่ม
+   หน้า Hotkeys ใช้ .hint เป็นกล่องคำอธิบายทั้งย่อหน้า ประกาศทับไว้ในหน้านั้นเอง */
+.hint { font-size: 11px; color: var(--muted); line-height: 1.6; }
+
+/* กล่องยืนยัน ---------------------------------------------------------- */
+/* หน้า Control กับ Presets มี markup ของตัวเองในหน้า หน้าอื่นสร้างจาก
+   RovClient.confirmBox() ทั้งสองทางใช้คลาสชุดนี้ร่วมกัน */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.74);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 600;
+}
+.modal-backdrop[hidden] { display: none; }
+.modal {
+  background: var(--s1);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  max-width: 430px;
+  width: 100%;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+}
+.modal-title {
+  padding: 15px 18px 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--text);
+}
+.modal-body {
+  padding: 12px 18px 18px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted2);
+  word-break: break-word;
+}
+.modal-body p { margin: 0 0 10px; }
+.modal-body p:last-child { margin-bottom: 0; }
+.modal-body b, .modal-body strong { color: var(--text); font-weight: 700; }
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 0 18px 18px;
+}
+
+/* Toast ---------------------------------------------------------------- */
+/* opacity 0 อย่างเดียวไม่พอ ตอนจางหายมันยังรับคลิกอยู่ ต้อง pointer-events:none
+   ไม่งั้นจะไปกินคลิกแถวขอบล่างของหน้า */
+
+.toast {
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--s2);
+  border: 1px solid var(--border2);
+  border-left: 2px solid var(--gold);
+  color: var(--text);
+  padding: 11px 18px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 300;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ลิงก์ในเนื้อหา ไม่ใช่ปุ่ม ขีดเส้นใต้ตอนชี้เท่านั้น
+   รายการยาวๆ ที่ขีดเส้นใต้ทุกบรรทัดอ่านยากกว่าเดิม */
+.link { color: inherit; text-decoration: none; }
+.link:hover { color: var(--gold); text-decoration: underline; }
+
+@media (max-width: 640px) {
+  .topbar { flex-wrap: wrap; height: auto; padding: 10px 14px; gap: 10px; }
+  .topnav { margin-left: 0; width: 100%; }
+}

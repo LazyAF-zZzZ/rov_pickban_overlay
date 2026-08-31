@@ -6,6 +6,7 @@
 <title>Match session - ROV Overlay Tool</title>
 <!-- หน้านี้อยู่ที่ /tournament/:id/bracket ลึกสองชั้น
      path ทุกอันต้องขึ้นต้นด้วย / เท่านั้น -->
+<link rel="stylesheet" href="/css/theme.css">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/bracket.css">
 </head>
@@ -27,7 +28,7 @@
 <!-- ตัวควบคุมการแข่งทั้งหมดอยู่ในแถบนี้แถบเดียว
      เดิมกระจายอยู่บนหน้าทัวร์นาเมนต์ ซึ่งเป็นหน้าตั้งค่าก่อนแข่ง คนละจังหวะการใช้งาน -->
 <div class="bracket-head">
-  <a class="tlink" id="backLink" href="/">&larr; TOURNAMENT</a>
+  <a class="tlink" id="backLink" data-esc-back href="/">&larr; TOURNAMENT</a>
   <div class="bracket-title" id="headName"></div>
   <div class="status-tags" id="headBadges"></div>
   <div class="spacer"></div>

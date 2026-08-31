@@ -6,6 +6,7 @@
 <title>Tournament - ROV Overlay Tool</title>
 <!-- หน้านี้เสิร์ฟที่ /tournament/:id ซึ่งลึกกว่าหน้าอื่นหนึ่งชั้น
      ทุก path ของ css/js จึงต้องขึ้นต้นด้วย / เสมอ ห้ามใช้ path สัมพัทธ์ -->
+<link rel="stylesheet" href="/css/theme.css">
 <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
@@ -27,11 +28,11 @@
 
   <div class="section">
     <div class="section-head">
-      <a class="tlink" href="/">&larr; ALL TOURNAMENTS</a>
+      <a class="tlink" data-esc-back href="/">&larr; ALL TOURNAMENTS</a>
       <div class="spacer"></div>
       <div class="status-tags" id="headBadges"></div>
     </div>
-    <h1 class="tcard-name" id="headName" style="font-size:26px;letter-spacing:1.5px;"></h1>
+    <h1 class="tcard-name" id="headName" style="font-size:25px;"></h1>
   </div>
 
   <div class="section" id="detailSection" hidden>

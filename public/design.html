@@ -4,57 +4,44 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ROV Custom Design</title>
+<link rel="stylesheet" href="/css/theme.css">
 <style>
-:root{--bg:#0b0c14;--s1:#111220;--s2:#181929;--s3:#1e2035;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--blue:#3b82f6;--red:#ef4444;--gold:#f59e0b;--green:#10b981;--text:#e2e8f0;--muted:#4a5568;--muted2:#64748b;--hf:'Arial Narrow','Segoe UI Condensed','Segoe UI',Arial,sans-serif;--bf:'Segoe UI',Arial,sans-serif;}
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:var(--bf);background:var(--bg);color:var(--text);min-height:100vh;}
+/* เฉพาะของหน้า Design
+   เปลือกที่ใช้ร่วมกับหน้าอื่นอยู่ใน /css/theme.css ซึ่งโหลดไว้ก่อนหน้านี้แล้ว
+   สีในตัวอย่างพรีวิวไม่ได้อยู่ในธีมนี้ มันคือสีของ overlay ที่ผู้ใช้ตั้งเอง */
 
-.topbar{background:var(--s1);border-bottom:1px solid var(--border);padding:0 18px;height:50px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;}
-.logo{font-family:var(--hf);font-size:18px;font-weight:900;letter-spacing:3px;color:var(--green);white-space:nowrap;}
-.logo span{color:rgba(255,255,255,0.3);}
-/* PAGE NAV - identical markup, order and styling on all four pages, so the
-   same button is always in the same place. The current page is marked rather
-   than removed, so the row never changes width as you move between pages. */
-.topnav{margin-left:auto;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
-.topnav .tlink.active{background:var(--s1);color:var(--text);border-color:var(--blue);cursor:default;}
-.topnav .tlink.active:hover{color:var(--text);border-color:var(--blue);}
-.tlink{padding:5px 13px;border-radius:6px;font-family:var(--hf);font-size:12px;font-weight:800;letter-spacing:1px;cursor:pointer;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);transition:all 0.2s;text-decoration:none;}
-.tlink:hover{color:var(--blue);border-color:var(--blue);}
-.tlink.danger{color:#fca5a5;}
-.tlink.danger:hover{color:var(--red);border-color:var(--red);}
+.wrap{max-width:1280px;}
+.panel{margin-bottom:14px;}
+.panel.theme-panel{border-top:2px solid var(--gold-line);}
 
-.wrap{max-width:1280px;margin:0 auto;padding:18px 14px 60px;}
-.panel{background:var(--s1);border-radius:12px;border:1px solid var(--border);overflow:hidden;margin-bottom:14px;}
-.panel.design-panel{border-top:3px solid var(--green);}
+/* ตัวแก้ธีมของ overlay ---------------------------------------------------- */
 
-/* THEME EDITOR */
-.panel.theme-panel{border-top:3px solid var(--gold);}
 .theme-note{font-size:11px;color:var(--muted);}
-.theme-group-title{font-family:var(--hf);font-size:11px;font-weight:800;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin:4px 0 10px;}
-.theme-group-title:not(:first-child){margin-top:20px;padding-top:16px;border-top:1px solid var(--border);}
+.theme-group-title{font-size:11px;font-weight:700;letter-spacing:0.16em;color:var(--muted);text-transform:uppercase;margin:4px 0 12px;}
+.theme-group-title:not(:first-child){margin-top:22px;padding-top:18px;border-top:1px solid var(--border);}
 .theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
-.trow{background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:11px 12px;}
-.trow-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-.trow-label{flex:1;min-width:0;font-size:11px;font-weight:700;letter-spacing:0.5px;color:var(--text);}
-.trow-value{font-family:Consolas,'Courier New',monospace;font-size:11px;color:var(--muted2);}
+.trow{border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;}
+.trow-head{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+.trow-label{flex:1;min-width:0;font-size:12px;font-weight:600;color:var(--text);}
+.trow-value{font-family:var(--mono);font-size:11px;color:var(--muted);}
 .trow.changed .trow-value{color:var(--gold);}
-.trow input[type=color]{width:38px;height:28px;padding:0;border:1px solid var(--border2);border-radius:6px;background:var(--s3);cursor:pointer;}
+.trow input[type=color]{width:38px;height:28px;padding:0;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--s3);cursor:pointer;}
 .trow input[type=range]{width:100%;accent-color:var(--gold);cursor:pointer;}
 .trow-inputs{display:flex;align-items:center;gap:9px;}
-.trow-inputs input[type=text]{flex:1;min-width:0;padding:5px 8px;background:var(--s3);border:1px solid var(--border2);color:var(--text);border-radius:6px;font-family:Consolas,'Courier New',monospace;font-size:12px;text-transform:lowercase;}
+.trow-inputs input[type=text]{flex:1;min-width:0;padding:6px 9px;background:var(--s3);border:1px solid var(--border2);color:var(--text);border-radius:var(--r-sm);font-family:var(--mono);font-size:12px;text-transform:lowercase;}
 .trow-inputs input[type=text]:focus{outline:none;border-color:var(--gold);}
 .trow-inputs input[type=text].invalid{border-color:var(--red);}
-.theme-hint{margin-top:18px;padding:11px 13px;background:var(--s2);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:8px;font-size:11px;line-height:1.7;color:var(--muted2);}
+.theme-hint{margin-top:18px;padding:12px 14px;background:var(--s2);border:1px solid var(--border);border-left:2px solid var(--gold-line);border-radius:var(--r-sm);font-size:12px;line-height:1.75;color:var(--muted2);}
 
-/* LIVE PREVIEW
-   Sticky so it stays on screen while you scroll the controls below it -
-   adjusting a colour you cannot see at the same time is guesswork. */
-.theme-preview{position:sticky;top:58px;z-index:5;margin-bottom:20px;padding-bottom:12px;background:var(--s1);}
+/* ตัวอย่างสด
+   ตรึงไว้ให้ยังเห็นตอนเลื่อนอ่านตัวควบคุมข้างล่าง
+   ปรับสีที่มองไม่เห็นไปด้วยคือการเดา */
+.theme-preview{position:sticky;top:60px;z-index:5;margin-bottom:20px;padding-bottom:12px;background:var(--s1);}
 .tp-frame{--tp-scale:0.25;--tp-w:1920px;--tp-h:1080px;
   width:calc(var(--tp-w) * var(--tp-scale));height:calc(var(--tp-h) * var(--tp-scale));
-  max-width:100%;border:1px solid var(--border2);border-radius:9px;overflow:hidden;position:relative;}
-/* The overlay is transparent - the backdrop stands in for gameplay footage.
-   Judging colours against one fixed background is misleading, hence the switch. */
+  max-width:100%;border:1px solid var(--border2);border-radius:var(--r-sm);overflow:hidden;position:relative;}
+/* overlay เป็นภาพโปร่ง พื้นหลังตรงนี้ยืนแทนภาพเกมจริง
+   ถ้าตัดสินสีบนพื้นหลังเดียวตลอดจะหลงทาง จึงมีปุ่มสลับพื้นหลังให้ */
 .tp-frame.dark{background:#141a24;}
 .tp-frame.light{background:#c8cdd6;}
 .tp-frame.checker{background-color:#2a3240;background-image:
@@ -63,52 +50,48 @@ body{font-family:var(--bf);background:var(--bg);color:var(--text);min-height:100
   background-size:18px 18px;background-position:0 0,0 9px,9px -9px,-9px 0;}
 .tp-frame iframe{width:var(--tp-w);height:var(--tp-h);border:0;display:block;
   transform:scale(var(--tp-scale));transform-origin:top left;pointer-events:none;}
-.tp-meta{display:flex;align-items:center;gap:9px;margin-top:8px;flex-wrap:wrap;}
+.tp-meta{display:flex;align-items:center;gap:9px;margin-top:9px;flex-wrap:wrap;}
 .tp-caption{font-size:11px;color:var(--muted);}
-.tp-backdrops{display:flex;gap:3px;margin-left:auto;}
-.tp-bd{padding:3px 8px;border-radius:5px;border:1px solid var(--border2);background:var(--s3);color:var(--muted);font-family:var(--hf);font-size:10px;font-weight:800;letter-spacing:0.8px;cursor:pointer;}
+.tp-backdrops{display:flex;gap:4px;margin-left:auto;}
+.tp-bd{padding:3px 9px;border-radius:4px;border:1px solid var(--border2);background:none;color:var(--muted);font-family:var(--bf);font-size:10px;font-weight:600;letter-spacing:0.06em;cursor:pointer;transition:color 0.15s,border-color 0.15s,background 0.15s;}
 .tp-bd:hover{color:var(--text);}
-.tp-bd.active{background:var(--gold);border-color:var(--gold);color:#1a1205;}
+.tp-bd.active{background:var(--gold);border-color:var(--gold);color:#141209;}
 @media (max-width:700px){.tp-frame{--tp-scale:0.17;}.theme-preview{position:static;}}
-.panel-head{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--s2);border-bottom:1px solid var(--border);flex-wrap:wrap;}
-.panel-title{font-family:var(--hf);font-size:15px;font-weight:900;letter-spacing:2px;text-transform:uppercase;}
-.panel-body{padding:16px;}
+
+/* ภาพพื้นหลังของ overlay -------------------------------------------------- */
 
 .design-toggles{margin-left:auto;display:flex;gap:14px;align-items:center;}
-.dtoggle{display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--hf);font-size:11px;font-weight:800;letter-spacing:1px;color:var(--muted2);}
+.dtoggle{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--muted2);}
 .dtoggle:hover{color:var(--text);}
-.dtoggle input{accent-color:var(--green);width:15px;height:15px;cursor:pointer;}
+.dtoggle input{accent-color:var(--gold);width:15px;height:15px;cursor:pointer;}
 
 .design-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
-.dgroup-title{grid-column:1/-1;font-family:var(--hf);font-size:12px;font-weight:800;letter-spacing:2px;color:var(--muted);text-transform:uppercase;padding-top:6px;border-top:1px solid var(--border);}
+.dgroup-title{grid-column:1/-1;font-size:11px;font-weight:700;letter-spacing:0.16em;color:var(--muted);text-transform:uppercase;padding-top:8px;border-top:1px solid var(--border);}
 .dgroup-title:first-child{padding-top:0;border-top:none;}
-.dslot{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:9px;}
-.dslot-title{font-family:var(--hf);font-size:12px;font-weight:800;letter-spacing:1.2px;color:var(--muted2);text-transform:uppercase;}
-.dslot-title b{color:var(--text);}
+.dslot{border:1px solid var(--border);border-radius:var(--r);padding:13px;display:flex;flex-direction:column;gap:10px;}
+.dslot-title{font-size:11px;font-weight:700;letter-spacing:0.12em;color:var(--muted);text-transform:uppercase;}
+.dslot-title b{color:var(--text);font-weight:700;}
 .dslot-note{font-size:11px;color:var(--muted);}
-.dsize-banner{grid-column:1/-1;display:flex;align-items:center;gap:12px;margin-top:10px;padding:10px 14px;background:var(--s2);border:1px solid var(--border2);border-radius:9px;font-size:12px;color:var(--muted2);}
+.dsize-banner{grid-column:1/-1;display:flex;align-items:center;gap:12px;margin-top:10px;padding:11px 14px;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;color:var(--muted2);}
 .dsize-banner:first-child{margin-top:0;}
 .dsize-banner b{color:var(--text);}
-.dsize-chip{font-family:var(--hf);font-size:14px;font-weight:900;letter-spacing:1.5px;color:#fff;background:var(--blue);padding:3px 12px;border-radius:5px;}
-.dslot[data-size="1440"]{border-color:rgba(59,130,246,0.28);}
-.dslot-size{background:var(--s3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;display:flex;flex-direction:column;gap:5px;}
+.dsize-chip{font-size:13px;font-weight:700;letter-spacing:0.06em;color:#141209;background:var(--gold);padding:3px 12px;border-radius:4px;}
+.dslot-size{border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;display:flex;flex-direction:column;gap:5px;}
 .dsize-row{display:flex;align-items:baseline;gap:8px;font-size:13px;}
-.dsize-px{color:var(--text);font-family:var(--bf);}
-.dsize-px b{color:var(--green);font-weight:700;}
+.dsize-px{color:var(--text);}
+.dsize-px b{color:var(--gold);font-weight:700;}
 .dsize-ratio{margin-left:auto;font-size:11px;color:var(--muted);}
-.dsize-file{font-family:var(--hf);font-size:11px;letter-spacing:0.5px;color:var(--muted);}
-.dslot-preview{aspect-ratio:16/5;border-radius:7px;border:1px dashed var(--border2);background:var(--s3) center/contain no-repeat;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);letter-spacing:1px;overflow:hidden;text-align:center;padding:8px;}
-.dslot-preview.filled{border-style:solid;border-color:var(--green);}
+.dsize-file{font-size:11px;color:var(--muted);}
+.dslot-preview{aspect-ratio:16/5;border-radius:var(--r-sm);border:1px dashed var(--border2);background:var(--s3) center/contain no-repeat;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);overflow:hidden;text-align:center;padding:8px;}
+.dslot-preview.filled{border-style:solid;border-color:var(--gold-line);}
 .dslot-actions{display:flex;gap:7px;}
 .dslot-actions .tlink{flex:1;text-align:center;}
 
 .guide{font-size:13px;color:var(--muted2);line-height:1.9;}
 .guide b{color:var(--text);}
-.guide code{background:var(--s3);border:1px solid var(--border2);border-radius:4px;padding:1px 6px;font-size:12px;color:var(--text);}
+.guide code{background:var(--s3);border:1px solid var(--border2);border-radius:4px;padding:1px 6px;font-family:var(--mono);font-size:12px;color:var(--text);}
 .guide ul{margin:8px 0 0 20px;}
 
-.toast{position:fixed;bottom:24px;right:20px;background:var(--s3);color:var(--text);border:1px solid var(--border2);border-left:3px solid var(--green);padding:10px 18px;border-radius:8px;font-family:var(--hf);font-size:13px;font-weight:700;letter-spacing:0.5px;box-shadow:0 8px 24px rgba(0,0,0,0.4);transform:translateX(130%);opacity:0;transition:all 0.3s cubic-bezier(.175,.885,.32,1.275);z-index:999;}
-.toast.show{transform:translateX(0);opacity:1;}
 @media (max-width:820px){.design-grid{grid-template-columns:1fr;}}
 </style>
 </head>
@@ -184,8 +167,8 @@ body{font-family:var(--bf);background:var(--bg);color:var(--text);min-height:100
 
   <div class="panel design-panel">
     <div class="panel-head">
-      <div style="width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);flex-shrink:0"></div>
-      <div class="panel-title" style="color:var(--green)">Custom Design</div>
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0"></div>
+      <div class="panel-title" data-i18n>Custom Design</div>
       <div class="design-toggles">
         <label class="dtoggle"><input type="checkbox" id="skinEnabled" onchange="updateSkinOptions()"> <span>USE MY DESIGN</span></label>
         <label class="dtoggle"><input type="checkbox" id="skinShowPanels" onchange="updateSkinOptions()" checked> <span>SHOW BUILT-IN PANELS</span></label>
@@ -198,7 +181,7 @@ body{font-family:var(--bf);background:var(--bg);color:var(--text);min-height:100
 
   <div class="panel">
     <div class="panel-head">
-      <div class="panel-title" style="color:var(--muted2)">วิธีทำภาพ</div>
+      <div class="panel-title">วิธีทำภาพ</div>
     </div>
     <div class="panel-body guide">
       <ul>

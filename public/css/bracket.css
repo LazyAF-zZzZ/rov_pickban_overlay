@@ -9,6 +9,8 @@
  *   .slot::after   เส้นนอนที่ยื่นออกไปทางขวา
  *   .slot::before  เส้นตั้งครึ่งบน/ครึ่งล่าง ที่ไปบรรจบกับคู่ของมัน
  *   .mbox::before  เส้นนอนที่รับเข้ามาทางซ้าย
+ *
+ * ใช้ร่วมกับ theme.css และ app.css เสมอ
  */
 
 .bracket-head {
@@ -16,27 +18,23 @@
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  padding: 12px 18px;
+  padding: 14px 20px;
   border-bottom: 1px solid var(--border);
   background: var(--s1);
 }
 .bracket-title {
-  font-family: var(--hf);
   font-size: 17px;
-  font-weight: 900;
-  letter-spacing: 1.4px;
-  text-transform: uppercase;
-  color: #dbeafe;
+  font-weight: 700;
+  color: var(--text);
 }
 .bracket-hint { font-size: 11px; color: var(--muted); }
-.bracket-head .spacer { margin-left: auto; }
 
 /* คำอธิบายวิธีใช้ แยกลงมาอีกแถว
    แถวบนมีปุ่มควบคุมจนเต็มแล้ว ถ้ายัดรวมกันคำอธิบายจะโดนดันตกบรรทัดแบบไม่ตั้งใจ */
 .bracket-subhead {
-  padding: 7px 18px;
+  padding: 8px 20px;
   border-bottom: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.18);
+  background: rgba(0, 0, 0, 0.25);
 }
 
 /* ต้องเลื่อนได้ทั้งสองแกน
@@ -45,36 +43,33 @@
    เพิ่มแถวบนหัวเมื่อไหร่ ต้องบวกตัวเลขนี้ตามด้วย ไม่งั้นสายจะยาวเกินจอไปเงียบๆ */
 .bracket-scroll {
   overflow: auto;
-  padding: 18px;
+  padding: 20px;
   max-height: calc(100vh - 150px);
 }
 
-.bracket-section { margin-bottom: 26px; }
+.bracket-section { margin-bottom: 28px; }
 .bracket-section-title {
-  font-family: var(--hf);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 2.5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--muted);
-  margin: 0 0 10px 2px;
+  margin: 0 0 12px;
 }
 
 .bracket { display: flex; align-items: stretch; min-width: min-content; }
 
 .round { display: flex; flex-direction: column; min-width: 208px; }
 .round-title {
-  background: var(--s3);
-  border: 1px solid var(--border2);
-  border-radius: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
   margin: 0 24px 10px 0;
   padding: 5px 10px;
-  font-family: var(--hf);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 1.6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--muted2);
+  color: var(--muted);
   text-align: center;
   white-space: nowrap;
 }
@@ -98,7 +93,7 @@
   right: 0;
   width: 24px;
   top: 50%;
-  border-top: 1px solid rgba(255,255,255,0.24);
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 /* เส้นตั้งที่ไปบรรจบกับคู่ของมัน
@@ -109,7 +104,7 @@
   position: absolute;
   right: 0;
   height: 50%;
-  border-right: 1px solid rgba(255,255,255,0.24);
+  border-right: 1px solid rgba(255, 255, 255, 0.18);
 }
 .round:not(:last-child) .slot.pair-top::before { top: 50%; }
 .round:not(:last-child) .slot.pair-bottom::before { bottom: 50%; }
@@ -121,78 +116,68 @@
   left: -24px;
   top: 50%;
   width: 24px;
-  border-top: 1px solid rgba(255,255,255,0.24);
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
 }
 
-/* MATCH BOX -------------------------------------------------------- */
+/* กล่องคู่แข่ง ---------------------------------------------------------- */
 
 .mbox {
   position: relative;
   width: 100%;
-  background: var(--s3);
+  background: var(--s1);
   border: 1px solid var(--border2);
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   overflow: hidden;
   cursor: default;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, background 0.15s;
 }
 .mbox.playable { cursor: pointer; }
-.mbox.playable:hover { border-color: var(--blue); box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35); }
-.mbox.complete { border-color: rgba(16, 185, 129, 0.4); }
-.mbox.live { border-color: rgba(16, 185, 129, 0.9); box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.5); }
-.mbox.bye { opacity: 0.45; }
+.mbox.playable:hover { border-color: var(--gold-line); background: var(--s2); }
+.mbox.complete { border-color: var(--border2); }
+/* คู่ที่ออกอากาศอยู่ตอนนี้ เป็นที่เดียวในหน้านี้ที่ได้สีทองเต็มๆ */
+.mbox.live { border-color: var(--gold); background: var(--gold-soft); }
+.mbox.bye { opacity: 0.4; }
 
 .mrow {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 4px 7px;
-  min-height: 22px;
+  gap: 8px;
+  padding: 5px 8px;
+  min-height: 24px;
 }
-.mrow + .mrow { border-top: 1px solid rgba(0, 0, 0, 0.45); }
+.mrow + .mrow { border-top: 1px solid var(--border); }
 
 .mrow .seed {
   flex: 0 0 16px;
-  font-family: var(--hf);
   font-size: 9px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--muted);
   text-align: right;
 }
 .mrow .nm {
   flex: 1;
-  font-family: var(--hf);
   font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  font-weight: 600;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.mrow .nm.tbd {
-  color: var(--muted);
-  font-style: italic;
-  text-transform: none;
-  letter-spacing: 0;
-  font-weight: 600;
-}
-.mrow.won .nm { color: #6ee7b7; }
-.mrow.lost .nm { color: var(--muted2); }
+.mrow .nm.tbd { color: var(--muted); font-style: italic; font-weight: 400; }
+.mrow.won .nm { color: var(--gold); font-weight: 700; }
+.mrow.lost .nm { color: var(--muted); }
 
 .mrow .sc {
   flex: 0 0 20px;
   text-align: center;
-  font-family: var(--hf);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 700;
   color: var(--muted2);
-  background: rgba(0, 0, 0, 0.28);
+  background: rgba(0, 0, 0, 0.35);
   border-radius: 3px;
   padding: 1px 0;
 }
-.mrow.won .sc { color: #6ee7b7; }
+.mrow.won .sc { color: var(--gold); }
 
 /* ช่องกรอกคะแนนในกล่อง ต้องหน้าตาเหมือน .sc เดิมทุกอย่างตอนไม่ได้แตะ
    กล่องเล็กมาก ถ้าทำให้ดูเป็นฟอร์มเต็มรูปแบบ สายทั้งสายจะกลายเป็นตารางกรอกข้อมูล */
@@ -201,6 +186,7 @@
   width: 24px;
   border: 1px solid transparent;
   cursor: text;
+  font-family: var(--bf);
   /* ปุ่มลูกศรขึ้นลงเล็กเกินกว่าจะกดถูกในกล่องขนาดนี้ และกินที่ของตัวเลข */
   appearance: textfield;
   -moz-appearance: textfield;
@@ -210,7 +196,7 @@
 .mrow .sc-input:hover { border-color: var(--border2); }
 .mrow .sc-input:focus {
   outline: none;
-  border-color: var(--blue);
+  border-color: var(--gold);
   background: rgba(0, 0, 0, 0.5);
   color: var(--text);
 }
@@ -222,9 +208,8 @@
   right: -21px;
   top: 50%;
   transform: translateY(-50%);
-  font-family: var(--hf);
   font-size: 9px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--muted);
   background: var(--bg);
   padding: 1px 3px;
@@ -232,19 +217,8 @@
 }
 .round:last-child .mno { display: none; }
 
-/* ROUND ROBIN / GROUPS --------------------------------------------- */
+/* พบกันหมด / แบ่งกลุ่ม --------------------------------------------------- */
 /* ไม่มีสายให้ไหลต่อ จึงไม่มีเส้นเชื่อม แค่จัดเป็นคอลัมน์ตามรอบ */
 
 .bracket.flat .slot { padding-right: 14px; min-height: 0; flex: 0 0 auto; margin-bottom: 7px; }
 .bracket.flat .round-title { margin-right: 14px; }
-
-.bracket-empty {
-  background: var(--s1);
-  border: 1px dashed var(--border2);
-  border-radius: 12px;
-  padding: 40px 20px;
-  text-align: center;
-  color: var(--muted2);
-  font-size: 13px;
-  line-height: 1.8;
-}

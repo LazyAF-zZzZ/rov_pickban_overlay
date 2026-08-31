@@ -44,7 +44,7 @@ rov-overlay-tool/
     ├── overlay.html         # หน้า Overlay
     │
     ├── css/
-    │   ├── control.css      # Styles Control Panel
+    │   ├── theme.css        # Design tokens (operator pages)
     │   └── overlay.css      # Styles Overlay
     │
     ├── js/

@@ -7,6 +7,7 @@
 <!-- หน้านี้เสิร์ฟที่ /teams/:id ซึ่งลึกกว่าหน้าอื่นหนึ่งชั้น
      ทุก path ของ css/js จึงต้องขึ้นต้นด้วย / เสมอ ห้ามใช้ path สัมพัทธ์
      ไม่งั้นเบราว์เซอร์จะไปหาที่ /teams/js/... แล้วได้ 404 -->
+<link rel="stylesheet" href="/css/theme.css">
 <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
@@ -28,7 +29,7 @@
 
   <div class="section">
     <div class="section-head">
-      <a class="tlink" href="/teams">&larr; ALL TEAMS</a>
+      <a class="tlink" data-esc-back href="/teams">&larr; ALL TEAMS</a>
       <div class="spacer"></div>
       <div class="status-tags" id="headBadges"></div>
     </div>
@@ -57,7 +58,7 @@
       <div class="frow" style="margin-top:12px;align-items:center;">
         <button type="button" class="tlink" id="uploadLogoBtn">UPLOAD LOGO</button>
         <button type="button" class="tlink" id="clearLogoBtn">CLEAR LOGO</button>
-        <span class="hint" style="color:var(--muted);">PNG, JPG or WEBP, up to 4 MB</span>
+        <span class="hint">PNG, JPG or WEBP, up to 4 MB</span>
       </div>
 
       <div class="frow" style="margin-bottom:0;">

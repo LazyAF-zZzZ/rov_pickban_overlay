@@ -192,6 +192,28 @@ test('status flips without sending the whole form', async () => {
   assert.strictEqual(junk.body.tournament.status, 'active', 'junk falls back to active');
 });
 
+// เส้นแบ่งระหว่าง "หน้าคนคุมงาน" กับ "กราฟิกออกอากาศ" เป็นเรื่องของธีมด้วย
+//
+// หน้าคนคุมงานใช้ธีมกลางร่วมกันหมด ส่วนหน้าที่ออกอากาศมีหน้าตาของตัวเอง
+// ที่ผู้ใช้ตั้งเองจากหน้า Design ถ้าวันหนึ่งมีใครลิงก์ theme.css เข้าไปในหน้า
+// ออกอากาศ การแก้สีในแอปจะไปเปลี่ยนสิ่งที่คนดูเห็นกลางถ่ายทอดสดโดยไม่มีใครตั้งใจ
+test('operator pages share the theme and broadcast pages keep their own look', async () => {
+  const operator = [
+    '/', '/teams', '/teams/anything', '/tournament/anything',
+    '/tournament/anything/bracket', '/analytics',
+    '/control', '/design', '/hotkeys', '/guide'
+  ];
+  for (const url of operator) {
+    const html = String((await request('GET', url)).body);
+    assert.ok(html.includes('/css/theme.css'), `${url} links the shared theme`);
+  }
+
+  for (const url of ['/overlay', '/overlay-1440', '/result', '/overlay-teams']) {
+    const html = String((await request('GET', url)).body);
+    assert.ok(!html.includes('theme.css'), `${url} must not take the operator theme`);
+  }
+});
+
 // หน้าที่ลบทัวร์นาเมนต์ได้ต้องโหลด tournament-ui.js ก่อนสคริปต์ของตัวเอง
 // ลืมแท็กนี้ = หน้าตายตั้งแต่บรรทัด destructure โดยไม่มีอะไรบอกว่าเพราะอะไร
 // (กฎเดียวกับ team-ui.js ที่ team-api.test.ts เฝ้าอยู่)
