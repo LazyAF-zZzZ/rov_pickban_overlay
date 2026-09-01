@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert';
 import path from 'path';
+import fs from 'fs';
 import type { SkinSlot, LogoSlot } from '../server/domain/media';
 import {
   SKIN_SLOTS,
@@ -13,7 +14,8 @@ import {
   skinFilePath,
   logoFilePath,
   sanitizeLogo,
-  sanitizeSkin
+  sanitizeSkin,
+  SOUND_FILES
 } from '../server/domain/media';
 
 test('magic byte checks accept the right headers and reject mismatches', () => {
@@ -76,4 +78,23 @@ test('sanitizeSkin always returns every known slot', () => {
     assert.strictEqual(typeof skin.slots[slot], 'number', `${slot} present`);
   });
   assert.strictEqual(skin.slots.overlayTop1080, 5);
+});
+
+// เสียงที่ต้องติดไปกับตัวติดตั้ง
+//
+// เสียงย้ายมาอยู่ใน public/images/sounds เพื่อให้ติดไปกับ .exe ที่คนโหลด
+// (ดู USER_SOUND_DIR ใน config.ts และ build.files ใน package.json)
+// ไฟล์หายไปจากโฟลเดอร์นี้เมื่อไหร่ ตัวติดตั้งก็จะเงียบ โดยที่ทุกอย่างยังผ่านหมด
+// เพราะโค้ดไม่ได้พังอะไร แค่ไม่มีไฟล์ให้เล่น ซึ่งแยกไม่ออกจากของเสีย
+test('the app ships with its own sound files, so a download is not silent', () => {
+  const dir = path.join(__dirname, '..', '..', 'public', 'images', 'sounds');
+
+  SOUND_FILES.forEach((name) => {
+    const found = ['mp3', 'wav']
+      .map((ext) => path.join(dir, `${name}.${ext}`))
+      .find((file) => fs.existsSync(file));
+
+    assert.ok(found, `${name} is missing from public/images/sounds - the installer would ship silent`);
+    assert.ok(fs.statSync(found).size > 0, `${name} is an empty file`);
+  });
 });

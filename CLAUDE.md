@@ -244,14 +244,19 @@ somewhere writable outside `app.asar`; sounds are dropped into a folder by hand,
 user wants them beside the project and shipped with the installer. `USER_SOUND_DIR` is
 therefore `public/images/sounds` in every mode, and `asarUnpack` in `package.json` keeps
 that folder out of `app.asar` so a packaged build can still open it and take new files.
-Two consequences worth remembering: the Electron menu's **Open Sounds Folder** has to
-resolve the same path (it rewrites `app.asar` to `app.asar.unpacked`, which `fs` does
-transparently but `shell.openPath` does not), and tests must set `ROV_USER_SOUND_DIR` to a
-temp folder or the "no sound files at all" test reads whatever the developer has on disk. `/sfx-test` is the diagnostic:
-it reports which files the server can see and whether the browser allows autoplay, printed on
-the page rather than logged, because it is meant to be opened as a browser source inside OBS
-where there is no console. Keep it working when the folder is empty — that is the only state
-in which anyone opens it.
+The default sounds are **committed and shipped**, like hero images and unlike team logos: a
+download has working sound out of the box, and a test asserts all three files are present so
+the installer cannot silently go quiet.
+
+`USER_SOUND_DIR` resolves `app.asar` to `app.asar.unpacked` itself, even though `fs` reads
+either path transparently. The value is shown to people — `/api/sounds`, `/sfx-test`, the
+startup banner — and all three exist to answer "why is there no sound", so naming a folder
+that cannot be opened sends the reader the wrong way. `electron-main.js` reads this same
+constant rather than recomputing it: a menu that opens a different folder from the one the
+server reads means files placed correctly and still no sound.
+
+Tests must set `ROV_USER_SOUND_DIR` to a temp folder, or the "no sound files at all" test
+reads whatever the developer happens to have on disk.
 
 **Sound levels are per event and live in state, not in the URL.** `state.sfx` holds a 0..1
 level for `pick`, `ban` and `timer`, sanitized by `sanitizeSfx` and listed in

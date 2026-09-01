@@ -56,5 +56,18 @@ export const HERO_IMAGE_DIR = path.join(PUBLIC_DIR, 'images', 'heroes');
 //
 // ROV_USER_SOUND_DIR มีไว้ให้เทสต์ชี้ไปโฟลเดอร์ว่างชั่วคราว
 // ไม่งั้นเทสต์ "ไม่มีไฟล์เสียงเลย" จะไปเจอไฟล์จริงของคนที่กำลังพัฒนาอยู่
+//
+// ต้องชี้ไปที่ app.asar.unpacked ไม่ใช่ app.asar ทั้งที่ fs อ่านได้ทั้งคู่
+// เพราะ path นี้ถูกเอาไปโชว์ให้คนอ่านด้วย: /api/sounds, หน้า /sfx-test
+// และบรรทัดที่พิมพ์ตอนเปิดเซิร์ฟเวอร์ ซึ่งทั้งหมดมีไว้ตอบคำถาม "ทำไมไม่มีเสียง"
+// การบอกโฟลเดอร์ที่เปิดไม่ได้จริงคือคำตอบที่พาไปผิดทางพอดี
 export const USER_SOUND_DIR = process.env.ROV_USER_SOUND_DIR
-  || path.join(PUBLIC_DIR, 'images', 'sounds');
+  || unpacked(path.join(PUBLIC_DIR, 'images', 'sounds'));
+
+// ตอนแพ็กเป็น .exe โค้ดอยู่ใน app.asar ซึ่งเป็นไฟล์ ไม่ใช่โฟลเดอร์
+// asarUnpack ใน package.json กันโฟลเดอร์เสียงไว้ข้างนอกให้เป็นโฟลเดอร์จริง
+// รันจาก source ไม่มีคำว่า app.asar ในเส้นทาง ฟังก์ชันนี้จึงคืนค่าเดิม
+function unpacked(dir: string): string {
+  const marker = `app.asar${path.sep}`;
+  return dir.includes(marker) ? dir.replace(marker, `app.asar.unpacked${path.sep}`) : dir;
+}

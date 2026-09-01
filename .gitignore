@@ -52,10 +52,13 @@ data/tournament.db
 data/tournament.db-shm
 data/tournament.db-wal
 
-# Sound effects and the README explaining them are generated into the media
-# folder when the server starts (ensureSoundDir), and the sound files themselves
-# are the user own. None of it is project source.
-public/images/sounds/
+# เสียงเอฟเฟกต์เป็นของที่มากับตัวแอพ ไม่ใช่ข้อมูลของผู้ใช้
+# ตัวติดตั้งต้องมีเสียงติดไปด้วย คนที่โหลดไปจะได้ใช้ได้เลยโดยไม่ต้องไปหาไฟล์เอง
+# จึงคอมมิตเข้ามาเหมือนรูปฮีโร่ ต่างจากโลโก้ทีมกับ state.json ที่เป็นของผู้ใช้จริงๆ
+#
+# ยกเว้น README.txt ที่ ensureSoundDir() เขียนใหม่เองตอนเปิดเซิร์ฟเวอร์
+# ถ้าคอมมิตไว้ มันจะขึ้นเป็นไฟล์ที่ถูกแก้ทุกครั้งที่ข้อความในโค้ดเปลี่ยน
+public/images/sounds/README.txt
 
 # state.json คือสภาพ overlay ที่กำลังออกอากาศอยู่ (ชื่อทีม ผู้เล่น พิค คะแนน)
 # เป็นข้อมูลของผู้ใช้ ไม่ใช่ซอร์ส และแอพสร้างใหม่เองได้ถ้าไม่มีไฟล์

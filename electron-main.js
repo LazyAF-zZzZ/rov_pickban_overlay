@@ -236,16 +236,19 @@ function watchGlobalHotkeys() {
   hotkeyPollTimer = setInterval(tick, HOTKEY_POLL_MS);
 }
 
-// โฟลเดอร์เสียง ต้องตรงกับ USER_SOUND_DIR ใน server/config.ts
+// โฟลเดอร์เสียง อ่านจาก config ตัวเดียวกับที่เซิร์ฟเวอร์ใช้
 //
-// ตอนแพ็กเป็น .exe โค้ดอยู่ใน app.asar ซึ่งเป็นไฟล์ ไม่ใช่โฟลเดอร์ เปิดด้วย
-// shell.openPath ไม่ได้ asarUnpack ใน package.json จึงกันโฟลเดอร์นี้ไว้ข้างนอก
-// ตัวจริงไปอยู่ที่ app.asar.unpacked ซึ่งเป็นโฟลเดอร์จริงที่เปิดและวางไฟล์เพิ่มได้
+// เมนูที่เปิดคนละโฟลเดอร์กับที่โปรแกรมอ่าน แปลว่าคนวางไฟล์ถูกที่ตามเมนูแล้วไม่มีเสียง
+// ซึ่งหาสาเหตุไม่เจอเลย จึงไม่คำนวณเส้นทางเองซ้ำอีกชุด
+//
+// ถ้า build/ ยังไม่มี (ยังไม่ได้คอมไพล์) ค่อยคำนวณเอง เมนูจะได้ไม่พังทั้งอัน
+// ส่วนตัวเซิร์ฟเวอร์เองก็เปิดไม่ขึ้นอยู่แล้วในสถานะนั้น (ดู server.js)
 function soundsDir() {
-  const inAsar = path.join(__dirname, 'public', 'images', 'sounds');
-  return inAsar.includes('app.asar' + path.sep)
-    ? inAsar.replace('app.asar' + path.sep, 'app.asar.unpacked' + path.sep)
-    : inAsar;
+  try {
+    return require(path.join(__dirname, 'build', 'server', 'config')).USER_SOUND_DIR;
+  } catch (error) {
+    return path.join(__dirname, 'public', 'images', 'sounds');
+  }
 }
 
 function createWindow(route = '/', options = {}) {

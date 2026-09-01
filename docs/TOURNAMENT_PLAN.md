@@ -754,10 +754,15 @@ pattern already in `public/js/overlay.js`.
   to. `ROV_USER_SOUND_DIR` overrides the path, and exists so tests can point at an empty
   folder rather than reading whatever the developer has on disk.
 
-  Still open, and now more visible: `build.files` ships `public/**/*` with no exclusions, so
-  the installer carries whatever sounds and dev-mode team logos are in the tree when it is
-  built. For sounds that is now deliberate. For `public/images/team-logos/*.png` it is not,
-  and `CLAUDE.md` claims an exclusion that `package.json` does not have.
+  The three default sounds are committed and ship with the installer, like hero images and
+  unlike team logos — a download plays sound out of the box instead of starting silent, and
+  a test asserts all three files are in the tree so a build cannot go quiet without anyone
+  noticing. Verified by building the installer and running the packaged app: it reports the
+  unpacked folder, finds all three files and serves them at full size.
+
+  Still open, and unchanged by this: `build.files` ships `public/**/*` with no exclusions,
+  so the installer also carries whatever dev-mode team logos are in `public/images/team-logos`
+  when it is built. `CLAUDE.md` claims an exclusion that `package.json` does not have.
 
 - **The user guide now lives in two places and they can drift.** `/guide` (in-app, bilingual,
   offline) and `docs/USER_GUIDE.md` (for reading on GitHub) carry the same content by hand.
