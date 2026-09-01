@@ -47,6 +47,9 @@
     "directories": {
       "output": "dist"
     },
+    "asarUnpack": [
+      "public/images/sounds/**"
+    ],
     "files": [
       "electron-main.js",
       "server.js",

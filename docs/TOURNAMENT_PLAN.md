@@ -742,6 +742,23 @@ pattern already in `public/js/overlay.js`.
   What is left is the page-by-page audit: reading each screen in Thai and fixing what sounds
   wrong, which is a language job rather than a code one.
 
+- **Sound files moved to `public/images/sounds`, and stay there in every mode.** They used
+  to follow `ROV_USER_MEDIA_DIR`, which put them in `%APPDATA%\rov-overlay-tool\media\sounds`
+  under the desktop app and in the project folder when run from source — two locations for
+  one thing, and the app read whichever the mode implied. `USER_SOUND_DIR` is now the project
+  folder outright, on the user's instruction: sounds are dropped in by hand rather than
+  uploaded, and they should travel with the app.
+
+  That makes them part of the build, so `asarUnpack` keeps the folder outside `app.asar` —
+  otherwise a packaged app would hold them inside a single file that nobody can open or add
+  to. `ROV_USER_SOUND_DIR` overrides the path, and exists so tests can point at an empty
+  folder rather than reading whatever the developer has on disk.
+
+  Still open, and now more visible: `build.files` ships `public/**/*` with no exclusions, so
+  the installer carries whatever sounds and dev-mode team logos are in the tree when it is
+  built. For sounds that is now deliberate. For `public/images/team-logos/*.png` it is not,
+  and `CLAUDE.md` claims an exclusion that `package.json` does not have.
+
 - **The user guide now lives in two places and they can drift.** `/guide` (in-app, bilingual,
   offline) and `docs/USER_GUIDE.md` (for reading on GitHub) carry the same content by hand.
   The in-app one is the copy users actually see; if only one gets updated, make it that one.

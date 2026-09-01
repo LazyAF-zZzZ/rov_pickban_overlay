@@ -236,6 +236,18 @@ function watchGlobalHotkeys() {
   hotkeyPollTimer = setInterval(tick, HOTKEY_POLL_MS);
 }
 
+// โฟลเดอร์เสียง ต้องตรงกับ USER_SOUND_DIR ใน server/config.ts
+//
+// ตอนแพ็กเป็น .exe โค้ดอยู่ใน app.asar ซึ่งเป็นไฟล์ ไม่ใช่โฟลเดอร์ เปิดด้วย
+// shell.openPath ไม่ได้ asarUnpack ใน package.json จึงกันโฟลเดอร์นี้ไว้ข้างนอก
+// ตัวจริงไปอยู่ที่ app.asar.unpacked ซึ่งเป็นโฟลเดอร์จริงที่เปิดและวางไฟล์เพิ่มได้
+function soundsDir() {
+  const inAsar = path.join(__dirname, 'public', 'images', 'sounds');
+  return inAsar.includes('app.asar' + path.sep)
+    ? inAsar.replace('app.asar' + path.sep, 'app.asar.unpacked' + path.sep)
+    : inAsar;
+}
+
 function createWindow(route = '/', options = {}) {
   const targetUrl = `${BASE_URL}${route}`;
   const windowTitle = options.title || 'ROV Overlay Tool';
@@ -313,10 +325,13 @@ function buildMenu() {
         },
         { type: 'separator' },
         {
-          // ผู้ใช้ต้องเอาไฟล์เสียงมาวางเอง โฟลเดอร์อยู่คนละที่กันระหว่างรันจาก
-          // source กับรันจากตัวติดตั้ง เปิดให้เลยง่ายกว่าบอกเป็น path ให้ไปหาเอง
+          // ผู้ใช้ต้องเอาไฟล์เสียงมาวางเอง เปิดให้เลยง่ายกว่าบอกเป็น path ให้ไปหาเอง
+          //
+          // ต้องเป็นโฟลเดอร์เดียวกับ USER_SOUND_DIR ใน server/config.ts เป๊ะๆ
+          // เมนูที่เปิดคนละโฟลเดอร์กับที่โปรแกรมอ่าน แปลว่าคนวางไฟล์ถูกที่ตามเมนู
+          // แล้วไม่มีเสียง ซึ่งหาสาเหตุไม่เจอเลย
           label: 'Open Sounds Folder',
-          click: () => shell.openPath(path.join(app.getPath('userData'), 'media', 'sounds'))
+          click: () => shell.openPath(soundsDir())
         },
         { type: 'separator' },
         {

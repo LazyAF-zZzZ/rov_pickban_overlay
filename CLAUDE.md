@@ -234,9 +234,20 @@ because the 1080p overlay, the 1440p overlay and the result screen all receive t
 state and would otherwise echo each other; and `play()` swallows everything until
 `RovSfx.arm()` is called at the end of the first `updateOverlay`, because that first state
 is the whole board arriving at once — without the gate, refreshing the source mid-draft
-fires a pick sound for every hero already on screen. Files live in the user's media
-directory (`USER_SOUND_DIR`), served at `/sounds`, with fixed names from a table in the
-module — never from user text, same rule as `domain/media.ts`. `/sfx-test` is the diagnostic:
+fires a pick sound for every hero already on screen. Files live in
+`public/images/sounds` (`USER_SOUND_DIR`), served at `/sounds`, with fixed names from a
+table in the module — never from user text, same rule as `domain/media.ts`.
+
+**Sound files are the one piece of user-supplied media that does *not* follow
+`ROV_USER_MEDIA_DIR`.** Logos and skins are uploaded through the app, so they must land
+somewhere writable outside `app.asar`; sounds are dropped into a folder by hand, and the
+user wants them beside the project and shipped with the installer. `USER_SOUND_DIR` is
+therefore `public/images/sounds` in every mode, and `asarUnpack` in `package.json` keeps
+that folder out of `app.asar` so a packaged build can still open it and take new files.
+Two consequences worth remembering: the Electron menu's **Open Sounds Folder** has to
+resolve the same path (it rewrites `app.asar` to `app.asar.unpacked`, which `fs` does
+transparently but `shell.openPath` does not), and tests must set `ROV_USER_SOUND_DIR` to a
+temp folder or the "no sound files at all" test reads whatever the developer has on disk. `/sfx-test` is the diagnostic:
 it reports which files the server can see and whether the browser allows autoplay, printed on
 the page rather than logged, because it is meant to be opened as a browser source inside OBS
 where there is no console. Keep it working when the folder is empty — that is the only state

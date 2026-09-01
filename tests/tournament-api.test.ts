@@ -14,6 +14,9 @@ import http from 'http';
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'rov-api-test-'));
 process.env.ROV_USER_DATA_DIR = path.join(TMP, 'data');
 process.env.ROV_USER_MEDIA_DIR = path.join(TMP, 'media');
+// เสียงไม่ตาม ROV_USER_MEDIA_DIR แล้ว (อยู่ใน public/images/sounds เสมอ)
+// ต้องชี้ไปโฟลเดอร์ว่างเอง ไม่งั้นเทสต์ "ไม่มีไฟล์เสียงเลย" จะไปเจอไฟล์จริงของคนพัฒนา
+process.env.ROV_USER_SOUND_DIR = path.join(TMP, 'sounds');
 process.env.CONTROL_TOKEN = '';
 
 // ต้อง import หลังตั้ง env เท่านั้น
