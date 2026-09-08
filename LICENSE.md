@@ -1,6 +1,6 @@
 # ROV Overlay Tool Free Non-Commercial License
 
-Copyright (c) 2026 Witta
+Copyright (c) 2026 LazyAF
 
 ROV Overlay Tool is provided free of charge for tournament, community, education, and personal broadcast use.
 
