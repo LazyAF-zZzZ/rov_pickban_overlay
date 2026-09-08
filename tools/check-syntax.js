@@ -55,9 +55,54 @@ function walk(dir) {
 
 walk(ROOT);
 
+// package.json ยังครบไหม
+//
+// ไฟล์นี้ถือทั้งสคริปต์ที่ใช้ทำงานทุกอย่าง และ build.files ที่กันข้อมูลของผู้ใช้
+// ออกจากตัวติดตั้ง ถ้ามันถูกเขียนทับ ทุกอย่างพังเงียบๆ: npm test หาสคริปต์ไม่เจอ
+// และตัวติดตั้งรอบถัดไปอาจแพ็ค state กับโลโก้ทีมของเครื่องที่ build ไปด้วย
+//
+// เกิดขึ้นมาแล้วจริงตอนออกรุ่น 2.0.0 (2026-09-08) คำสั่งที่ใช้ตรวจตัวติดตั้ง
+//   npx asar extract-file dist/win-unpacked/resources/app.asar package.json
+// ถูกรันจากรากโปรเจกต์ asar เขียนไฟล์ที่แตกออกมาลง "โฟลเดอร์ปัจจุบัน" เสมอ
+// package.json ของโปรเจกต์จึงถูกทับด้วยสำเนาที่อยู่ในแอพ ซึ่ง electron-builder
+// ตัด scripts / devDependencies / build ทิ้งไปแล้วตอนแพ็ค
+// ผลคือ 91 บรรทัดหายไปโดยไม่มีอะไรฟ้อง จนกว่าจะมีคนสั่ง npm อีกครั้ง
+//
+// (electron-builder ไม่ได้แตะไฟล์นี้ ยืนยันแล้วด้วยการรันแยกทีละขั้น)
+// จะแตกไฟล์จาก asar มาดู ต้อง cd ไปโฟลเดอร์ชั่วคราวก่อนเสมอ
+const REQUIRED_SCRIPTS = ['build', 'typecheck', 'typecheck:web', 'test', 'check', 'dist', 'start', 'app'];
+// สองบรรทัดนี้คือสิ่งที่กันข้อมูลของผู้ใช้ออกจากไฟล์ .exe ห้ามหาย
+const REQUIRED_EXCLUDES = ['!data/state.json', '!data/tournament.db*'];
+
+try {
+  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+
+  REQUIRED_SCRIPTS.forEach((name) => {
+    if (!pkg.scripts || !pkg.scripts[name]) {
+      problems.push(`package.json lost the "${name}" script`);
+    }
+  });
+  if (!pkg.devDependencies || Object.keys(pkg.devDependencies).length === 0) {
+    problems.push('package.json lost its devDependencies');
+  }
+  if (!pkg.main) problems.push('package.json lost "main", the Electron entry point');
+
+  const buildFiles = (pkg.build && pkg.build.files) || [];
+  if (buildFiles.length === 0) {
+    problems.push('package.json lost build.files, which the installer is built from');
+  }
+  REQUIRED_EXCLUDES.forEach((entry) => {
+    if (buildFiles.length && !buildFiles.includes(entry)) {
+      problems.push(`build.files no longer excludes ${entry} - the installer would ship the builder's own data`);
+    }
+  });
+} catch (error) {
+  problems.push('package.json could not be read: ' + error.message);
+}
+
 if (problems.length) {
   console.error(`${problems.length} problem(s):`);
   problems.forEach((p) => console.error(`  ${p}`));
   process.exit(1);
 }
-console.log(`check: ${checked} JS files parse cleanly, no stray control characters`);
+console.log(`check: ${checked} JS files parse cleanly, no stray control characters, package.json intact`);

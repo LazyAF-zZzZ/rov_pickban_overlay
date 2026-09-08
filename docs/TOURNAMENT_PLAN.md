@@ -2423,6 +2423,26 @@ Each of these cost real debugging time. They are also in `CLAUDE.md`.
   costs no extra request — probe and background fetch the same URL and the
   second is served from cache (measured: 18 tiles, 18 requests). The one-shot
   rule still applies to the probe: set `src` once, never reassign it.
+- **`asar extract-file` writes into the current directory, so never run it
+  from the project root.** Verifying the installer with
+  `npx asar extract-file dist/win-unpacked/resources/app.asar package.json`
+  overwrites the project's own `package.json` with the packaged copy — which
+  electron-builder has already stripped of `scripts`, `devDependencies` and
+  `build`. 91 lines vanish and nothing says so until the next `npm` command
+  fails with "Missing script". It happened during the 2.0.0 release; the commit
+  was already made, so nothing shipped wrong. `cd` to a temp folder first.
+  electron-builder itself does **not** touch the source file — confirmed by
+  running `npm run build` and `npx electron-builder` separately and hashing
+  between them.
+
+  `npm run check` now asserts `package.json` still has its scripts,
+  devDependencies, `main`, and the `build.files` entries that keep user data out
+  of the installer. Note what that can and cannot do: it catches *partial*
+  damage — the dangerous silent case, such as an exclusion being dropped so the
+  next installer ships the builder's own `state.json` — but it cannot catch the
+  total wipe, because once `scripts` is gone `npm run check` cannot run at all.
+  That case is loud instead: every npm command fails immediately, and `git
+  status` shows the file as modified.
 - **Retiring a boxed look means clearing `box-shadow` as well.**
   `background: none` and `border: none` leave a glow behind that now has no box
   to be the edge of, and on air that reads as a coloured halo floating around the
