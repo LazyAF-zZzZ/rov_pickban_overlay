@@ -99,14 +99,14 @@
         <input type="checkbox" id="globalEnabled">
         <span data-i18n>Switch on</span>
       </label>
+      <!-- แผงบนมีทางกลับไปค่าเริ่มต้น แผงนี้ไม่เคยมี ทั้งที่เซิร์ฟเวอร์รับคำสั่ง
+           resetGlobalHotkeys อยู่แล้วตั้งแต่แรก มันเป็นคำสั่งที่ไม่มีใครเรียกถึงได้
+           แถวของแผงนี้ก็ไม่มีปุ่ม DEFAULT รายตัวแบบแผงบนด้วย -->
+      <button class="tlink danger" type="button" id="resetGlobal" data-i18n>RESET ALL</button>
     </div>
     <div class="panel-body">
       <div id="globalRows"></div>
-      <div class="hint desktop-only">
-        This panel only does anything in the desktop app. A page in a browser
-        cannot register keys with Windows, so nothing here is switchable while
-        you are reading it in one.
-      </div>
+      <div class="hint desktop-only" data-i18n>This panel only does anything in the desktop app. A page in a browser cannot register keys with Windows, so nothing here is switchable while you are reading it in one.</div>
       <div class="hint">
         The desktop app registers these with Windows itself, so they fire from
         anywhere - no need to click back into the Control Panel first.
@@ -130,9 +130,9 @@
     </div>
     <div class="panel-body">
       <div class="fixed-list">
-        <div class="frow"><span class="fkey" data-i18n>Enter</span><span>Confirm the hero typed in a pick or ban box</span></div>
-        <div class="frow"><span class="fkey" data-i18n>Esc</span><span>Leave a hero box without choosing</span></div>
-        <div class="frow"><span class="fkey" data-i18n>Esc</span><span>Outside a box: go back to the previous page</span></div>
+        <div class="frow"><span class="fkey" data-i18n>Enter</span><span data-i18n>Confirm the hero typed in a pick or ban box</span></div>
+        <div class="frow"><span class="fkey" data-i18n>Esc</span><span data-i18n>Leave a hero box without choosing</span></div>
+        <div class="frow"><span class="fkey" data-i18n>Esc</span><span data-i18n>Outside a box: go back to the previous page</span></div>
       </div>
     </div>
   </div>

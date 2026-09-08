@@ -27,19 +27,8 @@ const DEFAULT_STAGGER = 90;
 
 let settleTimer = null;
 
-// ระวัง: Number(null) เป็น 0 และ 0 ก็ผ่าน Number.isFinite
-// เช็คแค่ isFinite อย่างเดียว พารามิเตอร์ที่ไม่ได้ใส่มาจะกลายเป็น 0 ไม่ใช่ค่าเริ่มต้น
-// ตอนแรกพลาดตรงนี้จริงๆ ผลคือ stagger = 0 การ์ดเข้าพร้อมกันหมด
-// อนิเมชันยังเล่นอยู่ ไม่มีอะไรพัง จึงมองไม่เห็นว่าหายไปจนกว่าจะจ้องดู
-function intParam(name, fallback, min, max) {
-    const value = params.get(name);
-    if (value === null || value.trim() === '') return fallback;
-    const raw = Number(value);
-    if (!Number.isFinite(raw)) return fallback;
-    return Math.max(min, Math.min(max, Math.trunc(raw)));
-}
 
-const stagger = intParam('stagger', DEFAULT_STAGGER, 0, 1000);
+const stagger = window.RovOverlay.intParam(params, 'stagger', DEFAULT_STAGGER, 0, 1000);
 
 
 // เวลาไล่เข้าทั้งชุดต้องไม่ยืดเกินไปเมื่อทีมเยอะ
@@ -61,11 +50,7 @@ async function getJson(url) {
 }
 
 // ข้อความช่วยตอนตั้งค่า จงใจให้จาง ถ้าหลุดออกอากาศจะได้ไม่เด่น
-function note(message) {
-    const el = document.getElementById('note');
-    el.textContent = message || '';
-    el.hidden = !message;
-}
+
 
 // เลือกทัวร์นาเมนต์: ระบุมาเอง > ตามแมตช์ที่ออกอากาศ > รายการล่าสุด
 //
@@ -114,7 +99,7 @@ function logoNode(team) {
 
 // จำนวนคอลัมน์ตามจำนวนทีม กว้างที่ใช้ได้คือ 1736px (1920 ลบขอบสองข้าง)
 function columnsFor(count) {
-    if (params.get('columns')) return intParam('columns', 3, 1, 6);
+    if (params.get('columns')) return window.RovOverlay.intParam(params, 'columns', 3, 1, 6);
     if (count <= 8) return 2;
     if (count <= 18) return 3;
     if (count <= 32) return 4;
@@ -200,9 +185,18 @@ function fitToStage() {
     const gridTop = grid.getBoundingClientRect().top;
     const needed = cards[cards.length - 1].getBoundingClientRect().bottom - gridTop;
 
+    // padding จาก getComputedStyle เป็นค่าก่อนถูกสเกล พิกัดจาก rect เป็นค่าหลังสเกล
+    //
+    // โหมด 1440 ขยายทั้งเวทีด้วย 4/3 ขอบล่าง 62px จึงกินที่จริง 82.7px
+    // เอาสองหน่วยนี้มาลบกันตรงๆ ทำให้ "ที่ว่าง" เกินจริงไป 21px
+    // ผลคือตอนที่ตัวย่อทำงาน การ์ดแถวสุดท้ายถูกตัดหายไปนิดหนึ่งเฉพาะที่ 1440
+    // offsetHeight เป็นความสูงตามผัง ส่วน rect.height เป็นความสูงที่เห็นจริง
+    // อัตราส่วนของสองค่านี้คือสเกลที่กำลังถูกใช้อยู่
+    const stageRect = stage.getBoundingClientRect();
+    const stageScale = stage.offsetHeight ? stageRect.height / stage.offsetHeight : 1;
     const stageStyle = getComputedStyle(stage);
-    const available = stage.getBoundingClientRect().bottom
-        - parseFloat(stageStyle.paddingBottom) - gridTop;
+    const available = stageRect.bottom
+        - parseFloat(stageStyle.paddingBottom) * stageScale - gridTop;
 
     if (needed <= 0 || available <= 0 || needed <= available) return;
 
@@ -229,7 +223,7 @@ function render(tournament, teams) {
     const showRoster = params.get('roster') !== 'off' && teams.length <= 12;
     teams.forEach((team, index) => grid.appendChild(teamCard(team, index, showRoster)));
 
-    note(teams.length === 0 ? 'No teams have been added to this tournament yet.' : '');
+    window.RovOverlay.note(teams.length === 0 ? 'No teams have been added to this tournament yet.' : '');
     fitToStage();
     settleSoon(teams.length, step);
 }
@@ -237,7 +231,7 @@ function render(tournament, teams) {
 async function load() {
     const id = await resolveTournamentId();
     if (!id) {
-        note('No tournament found. Create one, or add ?tournament=<id> to this URL.');
+        window.RovOverlay.note('No tournament found. Create one, or add ?tournament=<id> to this URL.');
         settleSoon(0);
         return;
     }
@@ -246,7 +240,7 @@ async function load() {
         const data = await getJson('/api/tournaments/' + encodeURIComponent(id));
         render(data.tournament || {}, data.teams || []);
     } catch (error) {
-        note('Could not load that tournament.');
+        window.RovOverlay.note('Could not load that tournament.');
         settleSoon(0);
     }
 }

@@ -13,7 +13,16 @@ let recordingAction = null;
 socket.on('connect_error', (error) => showToast(error.message || 'Connection error', 'red'));
 socket.on('stateUpdate', (state) => {
   if (state && state.hotkeys) hotkeys = { ...DEFAULTS, ...state.hotkeys };
+  // คีย์ลัดระดับระบบมาทางเดียวกัน และต้องรับด้วย ไม่ใช่แค่ hotkeys ของหน้า Control
+  //
+  // saveGlobal() ตั้งใจไม่เขียนค่าลงตัวแปรเอง รอให้เซิร์ฟเวอร์ตอบกลับมา
+  // (เซิร์ฟเวอร์เป็นคนตัดสินว่าปุ่มนั้นใช้ได้ไหม ดู sanitizeGlobalHotkeys)
+  // แต่ตรงนี้ไม่เคยรับค่านั้น globalHotkeys จึงค้างเป็นของเก่าตลอด
+  // แถวยังโชว์ปุ่มเดิมทั้งที่เซฟไปแล้ว และในแอพเดสก์ท็อปที่ถามซ้ำทุกสามวินาที
+  // renderGlobal() จะวาดจากค่าเก่าซ้ำ ติ๊ก "เปิด" แล้วเด้งกลับเป็นปิดเองภายในสามวินาที
+  if (state && state.globalHotkeys) globalHotkeys = state.globalHotkeys;
   render();
+  renderGlobal();
 });
 
 // ปุ่มเดียวกันถูกผูกไว้สองที่ = ปุ่มหลังชนะเงียบๆ ต้องบอกให้เห็น
@@ -263,6 +272,14 @@ document.getElementById('resetAll')?.addEventListener('click', () => {
   render();
   socket.emit('resetHotkeys');
   showToast(t('All hotkeys reset'), 'blue');
+});
+
+// ไม่เขียนค่าลงตัวแปรเองก่อน รอ state กลับมาแล้ววาดใหม่
+// เหตุผลเดียวกับ saveGlobal: เซิร์ฟเวอร์เป็นคนตัดสินว่าปุ่มไหนจองได้
+document.getElementById('resetGlobal')?.addEventListener('click', () => {
+  recordingGlobal = null;
+  socket.emit('resetGlobalHotkeys');
+  showToast(t('System-wide hotkeys reset'), 'blue');
 });
 
 document.getElementById('globalEnabled')?.addEventListener('change', (event) => {

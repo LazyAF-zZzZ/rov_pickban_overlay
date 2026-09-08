@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pick / ban history - ROV Overlay Tool</title>
+<!-- หน้านี้อยู่ที่ /tournament/:id/drafts ลึกสองชั้น
+     path ทุกอันต้องขึ้นต้นด้วย / เท่านั้น ไม่งั้นเบราว์เซอร์จะไปหาที่
+     /tournament/:id/js/... แล้วได้ 404 (กฎเดียวกับหน้าสายการแข่ง) -->
+<link rel="stylesheet" href="/css/theme.css">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">ROV <span>|</span> PICK &amp; BAN HISTORY</div>
+  <nav class="topnav" aria-label="Pages">
+    <a class="tlink" href="/" data-i18n>HOME</a>
+    <a class="tlink" href="/teams" data-i18n>TEAMS</a>
+    <a class="tlink" href="/analytics" data-i18n>ANALYTICS</a>
+    <a class="tlink" href="/control" data-i18n>CONTROL</a>
+    <a class="tlink" href="/design" data-i18n>DESIGN</a>
+    <a class="tlink" href="/hotkeys" data-i18n>HOTKEYS</a>
+    <a class="tlink" href="/guide" data-i18n>GUIDE</a>
+  </nav>
+</div>
+
+<div class="wrap">
+  <div class="section">
+    <div class="section-head">
+      <a class="tlink" id="backLink" href="/" data-esc-back data-i18n>← TOURNAMENT</a>
+      <div class="section-title" id="pageTitle"></div>
+      <div class="spacer"></div>
+      <select class="dh-filter" id="teamFilter"></select>
+      <input class="dh-filter dh-search" id="heroFilter" type="search" placeholder="Find a hero" data-i18n-placeholder>
+    </div>
+    <div class="panel"><div class="panel-body">
+      <div class="dh-count" id="count"></div>
+      <div id="list"></div>
+    </div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast_el"></div>
+
+<script src="/js/lib/i18n.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/lib/app-client.js"></script>
+<script src="/js/tournament-drafts.js"></script>
+</body>
+</html>

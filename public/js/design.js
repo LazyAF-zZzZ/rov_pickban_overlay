@@ -39,7 +39,13 @@ const EXTS = ['png', 'jpg', 'webp'];
 socket.on('connect', () => showToast(t('Connected'), 'green'));
 socket.on('disconnect', () => showToast(t('Disconnected'), 'red'));
 socket.on('controlError', (error) => showToast(error.message || 'Control blocked', 'red'));
+// เก็บ state ล่าสุดไว้ เพราะการสลับภาษาต้องวาดหน้านี้ใหม่ทั้งชุด
+// แล้วต้องเอาค่าที่แสดงอยู่กลับมาใส่เอง ไม่ใช่รอ stateUpdate ก้อนถัดไป
+// ซึ่งจะไม่มาเลยถ้านาฬิกาดราฟต์ไม่ได้เดินอยู่
+let lastState = null;
+
 socket.on('stateUpdate', (state) => {
+  lastState = state;
   renderSkin(state && state.skin);
   renderTheme(state && state.theme);
   renderPreviewSize(state && state.overlaySize);
@@ -57,7 +63,7 @@ function buildDesignGrid() {
       const banner = document.createElement('div');
       banner.className = 'dsize-banner';
       banner.innerHTML = `<span class="dsize-chip">${size}p</span>` +
-        `<span>สำหรับ Browser Source ขนาด <b>${size === '1080' ? '1920 x 1080' : '2560 x 1440'}</b></span>`;
+        `<span>${t('For a Browser Source sized')} <b>${size === '1080' ? '1920 x 1080' : '2560 x 1440'}</b></span>`;
       grid.appendChild(banner);
     }
 
@@ -86,7 +92,7 @@ function buildDesignGrid() {
     const preview = document.createElement('div');
     preview.className = 'dslot-preview';
     preview.id = `skinPreview_${key}`;
-    preview.textContent = 'ยังไม่มีภาพ';
+    preview.textContent = t('No image yet');
 
     // input file ซ่อนไว้ ให้ปุ่มปกติเป็นตัวกด หน้าตาจะได้เข้าชุดกัน
     const file = document.createElement('input');
@@ -179,7 +185,7 @@ function renderSkin(skin) {
       preview.style.backgroundImage = '';
       preview.classList.remove('filled');
       preview.dataset.version = '';
-      preview.textContent = 'ยังไม่มีภาพ';
+      preview.textContent = t('No image yet');
       return;
     }
     if (preview.dataset.version === String(version)) return;
@@ -264,7 +270,8 @@ function themeRow(field) {
   head.className = 'trow-head';
   const label = document.createElement('span');
   label.className = 'trow-label';
-  label.textContent = field.label;
+  // ป้ายของตัวปรับธีมมาจากตารางในไฟล์นี้ ผ่าน t() เหมือนข้อความอื่นของหน้าคนคุมงาน
+  label.textContent = t(field.label);
   const value = document.createElement('span');
   value.className = 'trow-value';
   head.append(label, value);
@@ -386,13 +393,22 @@ document.querySelectorAll('.tp-bd').forEach((/** @type {HTMLElement} */ btn) => 
     frame.classList.remove('checker', 'dark', 'light');
     frame.classList.add(btn.dataset.bd);
     document.querySelectorAll('.tp-bd').forEach((b) => b.classList.toggle('active', b === btn));
-    localStorage.setItem('rovPreviewBackdrop', btn.dataset.bd);
+    // localStorage โยน error ได้เมื่อเบราว์เซอร์บล็อกข้อมูลเว็บไซต์ไว้
+    // ไม่กันไว้ การคลิกเปลี่ยนพื้นหลังจะพังกลางคัน
+    try {
+      localStorage.setItem('rovPreviewBackdrop', btn.dataset.bd);
+    } catch { /* จำไม่ได้ก็ยังใช้ได้ในรอบนี้ */ }
   });
 });
 
 // จำพื้นหลังที่เลือกไว้ คนคุมมักดูบนพื้นเดิมทุกครั้ง
+//
+// ตัวนี้ทำงานตอนโหลดไฟล์ ถ้า localStorage โยน error ออกมา บรรทัดที่เหลือของ
+// design.js จะไม่ถูกรันเลย รวมถึง buildThemeEditor() กับ buildDesignGrid()
+// ข้างล่างนี้ = หน้าดีไซน์ว่างเปล่า ทั้งที่สาเหตุคือการจำพื้นหลังพรีวิว
 (() => {
-  const saved = localStorage.getItem('rovPreviewBackdrop') || 'checker';
+  let saved = 'checker';
+  try { saved = localStorage.getItem('rovPreviewBackdrop') || 'checker'; } catch { /* ค่าเริ่มต้น */ }
   /** @type {HTMLElement} */ (document.querySelector(`.tp-bd[data-bd="${saved}"]`))?.click();
 })();
 
@@ -400,5 +416,22 @@ buildThemeEditor();
 buildDesignGrid();
 fetch(withToken('/api/state'))
   .then((r) => r.json())
-  .then((state) => { renderSkin(state.skin); renderTheme(state.theme); renderPreviewSize(state.overlaySize); })
-  .catch(() => showToast('โหลดสถานะไม่สำเร็จ', 'red'));
+  .then((state) => {
+    lastState = state;
+    renderSkin(state.skin);
+    renderTheme(state.theme);
+    renderPreviewSize(state.overlaySize);
+  })
+  .catch(() => showToast(t('Could not load the state'), 'red'));
+
+// หน้านี้วาดป้ายเองจาก JS ตัวแปลเดินเฉพาะ [data-i18n] ที่อยู่ใน DOM แล้ว
+// จึงมองไม่เห็นของพวกนี้ ต้องวาดใหม่เองตอนสลับภาษา (กฎเดียวกันใน CLAUDE.md)
+// ไม่ทำแล้วกด EN จะเหลือป้ายไทยค้างอยู่จนกว่าจะรีเฟรช
+window.RovI18n?.onChange(() => {
+  buildThemeEditor();
+  buildDesignGrid();
+  if (!lastState) return;
+  renderSkin(lastState.skin);
+  renderTheme(lastState.theme);
+  renderPreviewSize(lastState.overlaySize);
+});

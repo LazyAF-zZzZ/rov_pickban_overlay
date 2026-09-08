@@ -1,6 +1,6 @@
 {
   "name": "rov-overlay-tool",
-  "version": "2.0.0-beta",
+  "version": "2.0.0",
   "description": "Arena of Valor Draft Pick Overlay Tool",
   "main": "electron-main.js",
   "scripts": {
@@ -62,6 +62,12 @@
       "!data/state.json",
       "!data/presets.json",
       "!data/tournament.db*",
+      "!public/images/team-logos/*.png",
+      "!public/images/team-logos/*.jpg",
+      "!public/images/team-logos/*.webp",
+      "!public/images/skins/*.png",
+      "!public/images/skins/*.jpg",
+      "!public/images/skins/*.webp",
       "node_modules/**/*"
     ],
     "win": {

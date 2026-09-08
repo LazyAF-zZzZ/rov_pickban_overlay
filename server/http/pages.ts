@@ -27,6 +27,22 @@ export const PAGES: Record<string, string> = {
   // กระดานสถิติ pick/ban สำหรับขึ้นจอระหว่างพัก ชื่อขึ้นต้นด้วย overlay- ด้วยเหตุผลเดียวกัน
   // /analytics เป็นหน้าของคนคุมงานไปแล้ว
   '/overlay-analytics': 'overlay-analytics.html',
+  // ตารางคะแนนของรอบแบ่งกลุ่ม
+  //
+  // รูปแบบพบกันหมดและแบ่งกลุ่มไม่มีสายให้ดูว่าใครไปต่อ ตารางคือตัวการแข่งขันเอง
+  // ก่อนหน้านี้ไม่มีทางเอาขึ้นจอเลย คนดูจึงไม่มีทางรู้ว่าใครนำอยู่
+  '/overlay-standings': 'overlay-standings.html',
+  // หัวต่อหัวของสองทีมที่กำลังจะเจอกัน
+  // อ่านจากดราฟต์และผู้ชนะรายเกมที่เก็บไว้อยู่แล้ว ไม่มีข้อมูลใหม่ที่ต้องกรอกเพิ่ม
+  '/overlay-matchup': 'overlay-matchup.html',
+  // ฮีโร่ที่สองทีมของคู่ที่ออกอากาศหยิบ/โดนแบนบ่อยสุดในรายการนี้
+  // หน้าตาเหมือนกราฟิกหัวต่อหัว (ใช้แผ่นสไตล์เดียวกัน) แต่นับคนละขอบเขต
+  '/overlay-team-drafts': 'overlay-team-drafts.html',
+  // ดราฟต์ของรอบก่อนหน้าในซีรีส์ที่กำลังคุมอยู่ พิคกับแบนอยู่ในกระดานเดียว
+  //
+  // เคยเป็นสองหน้าแยกกัน (/overlay-prev-picks กับ /overlay-prev-bans)
+  // รวมเป็นหน้าเดียวแล้วลบสองหน้านั้นทิ้งตามที่ผู้ใช้สั่ง 2026-09-08
+  '/overlay-prev': 'overlay-prev.html',
   // หน้าตั้งค่าภาพพื้นหลัง แยกจาก Control Panel เพราะเป็นงานก่อนแข่ง
   '/design': 'design.html',
   '/hotkeys': 'hotkeys.html',
@@ -64,6 +80,16 @@ export function pageRoutes(): Router {
   // path ของ asset ยิ่งต้องเป็นแบบเต็ม
   router.get('/tournament/:id/bracket', (_req, res) => {
     res.sendFile(path.join(PUBLIC_DIR, 'bracket.html'));
+  });
+
+  // ประวัติพิค/แบนของทัวร์นาเมนต์ อยู่ลึกสองชั้นเหมือนหน้าสายการแข่ง
+  //
+  // เป็นหน้าย่อยของทัวร์นาเมนต์ ไม่ได้เพิ่มลงแถบเมนู
+  // แถบเมนูต้องเหมือนกันทุกหน้าและมีเทสต์คุมอยู่ การเพิ่มหนึ่งช่องแปลว่า
+  // ต้องแก้ทุกหน้าพร้อมกัน ส่วนหน้านี้เข้าถึงจากหน้าทัวร์นาเมนต์ก็พอ
+  // (แบบเดียวกับ /tournament/:id/bracket)
+  router.get('/tournament/:id/drafts', (_req, res) => {
+    res.sendFile(path.join(PUBLIC_DIR, 'tournament-drafts.html'));
   });
 
   router.get('/index.html', (_req, res) => res.redirect('/control'));

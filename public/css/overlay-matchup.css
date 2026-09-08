@@ -1,0 +1,117 @@
+/* หัวต่อหัว: สองทีมนี้เคยเจอกันมาแล้วยังไง
+ *
+ * สำหรับช่วงก่อนเริ่มคู่ ข้อมูลทั้งหมดถูกเก็บอยู่แล้วตั้งแต่ Phase 5
+ * แต่ไม่เคยถูกเอามาใช้บนอากาศ
+ *
+ * ห้ามลิงก์ธีมของหน้าคนคุมงาน นี่คือสิ่งที่คนดูเห็น */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+    --ov-blue: #2f7ff5;
+    --ov-red: #f0483c;
+    --ov-accent: #f5b942;
+    --ov-text: #ffffff;
+    --ov-silver: #b9c0cc;
+    --ov-blue-rgb: 47, 127, 245;
+    --ov-red-rgb: 240, 72, 60;
+}
+
+body {
+    width: 1920px;
+    height: 1080px;
+    background: transparent;
+    font-family: 'Kanit', 'Segoe UI', Arial, sans-serif;
+    overflow: hidden;
+}
+
+body[data-size="1440"] { width: 2560px; height: 1440px; }
+body[data-size="1440"] .mu-stage { transform: scale(calc(4 / 3)); transform-origin: top left; }
+
+.mu-stage {
+    width: 1920px;
+    height: 1080px;
+    padding: 70px 90px;
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+}
+
+.mu-head { flex: 0 0 auto; text-align: center; opacity: 0; transform: translateY(-24px); animation: muIn 480ms cubic-bezier(0.16,0.84,0.32,1) forwards; }
+.mu-title { font-size: 44px; font-weight: 800; letter-spacing: 6px; text-transform: uppercase; color: var(--ov-text); text-shadow: 0 4px 22px rgba(0,0,0,0.85); }
+.mu-sub { margin-top: 6px; font-size: 18px; font-weight: 600; letter-spacing: 7px; text-transform: uppercase; color: var(--ov-accent); }
+
+@keyframes muIn { to { opacity: 1; transform: translateY(0); } }
+
+/* แถวคะแนนรวม: ชื่อทีมสองข้าง ตัวเลขตรงกลาง */
+.mu-score {
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 30px;
+    background: rgba(9, 11, 16, 0.72);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 14px;
+    padding: 26px 34px;
+    box-shadow: 0 10px 34px rgba(0,0,0,0.5);
+    opacity: 0;
+    transform: translateY(22px);
+    animation: muIn 520ms cubic-bezier(0.16,0.84,0.32,1) 120ms forwards;
+}
+
+.mu-team { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.mu-team.red { flex-direction: row-reverse; }
+.mu-dot { width: 12px; height: 12px; border-radius: 50%; flex: 0 0 12px; }
+.mu-team.blue .mu-dot { background: var(--ov-blue); }
+.mu-team.red .mu-dot { background: var(--ov-red); }
+.mu-name { font-size: 40px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: var(--ov-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.mu-tally { display: flex; align-items: baseline; gap: 16px; font-weight: 800; }
+.mu-num { font-size: 66px; line-height: 1; color: var(--ov-text); }
+.mu-num.lead { color: var(--ov-accent); }
+.mu-vs { font-size: 22px; letter-spacing: 4px; color: var(--ov-silver); }
+.mu-scope { grid-column: 1 / -1; text-align: center; font-size: 15px; font-weight: 600; letter-spacing: 4px; text-transform: uppercase; color: var(--ov-silver); }
+
+/* สองคอลัมน์: ฮีโร่ที่แต่ละฝั่งหยิบและแบนใส่กัน */
+.mu-cols { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+
+.mu-side {
+    background: rgba(9, 11, 16, 0.72);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 14px;
+    padding: 20px 24px;
+    box-shadow: 0 10px 34px rgba(0,0,0,0.5);
+    opacity: 0;
+    transform: translateY(22px);
+    animation: muIn 520ms cubic-bezier(0.16,0.84,0.32,1) 240ms forwards;
+}
+.mu-side.red { animation-delay: 320ms; }
+.mu-side.blue { border-top: 3px solid var(--ov-blue); }
+.mu-side.red { border-top: 3px solid var(--ov-red); }
+
+.mu-side-name { font-size: 22px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--ov-text); margin-bottom: 14px; }
+.mu-label { font-size: 12px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--ov-silver); margin: 14px 0 8px; }
+
+.mu-heroes { display: flex; gap: 10px; }
+.mu-hero { position: relative; width: 92px; }
+/* จุดครอบเป็นกึ่งกลาง ไม่ใช่ center 18%
+   18% มีไว้ดึงหน้าของรูปเต็มตัวขึ้นมาในกรอบสี่เหลี่ยม ตอนนี้ช่องนี้ใช้ไอคอน
+   ซึ่งจัดหน้าไว้กลางภาพอยู่แล้ว เลื่อนขึ้นอีกจะตัดส่วนบนของหัวทิ้ง
+   (ทางถอยไปรูปเต็มตัวใน hero-art.js ยังใช้กรอบเดียวกัน ยอมให้ครอบกลางแทน) */
+.mu-art { width: 92px; height: 92px; border-radius: 10px; background-size: cover; background-position: center; border: 1px solid rgba(255,255,255,0.12); }
+.mu-side.red .mu-art.banned { filter: grayscale(1) brightness(0.62); }
+.mu-side.blue .mu-art.banned { filter: grayscale(1) brightness(0.62); }
+.mu-count { position: absolute; right: 4px; bottom: 4px; font-size: 15px; font-weight: 800; color: var(--ov-text); text-shadow: 0 1px 4px rgba(0,0,0,0.95); }
+
+.mu-empty { font-size: 16px; font-weight: 500; letter-spacing: 2px; color: rgba(255,255,255,0.35); }
+.mu-note { flex: 0 0 auto; text-align: center; font-size: 17px; font-weight: 500; letter-spacing: 2px; color: rgba(255,255,255,0.4); }
+
+/* บังคับสถานะสุดท้าย OBS หยุด browser source ที่ไม่ได้ออกอากาศ */
+.mu-stage.settled .mu-head,
+.mu-stage.settled .mu-score,
+.mu-stage.settled .mu-side {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+}

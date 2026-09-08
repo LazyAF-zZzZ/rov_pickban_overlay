@@ -413,10 +413,13 @@ function boot() {
     }
   });
 
-  document.getElementById('foot').textContent =
-    'Teams here are shared by every tournament. Adding a team to a tournament does not copy it - ' +
-    'editing the roster on its profile changes it everywhere it plays from then on. ' +
-    'Matches already played keep the roster they were played with.';
+  // ประโยคเดียวเป็นคีย์เดียว ไม่ตัดเป็นสามท่อน
+  // คีย์แปลคือประโยคอังกฤษทั้งประโยค ตัดท่อนแล้วคนแปลจะเห็นเศษประโยคที่ไม่มีบริบท
+  document.getElementById('foot').textContent = t(
+    'Teams here are shared by every tournament. Adding a team to a tournament does not copy it - '
+    + 'editing the roster on its profile changes it everywhere it plays from then on. '
+    + 'Matches already played keep the roster they were played with.'
+  );
 }
 
 (async () => {

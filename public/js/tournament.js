@@ -12,7 +12,6 @@ const { socket, fetchJson, absoluteUrl, withToken, showToast, onDataChange, defe
 const { confirmAndDelete } = window.RovTournamentUI;
 
 // รายการ browser source ใช้ร่วมกับหน้า Control
-const { render: renderObsSources } = window.RovObsSources;
 
 // ช่องผู้เล่น โลโก้ และตัวอัปโหลด ใช้ร่วมกับหน้า /teams และ /teams/:id
 // อย่าก็อปกลับมาไว้ในไฟล์นี้อีก — สองชุดที่แก้คนละที่คือที่มาของบั๊กเดิม
@@ -313,10 +312,6 @@ function buildEditor(editor, team) {
   editor.append(nameRow, playersWrap, logoRow, saveRow);
 }
 
-function renderSources() {
-  renderObsSources(document.getElementById('sources'), { tournamentId });
-}
-
 function showMissing(message) {
   document.getElementById('headName').textContent = t('Tournament not found');
   const body = document.createElement('div');
@@ -592,6 +587,7 @@ async function clearLogo(team) {
 // จำสถานะไว้ เพราะการจัดทีมทำครั้งเดียวตอนต้น แต่หน้านี้ถูกเปิดซ้ำทั้งงาน
 // ต้องมาพับใหม่ทุกครั้งที่เปิดคือสิ่งที่น่ารำคาญกว่าการไม่มีปุ่มพับเสียอีก
 const TEAMS_FOLD_KEY = 'rovTournamentTeamsFolded';
+const DETAIL_FOLD_KEY = 'rovTournamentDetailFolded';
 
 function readFoldPreference() {
   // localStorage โยน error ได้ในโหมดส่วนตัวบางเบราว์เซอร์ ค่าเริ่มต้นคือกางไว้
@@ -600,6 +596,38 @@ function readFoldPreference() {
   } catch {
     return false;
   }
+}
+
+// แผงรายละเอียดพับเก็บเป็นค่าเริ่มต้น ตรงข้ามกับหัวข้อทีมที่กางไว้
+// ค่าที่จำไว้จึงอ่านกลับด้าน: ไม่มีค่าที่จำ = พับ
+function readDetailFoldPreference() {
+  try {
+    return localStorage.getItem(DETAIL_FOLD_KEY) !== '0';
+  } catch {
+    return true;
+  }
+}
+
+function setDetailFolded(folded, remember = true) {
+  const fold = document.getElementById('detailFold');
+  const button = document.getElementById('detailToggle');
+  if (!fold || !button) return;
+
+  fold.hidden = folded;
+  button.textContent = folded ? '▸' : '▾';
+  button.title = folded ? 'Show the tournament details' : 'Hide the tournament details';
+  button.setAttribute('aria-expanded', folded ? 'false' : 'true');
+
+  if (!remember) return;
+  try {
+    localStorage.setItem(DETAIL_FOLD_KEY, folded ? '1' : '0');
+  } catch {
+    /* จำไม่ได้ก็ไม่เป็นไร ปุ่มยังใช้ได้ในหน้านี้ */
+  }
+}
+
+function detailIsFolded() {
+  return document.getElementById('detailFold')?.hidden === true;
 }
 
 function setTeamsFolded(folded, remember = true) {
@@ -685,20 +713,21 @@ async function load() {
   renderHead(current);
   renderForm(current);
   renderTeams(current, data.teams || []);
-  renderSources();
   await refreshRegistry();
   await loadMatchSummary();
+  await loadStandings();
 
-  ['detailSection', 'teamsSection', 'matchesSection', 'obsSection'].forEach((id) => {
+  ['detailSection', 'teamsSection', 'matchesSection'].forEach((id) => {
     document.getElementById(id).hidden = false;
   });
 }
 
 function renderFoot() {
-  document.getElementById('foot').textContent =
-    'Add the overlay and result URLs as Browser sources in OBS. ' +
-    'Set the source size to match the overlay size chosen in the Control Panel, ' +
-    'and tick "Shutdown source when not visible" off so the draft keeps running.';
+  // ย่อหน้านี้เคยอธิบายวิธีเอา URL ไปใส่ OBS ตอนที่รายการ browser source
+  // ยังอยู่บนหน้านี้ ตอนนี้รายการนั้นอยู่ที่หน้า Control ที่เดียว คำอธิบายจึงชี้ไปที่นั่น
+  document.getElementById('foot').textContent = t(
+    'The OBS browser source URLs are on the Control Panel.'
+  );
 }
 
 // BOOT ---------------------------------------------------------------
@@ -730,7 +759,9 @@ function boot() {
   });
 
   setTeamsFolded(readFoldPreference(), false);
+  setDetailFolded(readDetailFoldPreference(), false);
   on('teamsToggle', 'click', () => setTeamsFolded(!teamsAreFolded()));
+  on('detailToggle', 'click', () => setDetailFolded(!detailIsFolded()));
 
   on('addTeamBtn', 'click', () => {
     const panel = document.getElementById('addPanel');
@@ -752,6 +783,11 @@ function boot() {
   const bracketLink = document.getElementById('bracketLink');
   if (bracketLink) {
     /** @type {HTMLAnchorElement} */ (bracketLink).href = withToken(`/tournament/${encodeURIComponent(tournamentId)}/bracket`);
+  }
+
+  const draftsLink = document.getElementById('draftsLink');
+  if (draftsLink) {
+    /** @type {HTMLAnchorElement} */ (draftsLink).href = withToken(`/tournament/${encodeURIComponent(tournamentId)}/drafts`);
   }
 
   on('addExistingBtn', 'click', addExisting);
@@ -807,3 +843,161 @@ function boot() {
     showMissing(error.message || 'Could not load this tournament.');
   }
 })();
+
+// ตารางคะแนน และการเลื่อนชั้นเข้ารอบน็อกเอาต์ ---------------------------
+//
+// แสดงเฉพาะรูปแบบที่แข่งพบกันหมด สายน็อกเอาต์ดูจากสายเอาได้อยู่แล้ว
+//
+// ทุกอย่างประกอบด้วย textContent ไม่มีการต่อ innerHTML
+// ชื่อทีมเป็นข้อความที่ผู้ใช้พิมพ์เอง (กฎเดียวกับที่หัวไฟล์นี้เขียนไว้)
+
+const STANDINGS_FORMATS = ['round_robin', 'group_stage'];
+
+const ST_COLUMNS = [
+  { key: 'played', label: 'P' },
+  { key: 'won', label: 'W' },
+  { key: 'lost', label: 'L' },
+  { key: 'gameDiff', label: '+/-' },
+  { key: 'points', label: 'PTS', cls: 'stpts' }
+];
+
+function stCell(text, cls) {
+  const td = document.createElement('td');
+  if (cls) td.className = cls;
+  td.textContent = text;
+  return td;
+}
+
+function stHeader() {
+  const tr = document.createElement('tr');
+  const rank = document.createElement('th');
+  rank.className = 'strank';
+  rank.textContent = '#';
+  const name = document.createElement('th');
+  name.className = 'stname';
+  name.textContent = t('Team');
+  tr.append(rank, name);
+  ST_COLUMNS.forEach((col) => {
+    const th = document.createElement('th');
+    th.textContent = col.label;
+    tr.appendChild(th);
+  });
+  return tr;
+}
+
+function renderStandings(groups) {
+  const box = document.getElementById('standingsBody');
+  if (!box) return;
+  box.textContent = '';
+
+  if (groups.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'stnote';
+    empty.textContent = t('Draw the matches first, then the table fills in as results come in.');
+    box.appendChild(empty);
+    return;
+  }
+
+  const field = /** @type {HTMLInputElement|null} */ (document.getElementById('perGroup'));
+  const through = Number(field?.value) || 0;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'stgroups';
+
+  groups.forEach((group) => {
+    const card = document.createElement('div');
+    card.className = 'stgroup';
+
+    const name = document.createElement('div');
+    name.className = 'stgroup-name';
+    name.textContent = group.bracket === 'main' ? t('Table') : `${t('Group')} ${group.bracket}`;
+    if (group.remaining > 0) {
+      const left = document.createElement('span');
+      left.className = 'stgroup-left';
+      left.textContent = tf('{n} still to play', { n: group.remaining });
+      name.appendChild(left);
+    }
+
+    const table = document.createElement('table');
+    table.className = 'sttable';
+    table.appendChild(stHeader());
+
+    group.rows.forEach((row, position) => {
+      const tr = document.createElement('tr');
+      // เส้นตัดขีดตามตำแหน่งจริง ไม่ใช่ตาม rank
+      // สองทีมที่เสมอกันได้ rank เท่ากัน ขีดตาม rank จะได้เกินโควตา
+      if (through > 0 && position < through) tr.classList.add('through');
+      if (row.tied) tr.classList.add('tied');
+
+      tr.appendChild(stCell(String(row.rank), 'strank'));
+      tr.appendChild(stCell(row.name || '—', 'stname'));
+      ST_COLUMNS.forEach((col) => {
+        const value = row[col.key];
+        const text = col.key === 'gameDiff' && value > 0 ? `+${value}` : String(value);
+        tr.appendChild(stCell(text, col.cls));
+      });
+      table.appendChild(tr);
+    });
+
+    card.append(name, table);
+    wrap.appendChild(card);
+  });
+
+  box.appendChild(wrap);
+
+  const anyTied = groups.some((g) => g.rows.some((r) => r.tied));
+  if (anyTied) {
+    const hint = document.createElement('div');
+    hint.className = 'stnote';
+    hint.textContent = t('Rows marked = are level on every measure. Settle those by your own rules before drawing the playoff.');
+    box.appendChild(hint);
+  }
+}
+
+async function loadStandings() {
+  const section = document.getElementById('standingsSection');
+  if (!section || !current) return;
+
+  // สายน็อกเอาต์ไม่ต้องมีตารางคะแนน สายบอกทุกอย่างอยู่แล้ว
+  if (!STANDINGS_FORMATS.includes(current.format)) {
+    section.hidden = true;
+    return;
+  }
+
+  try {
+    const data = await fetchJson(`/api/tournaments/${encodeURIComponent(tournamentId)}/standings`);
+    renderStandings(data.groups || []);
+    section.hidden = false;
+  } catch (error) {
+    section.hidden = true;
+  }
+}
+
+document.getElementById('perGroup')?.addEventListener('input', () => loadStandings());
+
+document.getElementById('promoteBtn')?.addEventListener('click', async () => {
+  const field = /** @type {HTMLInputElement|null} */ (document.getElementById('perGroup'));
+  const perGroup = Number(field?.value) || 2;
+
+  const ok = await window.RovClient.confirmBox({
+    title: t('Draw the playoff bracket?'),
+    body: [
+      tf('The top {n} of each group go through to a knockout bracket.', { n: perGroup }),
+      t('The group stage is not touched. Drawing again replaces the playoff, but only while none of it has been played.')
+    ],
+    confirmLabel: t('DRAW PLAYOFF')
+  });
+  if (!ok) return;
+
+  try {
+    const data = await fetchJson(
+      `/api/tournaments/${encodeURIComponent(tournamentId)}/playoffs`,
+      { method: 'POST', body: JSON.stringify({ perGroup }) }
+    );
+    showToast(tf('{n} teams are through', { n: data.promoted }), 'green');
+    await loadMatchSummary();
+    await loadStandings();
+  } catch (error) {
+    showToast(t(error.message || 'Could not draw the playoff'), 'red');
+  }
+});

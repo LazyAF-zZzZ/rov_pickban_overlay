@@ -72,6 +72,81 @@
 
     // หน้าแรก
     'Tournaments': 'ทัวร์นาเมนต์',
+
+    // ประวัติพิค/แบนของทัวร์นาเมนต์
+    'Pick / ban history': 'ประวัติพิค/แบน',
+    'PICK / BAN HISTORY': 'ประวัติพิค/แบน',
+    'All teams': 'ทุกทีม',
+    'Round': 'รอบ',
+    'Losers round': 'สายแพ้ รอบ',
+    'Grand final': 'รอบชิงชนะเลิศ',
+    'Playoff round': 'น็อกเอาต์ รอบ',
+    'GAME': 'เกมที่',
+    'No draft has been recorded in this tournament yet.': 'ยังไม่มีดราฟต์ที่ถูกบันทึกไว้ในรายการนี้',
+    'Nothing matches that filter.': 'ไม่มีอะไรตรงกับที่กรองไว้',
+    'Could not load the draft history': 'โหลดประวัติดราฟต์ไม่ได้',
+    '{n} games with a recorded draft': 'มีดราฟต์ที่บันทึกไว้ {n} เกม',
+    '{shown} of {total} games': 'แสดง {shown} จาก {total} เกม',
+
+    // ตารางคะแนน และการเลื่อนชั้น
+    'Standings': 'ตารางคะแนน',
+    'Table': 'ตาราง',
+    'Group': 'กลุ่ม',
+    'Teams through per group': 'ผ่านเข้ารอบกลุ่มละ',
+    'DRAW PLAYOFF': 'จับสายรอบน็อกเอาต์',
+    'Draw the playoff bracket?': 'จับสายรอบน็อกเอาต์เลยไหม',
+    'The group stage is not touched. Drawing again replaces the playoff, but only while none of it has been played.':
+      'รอบแบ่งกลุ่มจะไม่ถูกแตะ จับสายซ้ำได้ แต่ทำได้เฉพาะตอนที่ยังไม่มีใครเล่นรอบน็อกเอาต์',
+    'Draw the matches first, then the table fills in as results come in.':
+      'จับสายก่อน แล้วตารางจะเติมเองเมื่อผลทยอยเข้ามา',
+    'Rows marked = are level on every measure. Settle those by your own rules before drawing the playoff.':
+      'แถวที่มี = คือเท่ากันทุกตัวชี้วัด ให้ตัดสินด้วยกติกาของรายการเองก่อนจับสาย',
+    'Could not draw the playoff': 'จับสายรอบน็อกเอาต์ไม่สำเร็จ',
+    '{n} still to play': 'ยังเหลืออีก {n} นัด',
+    'The top {n} of each group go through to a knockout bracket.':
+      'ทีมอันดับ 1 ถึง {n} ของแต่ละกลุ่มจะได้ไปเล่นรอบน็อกเอาต์',
+    '{n} teams are through': 'ผ่านเข้ารอบ {n} ทีม',
+    // คำปฏิเสธจากเซิร์ฟเวอร์ ต้องสะกดตรงกับ domain/standings.ts และ store/matches.ts
+    'There are no groups to promote from': 'ไม่มีกลุ่มให้เลื่อนชั้น',
+    'Promote at least one team per group': 'ต้องเลื่อนชั้นอย่างน้อยกลุ่มละหนึ่งทีม',
+    'A playoff needs at least two teams': 'รอบน็อกเอาต์ต้องมีอย่างน้อยสองทีม',
+    'The same team cannot be in the playoff twice': 'ทีมเดียวกันอยู่ในรอบน็อกเอาต์สองที่ไม่ได้',
+    'The playoff bracket has results already - clear them before redrawing':
+      'รอบน็อกเอาต์มีผลบันทึกไว้แล้ว ต้องล้างผลก่อนจับสายใหม่',
+
+    // สำรองข้อมูล
+    'Backup': 'สำรองข้อมูล',
+    'SAVE A BACKUP': 'บันทึกไฟล์สำรอง',
+    'RESTORE…': 'กู้คืน…',
+    'RESTORE': 'กู้คืน',
+    'Everything on this machine — teams, logos, brackets and every recorded draft — saved as one file you can keep somewhere else or move to another PC.':
+      'ทุกอย่างในเครื่องนี้ ทั้งทีม โลโก้ สายการแข่ง และดราฟต์ที่บันทึกไว้ รวมเป็นไฟล์เดียว เก็บไว้ที่อื่นหรือย้ายไปเครื่องใหม่ได้',
+    'Saving a backup…': 'กำลังบันทึกไฟล์สำรอง…',
+    'That file is not readable JSON': 'ไฟล์นี้อ่านเป็น JSON ไม่ได้',
+    // คำปฏิเสธจากเซิร์ฟเวอร์ ต้องสะกดตรงกับ server/domain/backup.ts เป๊ะๆ
+    // เพราะข้อความทั้งประโยคคือกุญแจ (ดู readBackup)
+    'That file is not a ROV Overlay backup': 'ไฟล์นี้ไม่ใช่ไฟล์สำรองของ ROV Overlay',
+    'That backup file has no version': 'ไฟล์สำรองนี้ไม่มีเลขเวอร์ชัน',
+    'That backup was made by a newer version of the app':
+      'ไฟล์สำรองนี้ถูกสร้างจากแอพเวอร์ชันที่ใหม่กว่า',
+    'Only full backups can be restored right now':
+      'ตอนนี้กู้คืนได้เฉพาะไฟล์สำรองแบบเต็มเท่านั้น',
+    'Could not read that backup': 'อ่านไฟล์สำรองนี้ไม่ได้',
+    'Restore failed': 'กู้คืนไม่สำเร็จ',
+    'Matches': 'คู่แข่ง',
+    'Recorded drafts': 'ดราฟต์ที่บันทึกไว้',
+    'Logos': 'โลโก้',
+    'Made on': 'สร้างเมื่อ',
+    'Already on this machine': 'มีอยู่ในเครื่องแล้ว',
+    'Restore this backup?': 'กู้คืนจากไฟล์นี้ใช่ไหม',
+    'Anything already on this machine is kept. Records that are already here are skipped, not replaced.':
+      'ของที่มีอยู่ในเครื่องแล้วจะไม่ถูกแตะ รายการที่ซ้ำจะถูกข้าม ไม่ใช่เขียนทับ',
+    '{teams} teams, {tournaments} tournaments': '{teams} ทีม {tournaments} ทัวร์นาเมนต์',
+    '{teams} teams and {tournaments} tournaments will be added.':
+      'จะเพิ่มเข้ามา {teams} ทีม และ {tournaments} ทัวร์นาเมนต์',
+    'Restored {teams} teams and {tournaments} tournaments':
+      'กู้คืนแล้ว {teams} ทีม และ {tournaments} ทัวร์นาเมนต์',
+
     '+ NEW TOURNAMENT': '+ สร้างทัวร์นาเมนต์',
     'Tournament name': 'ชื่อทัวร์นาเมนต์',
     'Banner on air': 'แบนเนอร์ออกอากาศอยู่',
@@ -89,6 +164,13 @@
     'Team logo': 'โลโก้ทีม',
     'Team Logo': 'โลโก้ทีม',
     'Tag': 'ตัวย่อ',
+    'Player position': 'ตำแหน่งของผู้เล่น',
+    'Position': 'ตำแหน่ง',
+    'Jungle': 'จังเกิ้ล',
+    'Carry': 'แคร์รี่',
+    'Mid lane': 'เลนกลาง',
+    'Off lane': 'เลนบน',
+    'Support': 'ซัพพอร์ต',
     'CHOOSE LOGO': 'เลือกโลโก้',
     'UPLOAD LOGO': 'อัปโหลดโลโก้',
     'CLEAR LOGO': 'ลบโลโก้',
@@ -124,6 +206,11 @@
     'Auto-saves': 'บันทึกอัตโนมัติ',
     'Saved': 'บันทึกแล้ว',
     'SCORE': 'คะแนน',
+    'ROUND': 'รอบ',
+    '{n} on the board': 'ย้อนหลัง {n} รอบ',
+    'Already on round 1': 'อยู่ที่รอบ 1 อยู่แล้ว',
+    'Round is already at the limit': 'เดินรอบต่อไปอีกไม่ได้แล้ว',
+    'This series has no more games': 'ซีรีส์นี้ไม่มีเกมต่อไปแล้ว',
     'NICKNAME': 'ชื่อในเกม',
     'HERO PICK': 'ฮีโร่ที่เลือก',
     'BAN': 'แบน',
@@ -288,6 +375,7 @@
     'Could not load this match session': 'เปิดสายการแข่งนี้ไม่ได้',
     'Could not load hotkeys': 'โหลดคีย์ลัดไม่ได้',
     'All hotkeys reset': 'รีเซ็ตคีย์ลัดทั้งหมดแล้ว',
+    'System-wide hotkeys reset': 'รีเซ็ตคีย์ลัดระดับระบบแล้ว',
     'Cancelled': 'ยกเลิกแล้ว',
     'Draft started': 'เริ่มดราฟต์แล้ว',
     'Paused': 'หยุดชั่วคราว',
@@ -325,7 +413,69 @@
 
     // ข้อความว่าง
     'No tournaments yet. Create one to get started.':
-      'ยังไม่มีทัวร์นาเมนต์ กดสร้างเพื่อเริ่มใช้งาน'
+      'ยังไม่มีทัวร์นาเมนต์ กดสร้างเพื่อเริ่มใช้งาน',
+
+    // คำอธิบายที่ค้างเป็นอังกฤษอยู่ในหน้าที่ตั้งค่าเริ่มต้นเป็นไทย
+    // เพิ่ม 2026-09-08 หลังไล่สแกนทุกหน้าของคนคุมงาน
+    //
+    // บรรทัดยาวโดยตั้งใจ: ทั้งกุญแจและคำแปลต้องเป็นสตริงเดี่ยว ห้ามต่อสตริง
+    // กุญแจที่เขียนเป็น a + b ใช้เป็นชื่อคีย์ของ object ไม่ได้ และตัวอ่านตาราง
+    // ใน i18n.test.ts ก็จับคู่ทีละสตริงเดียวเท่านั้น
+    'Click a match to put it on air. Type in the score boxes to record a result.':
+      'กดที่คู่ไหนเพื่อเอาคู่นั้นขึ้นจอ พิมพ์ในช่องคะแนนเพื่อบันทึกผล',
+    'Levels reach the overlay straight away - no need to refresh the OBS source. TEST plays here, not on stream.':
+      'ระดับเสียงถึง overlay ทันที ไม่ต้องกด Refresh ที่ซอร์สใน OBS ปุ่ม TEST เล่นที่หน้านี้เท่านั้น ไม่ได้ออกอากาศ',
+    'Paste these into OBS as a Browser source. Sound is already switched on in the overlay URLs.':
+      'ก๊อปไปวางใน OBS เป็น Browser source ได้เลย URL ของ overlay เปิดเสียงมาให้แล้ว',
+    'Changes show on the overlay as you make them':
+      'แก้แล้วเห็นผลบน overlay ทันที',
+    'Text sizes move the centre column - the score, timer and match title sit on the bottom edge of the banner, so making them bigger pushes everything above them upward. If the logos start crowding the score, bring a size back down or use Reset.':
+      'ขนาดตัวอักษรจะดันคอลัมน์กลาง คะแนน เวลา และชื่อแมตช์วางชิดขอบล่างของแบนเนอร์ ทำให้ใหญ่ขึ้นแล้วทุกอย่างที่อยู่เหนือมันจะถูกดันขึ้นไป ถ้าโลโก้เริ่มเบียดคะแนน ให้ลดขนาดลงหรือกด Reset',
+    'This panel only does anything in the desktop app. A page in a browser cannot register keys with Windows, so nothing here is switchable while you are reading it in one.':
+      'แผงนี้ทำงานเฉพาะในแอพเดสก์ท็อป หน้าเว็บในเบราว์เซอร์ลงทะเบียนปุ่มกับ Windows ไม่ได้ ระหว่างที่อ่านอยู่ในเบราว์เซอร์จึงกดเปิดอะไรตรงนี้ไม่ได้เลย',
+    'Confirm the hero typed in a pick or ban box':
+      'ยืนยันฮีโร่ที่พิมพ์ในช่องพิคหรือแบน',
+    'Leave a hero box without choosing':
+      'ออกจากช่องฮีโร่โดยไม่เลือก',
+    'Outside a box: go back to the previous page':
+      'ถ้าไม่ได้อยู่ในช่อง: ย้อนกลับหน้าก่อนหน้า',
+    'For a Browser Source sized':
+      'สำหรับ Browser Source ขนาด',
+    'No image yet':
+      'ยังไม่มีภาพ',
+    'Teams here are shared by every tournament. Adding a team to a tournament does not copy it - editing the roster on its profile changes it everywhere it plays from then on. Matches already played keep the roster they were played with.':
+      'ทีมตรงนี้ใช้ร่วมกันทุกทัวร์นาเมนต์ การเพิ่มทีมเข้าทัวร์นาเมนต์ไม่ได้ก๊อปทีมขึ้นมาใหม่ แก้รายชื่อผู้เล่นในโปรไฟล์แล้วจะเปลี่ยนทุกที่ที่ทีมนั้นลงเล่นตั้งแต่นั้นไป ส่วนแมตช์ที่เล่นไปแล้วยังเก็บรายชื่อชุดที่ใช้ตอนลงเล่นไว้เหมือนเดิม',
+    'Open a tournament to edit its details and copy the OBS browser source URLs. The Control Panel works on its own for a quick match that is not part of any tournament: pick both teams straight from the registry there.':
+      'เปิดทัวร์นาเมนต์เพื่อแก้รายละเอียดและก๊อป URL ของ browser source สำหรับ OBS ส่วนหน้า Control ใช้เดี่ยวๆ ได้สำหรับแมตช์เร็วที่ไม่ได้อยู่ในทัวร์นาเมนต์ไหน เลือกทีมทั้งสองฝั่งจากทะเบียนได้ที่หน้านั้นเลย',
+
+    // ป้ายของตัวปรับธีมในหน้า Design ทั้งชุด
+    // เดิมเป็นอังกฤษล้วนเพราะถูกวาดจากตารางใน design.js ไม่ได้อยู่ใน HTML
+    'Blue team':
+      'ทีมน้ำเงิน',
+    'Red team':
+      'ทีมแดง',
+    'Score':
+      'คะแนน',
+    'Match title':
+      'ชื่อแมตช์',
+    'Text colour':
+      'สีตัวอักษร',
+    'Accent / urgent':
+      'สีเน้น / สีเตือน',
+    'Player name':
+      'ชื่อผู้เล่น',
+    'Label size (BAN, phase, VS)':
+      'ขนาดป้ายกำกับ (BAN, เฟส, VS)',
+    'Label colour':
+      'สีป้ายกำกับ',
+    'Logo size':
+      'ขนาดโลโก้',
+    'Distance from centre':
+      'ระยะห่างจากกึ่งกลาง',
+    'Could not load the state':
+      'โหลดสถานะไม่สำเร็จ',
+    'The OBS browser source URLs are on the Control Panel.':
+      'URL ของ browser source สำหรับ OBS อยู่ที่หน้า Control'
   };
 
   function read() {
@@ -452,10 +602,26 @@
     applyTo(document);
   }
 
+  // แปลทันทีที่ไฟล์นี้ทำงาน ห้ามรอ DOMContentLoaded
+  //
+  // แท็กของไฟล์นี้อยู่ท้าย <body> ถัดจากเนื้อหาทั้งหมด ตอนที่บรรทัดนี้ทำงาน
+  // ตัวหนังสือที่ต้องแปลจึงถูกพาร์สครบแล้ว แปลได้เลยไม่ต้องรออะไร
+  //
+  // ของเดิมรอ DOMContentLoaded ซึ่งไม่ได้ยิงตอนพาร์สเสร็จ แต่ยิงหลังจาก
+  // สคริปต์ที่เหลือในหน้าโหลดและทำงานจบด้วย นั่นรวม socket.io.js ที่หนัก 155KB
+  // ระหว่างนั้นเบราว์เซอร์มีทั้งหน้าเป็นภาษาอังกฤษพร้อมวาดอยู่แล้ว
+  // อาการที่เห็นคือหน้าขึ้นเป็นอังกฤษแวบหนึ่งแล้วค่อยเด้งกลับเป็นไทย
+  //
+  // การเปลี่ยนหน้าแบบ View Transition ยิ่งทำให้เห็นชัด เพราะมันจับภาพเฟรมแรก
+  // ของหน้าใหม่มาค้างไว้ตลอดช่วงเฟด เฟรมนั้นจึงเป็นภาษาอังกฤษเต็มๆ
+  boot();
+
+  // กันไว้อีกชั้น เผื่อวันหลังมีคนย้ายแท็กนี้ขึ้นไปไว้ใน <head>
+  // หรือมีเนื้อหาถูกเติมต่อท้ายหลังจากบรรทัดนี้
+  // เรียกซ้ำได้ปลอดภัย: mountToggle ไม่สร้างปุ่มซ้ำ และ applyTo จำต้นฉบับอังกฤษ
+  // ไว้ที่ตัว element แล้ว (ดู sourceOf) ผลลัพธ์รอบสองจึงเหมือนเดิมเป๊ะ
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot);
-  } else {
-    boot();
   }
 
   global.RovI18n = { t, tf, apply: applyTo, set, onChange, get lang() { return lang; } };

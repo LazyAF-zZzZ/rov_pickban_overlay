@@ -53,21 +53,14 @@ let settleTimer = null;
 let refreshTimer = null;
 let countdowns = [];
 
-// ระวัง: Number(null) เป็น 0 และ 0 ก็ผ่าน Number.isFinite
-// เช็คแค่ isFinite อย่างเดียว พารามิเตอร์ที่ไม่ได้ใส่มาจะกลายเป็น 0 ไม่ใช่ค่าเริ่มต้น
-// เคยเป็นบั๊กจริงใน /overlay-teams: stagger กลายเป็น 0 แล้วการ์ดเข้าพร้อมกันหมด
-// โดยไม่มีอะไรพัง จึงมองไม่เห็นจนกว่าจะจ้องดู
-function intParam(name, fallback, min, max) {
-    const value = params.get(name);
-    if (value === null || value.trim() === '') return fallback;
-    const raw = Number(value);
-    if (!Number.isFinite(raw)) return fallback;
-    return Math.max(min, Math.min(max, Math.trunc(raw)));
-}
-
-const stagger = intParam('stagger', DEFAULT_STAGGER, 0, 1000);
-const topCount = intParam('top', DEFAULT_TOP, 1, 20);
-const mode = MODES[params.get('mode')] ? params.get('mode') : 'presence';
+const stagger = window.RovOverlay.intParam(params, 'stagger', DEFAULT_STAGGER, 0, 1000);
+const topCount = window.RovOverlay.intParam(params, 'top', DEFAULT_TOP, 1, 20);
+// hasOwnProperty ไม่ใช่ MODES[x] เฉยๆ
+// ?mode=constructor หรือ ?mode=toString จะเจอของที่ติดมากับ Object.prototype
+// ซึ่งเป็นค่าที่ truthy แล้วผ่านไปได้ จากนั้น MODES[mode].label เป็น undefined
+// กระดานออกอากาศจะขึ้นคำว่า "undefined" เป็นหัวข้อและแถบไม่มีสี
+const modeParam = params.get('mode');
+const mode = Object.prototype.hasOwnProperty.call(MODES, modeParam) ? modeParam : 'presence';
 
 function staggerFor(count) {
     if (params.get('stagger')) return stagger;
@@ -82,11 +75,6 @@ async function getJson(url) {
 }
 
 // ข้อความช่วยตอนตั้งค่า จงใจให้จาง ถ้าหลุดออกอากาศจะได้ไม่เด่น
-function note(message) {
-    const el = document.getElementById('note');
-    el.textContent = message || '';
-    el.hidden = !message;
-}
 
 const pct = (value) => (value * 100).toFixed(1) + '%';
 
@@ -126,12 +114,11 @@ function placeholderFace(hero) {
 // ชื่อฮีโร่คือชื่อไฟล์ภาพ (ดู domain/heroes.ts)
 // ประวัติเก่าอาจอ้างไฟล์ที่ถูกเปลี่ยนชื่อไปแล้ว ภาพหายต้องไม่ทิ้งกรอบว่างไว้กลางกราฟิก
 function faceNode(hero) {
-    const img = document.createElement('img');
-    img.className = 'an-face';
-    img.alt = '';
-    img.src = '/images/heroes/' + encodeURIComponent(hero) + '.png';
-    img.addEventListener('error', () => img.replaceWith(placeholderFace(hero)), { once: true });
-    return img;
+    // ไอคอนก่อน ถอยไปรูปเต็ม แล้วค่อยเป็นอักษรย่อ (ดู lib/hero-art.js)
+    // ช่องนี้เป็นสี่เหลี่ยมจัตุรัส 64px รูปเต็มตัวย่อลงมาขนาดนี้จะเหลือแต่ไหล่
+    return window.RovHeroArt.image(hero, 'an-face', (img) => {
+        img.replaceWith(placeholderFace(hero));
+    });
 }
 
 function statBlock(value, label, extraClass) {
@@ -306,7 +293,7 @@ function fitToStage() {
 }
 
 function columnsFor(count) {
-    if (params.get('columns')) return intParam('columns', 1, 1, 2);
+    if (params.get('columns')) return window.RovOverlay.intParam(params, 'columns', 1, 1, 2);
     return count > 12 ? 2 : 1;
 }
 
@@ -341,9 +328,9 @@ function render(tournament, summary, heroes) {
     const peak = heroes.reduce((max, stat) => Math.max(max, leadRate(stat)), 0);
     heroes.forEach((stat, index) => board.appendChild(row(stat, index, peak, step)));
 
-    if (games === 0) note('No completed drafts in this tournament yet.');
-    else if (heroes.length === 0) note('Nothing to rank in this mode yet.');
-    else note('');
+    if (games === 0) window.RovOverlay.note('No completed drafts in this tournament yet.');
+    else if (heroes.length === 0) window.RovOverlay.note('Nothing to rank in this mode yet.');
+    else window.RovOverlay.note('');
 
     fitToStage();
 
@@ -359,7 +346,7 @@ function render(tournament, summary, heroes) {
 async function load() {
     const id = await resolveTournamentId();
     if (!id) {
-        note('No tournament found. Create one, or add ?tournament=<id> to this URL.');
+        window.RovOverlay.note('No tournament found. Create one, or add ?tournament=<id> to this URL.');
         settleNow();
         return;
     }
@@ -369,7 +356,7 @@ async function load() {
         mode,
         top: String(topCount)
     });
-    if (params.get('minGames')) query.set('minDecided', String(intParam('minGames', 3, 0, 999)));
+    if (params.get('minGames')) query.set('minDecided', String(window.RovOverlay.intParam(params, 'minGames', 3, 0, 999)));
 
     try {
         const [tournamentData, analytics] = await Promise.all([
@@ -378,14 +365,14 @@ async function load() {
         ]);
         render(tournamentData.tournament || {}, analytics.summary, analytics.heroes || []);
     } catch (error) {
-        note('Could not load the statistics for that tournament.');
+        window.RovOverlay.note('Could not load the statistics for that tournament.');
         settleNow();
     }
 }
 
 // ดึงซ้ำเป็นรอบ สำหรับคนที่วางกระดานค้างไว้ทั้งงาน
 // ไม่ใช่ค่าเริ่มต้น: ท่าปกติคือให้ OBS รีเฟรชตอนสลับเข้าฉาก ซึ่งได้ข้อมูลสดโดยไม่ต้องวน
-const refreshSeconds = intParam('refresh', 0, 5, 3600);
+const refreshSeconds = window.RovOverlay.intParam(params, 'refresh', 0, 5, 3600);
 if (params.get('refresh') && refreshSeconds > 0) {
     refreshTimer = setInterval(load, refreshSeconds * 1000);
 }

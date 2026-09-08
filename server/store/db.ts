@@ -63,6 +63,16 @@ export function getDatabase(): DatabaseSync {
   return appDb;
 }
 
+// ฐานถูกเปิดไปแล้วหรือยัง โดยไม่เผลอเปิดมันเสียเอง
+//
+// มีไว้ให้โค้ดที่อยาก "เก็บกวาดถ้ามีอะไรให้เก็บ" ถามก่อน เช่นตอน RESET MATCH
+// ที่ต้องล้างตัวชี้แมตช์ที่ออกอากาศ ถ้าเรียก getStores() ตรงๆ คนที่ใช้แค่ overlay
+// กับหน้า control จะได้ไฟล์ tournament.db งอกขึ้นมาเปล่าๆ ตั้งแต่กดปุ่มแรก
+// ซึ่งขัดกับที่ตั้งใจให้เปิดแบบ lazy
+export function isDatabaseOpen(): boolean {
+  return appDb !== null;
+}
+
 export function closeDatabase(): void {
   if (appDb) {
     appDb.close();

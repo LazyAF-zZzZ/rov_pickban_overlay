@@ -39,6 +39,16 @@
 .panel.blue-panel{border-top:2px solid var(--blue);}
 .panel.red-panel{border-top:2px solid var(--red);}
 .panel.draft-panel{border-top:2px solid var(--gold-line);}
+
+/* ตัวเดินรอบ อยู่ในหัวแผงดราฟต์
+   หน้าตาเดียวกับ .size-switch บนแถบบน เพราะเป็นของประเภทเดียวกัน:
+   สวิตช์ที่ถูกแตะระหว่างออกอากาศ ไม่ใช่ปุ่มสั่งงานหรือลิงก์เปลี่ยนหน้า */
+.round-switch{margin-left:auto;display:flex;align-items:center;gap:4px;padding:3px 8px 3px 10px;border:1px solid var(--border2);border-radius:var(--r-sm);}
+.round-switch-label{font-size:9px;font-weight:700;letter-spacing:0.16em;color:var(--muted);margin-right:4px;}
+.round-btn{width:26px;height:26px;border-radius:4px;border:1px solid transparent;background:none;color:var(--muted2);font-family:var(--bf);font-size:17px;line-height:1;cursor:pointer;transition:color 0.15s,background 0.15s;}
+.round-btn:hover{color:var(--text);background:var(--s3);}
+.round-value{min-width:26px;text-align:center;font-family:var(--bf);font-size:17px;font-weight:700;color:var(--gold);}
+.round-note{font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-left:6px;white-space:nowrap;}
 .score-badge{margin-left:auto;display:flex;align-items:center;gap:9px;}
 .score-badge label{font-size:10px;color:var(--muted);letter-spacing:0.14em;text-transform:uppercase;}
 .score-input{width:52px;text-align:center;font-family:var(--bf);font-size:19px;font-weight:700;padding:3px 4px;background:var(--s3);border:1px solid var(--border2);color:var(--text);border-radius:var(--r-sm);}
@@ -77,13 +87,19 @@
 .hero-native-select:focus,.hero-search-input:focus{outline:none;border-color:var(--gold);}
 .hero-native-select option{background:var(--s2);color:var(--text);}
 .hero-search-input::placeholder{color:var(--muted);font-weight:400;}
+/* ไอคอนของฮีโร่ที่กรอกไปแล้ว อยู่ในช่องเลย จะได้เห็นว่าเลือกถูกตัวไหมโดยไม่ต้องอ่าน
+   ใช้ background-image เพราะ <input> ใส่ <img> ข้างในไม่ได้ */
+.hero-search-input.has-art{padding-left:34px;background-repeat:no-repeat;background-position:5px center;background-size:23px 23px;}
 
 /* รายการฮีโร่ที่แนะนำ
    สูงพอจะกวาดตาทั้งรายการ ที่เหลือเลื่อนเอา overscroll-behavior กันไม่ให้
    ล้อเมาส์เลื่อนหน้าต่อเมื่อรายการเลื่อนจนสุดแล้ว */
 .hero-dd{position:absolute;z-index:500;max-height:340px;overflow-y:auto;overscroll-behavior:contain;background:var(--s2);border:1px solid var(--border2);border-radius:var(--r-sm);box-shadow:0 14px 34px rgba(0,0,0,0.65);padding:4px;}
 .hero-dd[hidden]{display:none;}
-.hero-dd-item{padding:6px 10px;border-radius:4px;font-family:var(--bf);font-size:13px;color:var(--text);cursor:pointer;white-space:nowrap;}
+.hero-dd-item{display:flex;align-items:center;gap:9px;padding:4px 8px;border-radius:4px;font-family:var(--bf);font-size:13px;color:var(--text);cursor:pointer;white-space:nowrap;}
+/* ไอคอนฮีโร่ในรายการที่เลื่อนเลือก ดูรูปเร็วกว่าอ่านชื่อ 129 ชื่อที่คล้ายกัน */
+.hero-dd-art{width:28px;height:28px;flex:0 0 auto;border-radius:4px;object-fit:cover;background:var(--s3);}
+.hero-dd-name{overflow:hidden;text-overflow:ellipsis;}
 .hero-dd-item:hover{background:var(--s3);}
 .hero-dd-item.active,.hero-dd-item.active:hover{background:var(--gold);color:#141209;}
 .hero-dd::-webkit-scrollbar{width:9px;}
@@ -107,6 +123,8 @@
 .ban-slot-label{font-size:9px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;text-align:center;}
 /* ตัวที่ถูกแบนเขียนด้วยสีจางกว่าตัวที่ถูกเลือก คนละความหมายกัน */
 .ban-select-wrap .hero-native-select,.ban-select-wrap .hero-search-input{height:30px;color:var(--muted2);font-size:12px;padding:0 7px;}
+/* ช่องแบนเตี้ยกว่า ต้องเขียนทับ padding ของบรรทัดบน (specificity สูงกว่า .has-art เฉยๆ) */
+.ban-select-wrap .hero-search-input.has-art{padding-left:29px;background-size:20px 20px;background-position:4px center;}
 .ban-clear{font-size:10px;padding:2px 0;background:none;border:none;color:var(--muted);cursor:pointer;font-family:var(--bf);letter-spacing:0.06em;text-transform:uppercase;text-align:center;transition:color 0.15s;}
 .ban-clear:hover{color:var(--red);}
 
@@ -320,6 +338,17 @@
     <div class="panel-head">
       <div style="width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0"></div>
       <div class="panel-title" data-i18n>Draft Timer</div>
+      <!-- ตัวเดินรอบ อยู่ในแผงดราฟต์เพราะเปลี่ยนรอบ = ล้างกระดานแล้วเริ่มดราฟต์ใหม่
+           ROUND ที่เห็นตรงนี้คือเลขเดียวกับที่กราฟิก "รอบก่อนหน้า" ใช้แบ่งแถว -->
+      <div class="round-switch">
+        <span class="round-switch-label" data-i18n>ROUND</span>
+        <button class="round-btn" type="button" id="roundPrev" onclick="stepRound(-1)"
+                title="Go back to the previous round and put its draft back on the board" aria-label="Previous round">&#8249;</button>
+        <span class="round-value" id="roundValue">1</span>
+        <button class="round-btn" type="button" id="roundNext" onclick="stepRound(1)"
+                title="File this draft as a previous round and start the next one" aria-label="Next round">&#8250;</button>
+        <span class="round-note" id="roundNote"></span>
+      </div>
     </div>
     <div class="draft-inner">
       <div class="draft-clock">
@@ -347,7 +376,7 @@
   <div class="panel full">
     <div class="panel-head">
       <div class="panel-title" data-i18n>Sound effects</div>
-      <span class="panel-note">Levels reach the overlay straight away - no need to refresh the OBS source. TEST plays here, not on stream.</span>
+      <span class="panel-note" data-i18n>Levels reach the overlay straight away - no need to refresh the OBS source. TEST plays here, not on stream.</span>
     </div>
     <div class="panel-body">
       <div id="sfxLevels"></div>
@@ -358,7 +387,7 @@
   <div class="panel full">
     <div class="panel-head">
       <div class="panel-title" data-i18n>OBS browser sources</div>
-      <span class="panel-note">Paste these into OBS as a Browser source. Sound is already switched on in the overlay URLs.</span>
+      <span class="panel-note" data-i18n>Paste these into OBS as a Browser source. Sound is already switched on in the overlay URLs.</span>
     </div>
     <div class="panel-body">
       <div id="sources"></div>

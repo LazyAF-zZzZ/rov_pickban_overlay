@@ -185,9 +185,31 @@ function releaseGlobalHotkeys() {
 
 // จองใหม่เฉพาะตอนค่าเปลี่ยนจริง ไม่ใช่ทุกครั้งที่ถาม
 // ปลดแล้วจองใหม่ทุกสองวินาทีคือช่องว่างสั้นๆ ที่ปุ่มไม่ทำงาน ทุกสองวินาที
+//
+// ลายเซ็นต้องมาจากเฉพาะสิ่งที่กำหนด "ต้องจองอะไรบ้าง" คือ enabled กับ accelerators
+//
+// ห้ามเอาทั้งก้อนที่ได้จาก GET มาทำลายเซ็น เพราะในนั้นมี held ซึ่งเป็นผลลัพธ์ที่
+// เราเป็นคน POST กลับไปเอง มันจึงกลายเป็นวงจรที่ป้อนตัวเอง: รอบแรก held เป็น null
+// เราจอง แล้วรายงานกลับ รอบสอง GET ได้ held ที่เพิ่งส่งไป ลายเซ็นเลยเปลี่ยน
+// แล้วปลดคีย์ทั้งชุดจองใหม่ทั้งที่ไม่มีอะไรเปลี่ยนเลย เกิดขึ้นสองวินาทีหลังเปิดแอพพอดี
 function applyGlobalHotkeys(config) {
-  const signature = JSON.stringify(config);
-  if (signature === lastHotkeySignature) return;
+  const signature = JSON.stringify({
+    enabled: Boolean(config && config.enabled),
+    accelerators: (config && config.accelerators) || {}
+  });
+
+  // เซิร์ฟเวอร์ลืมว่าเราจองอะไรไว้ ก็บอกมันใหม่ โดยไม่ต้องไปยุ่งกับคีย์ที่จองอยู่
+  //
+  // เกิดได้สองทาง: POST รอบก่อนล้มเหลว (มันกลืน error เงียบๆ และมี timeout 1.5 วินาที)
+  // หรือเซิร์ฟเวอร์ถูกสตาร์ทใหม่โดยที่แอพยังเปิดอยู่ (โหมดที่ต่อกับเซิร์ฟเวอร์ข้างนอก)
+  // อาการคือหน้า /hotkeys กลับไปบอกว่าจองติดครบทุกปุ่ม ซึ่งเป็นคำโกหกแบบเดียวกับ
+  // ที่ระบบรายงานนี้ถูกสร้างมาเพื่อกำจัด
+  if (signature === lastHotkeySignature) {
+    const serverHeld = config && config.held;
+    const known = Array.isArray(serverHeld) ? JSON.stringify(serverHeld) : null;
+    if (known !== JSON.stringify(heldAccelerators)) reportHeldAccelerators();
+    return;
+  }
   lastHotkeySignature = signature;
 
   releaseGlobalHotkeys();
@@ -370,7 +392,28 @@ app.whenReady().then(async () => {
     return;
   }
 
-  await startServerIfNeeded();
+  // เซิร์ฟเวอร์ไม่ขึ้นต้องบอก ไม่ใช่เงียบ
+  //
+  // ก่อนหน้านี้ปล่อยให้ throw ทะลุออกจาก whenReady().then() ซึ่งไม่มีใครรับ
+  // แอพจะค้างอยู่ในหน่วยความจำโดยไม่มีหน้าต่าง ไม่มีเมนู และไม่มีข้อความอะไรเลย
+  // อาการที่ผู้ใช้เห็นคือ "ดับเบิลคลิกแล้วไม่มีอะไรเกิดขึ้น" ซึ่งเดาสาเหตุไม่ได้เลย
+  // (เจอได้จริงเมื่อพอร์ต 3000 ถูกโปรแกรมอื่นยึด หรือยังไม่ได้ npm run build)
+  try {
+    await startServerIfNeeded();
+  } catch (error) {
+    dialog.showMessageBoxSync({
+      type: 'error',
+      title: 'ROV Overlay Tool',
+      message: 'The local server did not start.',
+      detail: `${error.message}\n\nAnother program may be using port ${PORT}. `
+        + 'Close it and open ROV Overlay Tool again.',
+      buttons: ['Exit'],
+      noLink: true
+    });
+    app.quit();
+    return;
+  }
+
   Menu.setApplicationMenu(buildMenu());
   watchGlobalHotkeys();
   mainWindow = createWindow('/');

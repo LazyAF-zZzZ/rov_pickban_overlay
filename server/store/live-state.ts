@@ -45,6 +45,13 @@ export function getState(): GameState {
 
 export function setState(next: GameState): GameState {
   gameState = next;
+  // ประวัติ undo เป็นของแมตช์ที่เพิ่งถูกแทนที่ ต้องทิ้งไปพร้อมกัน
+  //
+  // setState คือการเปลี่ยน "แมตช์" ทั้งก้อน (เอาคู่ใหม่ขึ้นจอ หรือกด RESET MATCH)
+  // ถ้าปล่อยกองเดิมไว้ การกด Ctrl+Z ครั้งเดียวหลังสลับคู่จะเอาทีมของคู่ก่อนหน้า
+  // ทั้งชื่อ ผู้เล่น โลโก้ และดราฟต์ กลับขึ้นออกอากาศทับคู่ที่กำลังจะเล่น
+  // เห็นกับตาแล้ว: เปิดคู่ Bravo vs Charlie แล้วกด undo หนึ่งครั้ง จอกลายเป็น Alpha vs Delta
+  clearUndo();
   return gameState;
 }
 
@@ -95,6 +102,11 @@ export function pushUndo(): void {
     teamRed: deepClone(gameState.teamRed)
   });
   if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+}
+
+// ล้างประวัติ undo ทิ้ง เรียกจาก setState ตอนที่ทั้งแมตช์ถูกแทนที่
+export function clearUndo(): void {
+  undoStack.length = 0;
 }
 
 export function popUndo(): boolean {

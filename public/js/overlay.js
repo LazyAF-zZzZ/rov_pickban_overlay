@@ -17,6 +17,50 @@ function imageUrl(folder, name) {
 
 const LOGO_FILES = { teamBlue: 'blue-team', teamRed: 'red-team' };
 
+// ไอคอนตำแหน่ง (เลน) ที่อยู่เป็นพื้นหลังของช่องพิค
+//
+// ชื่อไฟล์มาจาก slug ที่เซิร์ฟเวอร์กรองมาแล้วเท่านั้น (ดู server/domain/position.ts)
+// state ส่งมาได้แค่ห้าค่านี้หรือค่าว่าง จึงไม่มีทางที่ข้อความจากผู้ใช้จะกลายเป็น path
+//
+// ชั้นของไอคอนถูกสร้างจาก JS ไม่ได้ใส่ไว้ใน overlay.html / overlay-1440.html
+// เพราะสองหน้านั้นมีช่องพิคหน้าละสิบช่อง การแก้มาร์กอัปสองไฟล์ยี่สิบจุด
+// แล้ววันหลังลืมแก้ที่ใดที่หนึ่ง คือรูปแบบความผิดพลาดที่ไฟล์ team-ui.js ตั้งใจเลี่ยงอยู่แล้ว
+// ทั้งสองหน้าโหลด overlay.js ตัวเดียวกัน แก้ที่นี่ที่เดียวจึงครบทั้งคู่
+const POSITION_SLUGS = ['jungle', 'carry', 'midlane', 'offlane', 'support'];
+
+function positionIconUrl(position) {
+    if (!POSITION_SLUGS.includes(position)) return '';
+    return `images/positions/${position}.png`;
+}
+
+// วางไอคอนไว้ใต้ .hero-image ของช่องนั้น
+//
+// ไม่แตะ background ของ .pick-slot เอง เพราะ CSS ตั้งไล่เฉดสีประจำฝั่งไว้ตรงนั้น
+// (.blue-team .pick-slot / .red-team .pick-slot) การเขียนทับด้วย inline style
+// จะกินเฉดสีทีมหายไปทั้งช่อง จึงใช้ element ของตัวเองซ้อนเป็นชั้นแทน
+function renderPositionIcon(slot, position) {
+    const url = positionIconUrl(position);
+
+    let layer = slot.querySelector('.position-icon');
+    if (!url) {
+        if (layer) layer.remove();
+        return;
+    }
+
+    if (!layer) {
+        layer = document.createElement('div');
+        layer.className = 'position-icon';
+        // ต้องเป็นลูกคนแรก .hero-image เป็น position: relative จึงวาดทับชั้นนี้เสมอ
+        slot.insertBefore(layer, slot.firstChild);
+    }
+
+    // แตะ src เฉพาะตอนเปลี่ยนจริง state ถูกส่งมาทุกวินาทีตอนจับเวลา
+    // การเขียน background-image ซ้ำทุกครั้งทำให้ภาพกระพริบบนอากาศ (กฎเดียวกับโลโก้ทีม)
+    if (layer.dataset.position === position) return;
+    layer.dataset.position = position;
+    layer.style.backgroundImage = `url("${url}")`;
+}
+
 // THEME ----------------------------------------------------------------
 // Maps state.theme onto the CSS custom properties declared in :root.
 // Values are written on <html> so they override the stylesheet without it
@@ -230,8 +274,8 @@ function updateOverlay(state) {
     updateBans('teamRed', state.teamRed.bans);
     
     // Update picks
-    updatePicks('teamBlue', state.teamBlue.picks);
-    updatePicks('teamRed', state.teamRed.picks);
+    updatePicks('teamBlue', state.teamBlue.picks, state.teamBlue.positions);
+    updatePicks('teamRed', state.teamRed.picks, state.teamRed.positions);
 
     // state ก้อนแรกคือ "กระดานตอนนี้" ไม่ใช่ "มีอะไรเพิ่งเกิดขึ้น"
     // ทุก pick/ban ที่มีอยู่แล้วเพิ่งถูกนับเป็นการเปลี่ยนแปลงไปเมื่อกี้
@@ -311,9 +355,20 @@ function updateBans(team, bans) {
         const img = document.createElement('img');
         img.className = 'ban-icon';
         img.src = imageUrl('heroes-icons', hero);
-        img.onerror = function () {
-            // ถ้าไม่มีไอคอน ใช้รูปเต็มแทน
-            this.src = imageUrl('heroes', hero);
+        // ไม่มีไอคอน ใช้รูปเต็มแทน แต่ถอยได้ครั้งเดียวเท่านั้น
+        //
+        // ของเดิมชี้ src ไปที่รูปเต็มโดยไม่เปลี่ยน onerror ฮีโร่ที่ไม่มีทั้งไอคอนและ
+        // รูปเต็ม (ชื่ออยู่ใน heroes.json แต่ไฟล์หายหรือถูกเปลี่ยนชื่อ) จึงวนขอไฟล์เดิม
+        // ไม่มีที่สิ้นสุด เพราะการเขียน src ทับด้วยค่าเดิมก็สั่งให้โหลดใหม่อยู่ดี
+        //
+        // วัดจริงในเบราว์เซอร์: error 1607 ครั้งใน 2.5 วินาที ราว 640 คำขอต่อวินาที
+        // ค้างไว้ตลอดรายการ บนกราฟิกที่ออกอากาศอยู่ และไม่มีอะไรบนจอบอกว่าเกิดอะไรขึ้น
+        // สิ่งที่หยุดวงจรคือ "ไม่เขียน src อีก" ไม่ใช่ remove()
+        // ภาพที่ถูกถอดออกจาก DOM แล้วยังโหลดต่อได้ตามปกติ ตราบใดที่ยังมีใครถือมันอยู่
+        // (เห็นมาแล้วตอนทดสอบ: ถอดออกแล้วมันยิงคำขอต่ออีกสองแสนกว่าครั้ง)
+        img.onerror = () => {
+            img.onerror = () => img.remove();   // รูปเต็มก็ไม่มี เอาออกแล้วเลิกลอง
+            img.src = imageUrl('heroes', hero);
         };
         slot.appendChild(img);
         playOnce(slot, 'just-banned');
@@ -344,10 +399,12 @@ function showHeroArtWhenReady(slot, heroImage, hero, cssUrl) {
     preload.src = imageUrl('heroes', hero);
 }
 
-function updatePicks(team, picks) {
+function updatePicks(team, picks, positions) {
     picks.forEach((hero, index) => {
         const slot = /** @type {HTMLElement} */ (document.querySelector(`.pick-slot[data-team="${team}"][data-index="${index}"]`));
         if (slot) {
+            // ไอคอนตำแหน่งอยู่หลังภาพฮีโร่ ช่องที่ยังไม่ถูกเลือกจึงบอกได้ว่าเป็นเลนอะไร
+            renderPositionIcon(slot, (positions && positions[index]) || '');
             const heroImage = /** @type {HTMLElement} */ (slot.querySelector('.hero-image'));
             if (hero) {
                 slot.classList.add('filled');

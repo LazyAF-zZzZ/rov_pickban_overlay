@@ -1,48 +1,42 @@
-// สลับภาษาของหน้าคู่มือ
+// สลับภาษาของหน้าคู่มือ ตามภาษาที่เลือกไว้ทั้งแอพ
 //
 // เนื้อหาทั้งสองภาษาอยู่ในหน้าเลยตั้งแต่แรก ไม่ได้โหลดทีหลัง
 // คู่มือต้องเปิดอ่านได้ตอนที่อย่างอื่นพังอยู่ ยิ่งพึ่งอะไรน้อยยิ่งดี
 // ไม่ใช้ app-client.js ด้วยเหตุผลเดียวกัน หน้านี้ไม่ต้องต่อ socket ไม่ต้องมีโทเคน
 //
-// จำภาษาที่เลือกไว้ใน localStorage คนคุมงานคนเดิมเปิดคู่มือหลายรอบใน
-// วันเดียวกัน ไม่ต้องมากดสลับใหม่ทุกครั้ง
+// เดิมหน้านี้มีปุ่มเลือกภาษาของตัวเอง และจำไว้แยกใน localStorage (rovGuideLang)
+// เลยกลายเป็นว่ามีปุ่มภาษาสองชุดบนหน้าเดียว หน้าตาเหมือนกันแต่คุมคนละขอบเขต
+// ปุ่มบนแถบบนเปลี่ยนทั้งแอพ ปุ่มในเนื้อหาเปลี่ยนเฉพาะคู่มือ ซึ่งเดาไม่ถูกว่าอันไหนทำอะไร
+// และเลือกไทยไว้ทั้งแอพแล้วเปิดคู่มือมาเจออังกฤษ ก็ขัดกับสิ่งที่เพิ่งสั่งไป
+//
+// ตอนนี้เหลือปุ่มเดียวคือ TH/EN บนแถบบน ซึ่ง i18n.js ใส่ให้ทุกหน้าอยู่แล้ว
+// หน้านี้แค่ฟังว่าภาษาเปลี่ยนแล้วสลับบล็อกตาม
+//
+// ยังใช้วิธีซ่อน/แสดงเหมือนเดิม ไม่ได้เปลี่ยนไปใช้ data-i18n
+// เพราะคู่มือเป็นย่อหน้ายาวทั้งหน้า ไม่ใช่ป้ายสั้นๆ และการมีทั้งสองภาษาอยู่ในไฟล์
+// แปลว่าถ้าสคริปต์นี้พัง หน้าก็ยังอ่านได้เป็นภาษาอังกฤษ ไม่ใช่ว่างเปล่า
 
 (function () {
-  const buttons = {
-    en: document.getElementById('btnEn'),
-    th: document.getElementById('btnTh')
-  };
-
   function apply(lang) {
-    const other = lang === 'th' ? 'en' : 'th';
+    const wanted = lang === 'th' ? 'th' : 'en';
+    const other = wanted === 'th' ? 'en' : 'th';
 
-    const show = /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(`[data-lang="${lang}"]`));
-    const hide = /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(`[data-lang="${other}"]`));
+    /** @type {NodeListOf<HTMLElement>} */
+    const show = document.querySelectorAll(`[data-lang="${wanted}"]`);
+    /** @type {NodeListOf<HTMLElement>} */
+    const hide = document.querySelectorAll(`[data-lang="${other}"]`);
     show.forEach((el) => { el.hidden = false; });
     hide.forEach((el) => { el.hidden = true; });
-
-    buttons.en.setAttribute('aria-pressed', String(lang === 'en'));
-    buttons.th.setAttribute('aria-pressed', String(lang === 'th'));
-    document.documentElement.lang = lang;
-
-    try {
-      localStorage.setItem('rovGuideLang', lang);
-    } catch (error) {
-      // เปิดในโหมดส่วนตัวหรือปิด storage ไว้ ก็แค่ไม่จำ ไม่ใช่เรื่องใหญ่
-    }
   }
 
-  let saved = null;
-  try {
-    saved = localStorage.getItem('rovGuideLang');
-  } catch (error) {
-    saved = null;
-  }
+  const i18n = window.RovI18n;
 
-  // ยังไม่เคยเลือก ให้เดาจากภาษาของเบราว์เซอร์ แอพนี้ใช้กันในไทยเป็นหลัก
-  const guessThai = saved === null && String(navigator.language || '').toLowerCase().startsWith('th');
-  apply(saved === 'th' || guessThai ? 'th' : 'en');
+  // ไม่มี i18n (สคริปต์หาย หรือลำดับแท็กสลับ) ก็ปล่อยไว้เป็นอังกฤษตามที่มาร์กอัปตั้งไว้
+  // ดีกว่าโยน error แล้วหน้าค้างครึ่งๆ
+  if (!i18n) return;
 
-  buttons.en.addEventListener('click', () => apply('en'));
-  buttons.th.addEventListener('click', () => apply('th'));
+  apply(i18n.lang);
+  // ภาษาของทั้งแอพเปลี่ยนเมื่อไหร่ คู่มือสลับตามทันที ไม่ต้องโหลดหน้าใหม่
+  // (i18n.js แปลเฉพาะ data-i18n ซึ่งเป็นของแถบบน บล็อกเนื้อหาเป็นหน้าที่ของที่นี่)
+  i18n.onChange(apply);
 })();

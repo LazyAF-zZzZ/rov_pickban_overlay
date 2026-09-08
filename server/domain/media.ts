@@ -177,10 +177,28 @@ export const SKIN_MAGIC: Record<ImageExt, (b: Buffer) => boolean> = {
   webp: (b) => b.length > 12 && b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WEBP'
 };
 
+// ชื่ออุปกรณ์ที่ Windows จองไว้ ห้ามเป็นชื่อไฟล์
+//
+// แอพนี้ลงบน Windows และ Windows ตีความชื่อพวกนี้เป็นอุปกรณ์ ไม่ใช่ไฟล์
+// รวมถึงตอนมีนามสกุลต่อท้ายด้วย: "aux.png" ก็ยังหมายถึงอุปกรณ์ AUX
+// การเขียนลงไปจะล้มเหลวหรือค้าง ไม่ใช่ได้ไฟล์ภาพ
+//
+// วันนี้ยังไปไม่ถึงจุดนั้น: id ถูกสร้างจากเซิร์ฟเวอร์ (newId) และเส้นทางอัปโหลด
+// โลโก้เช็คก่อนว่ามีทีมนั้นอยู่จริง ใครก็ตั้ง id เป็น "aux" ไม่ได้
+// กันไว้ด้วยเหตุผลเดียวกับที่ newId เรียก isSafeMediaId ซ้ำอีกที:
+// ถ้าวันหลังมีคนเปิดให้ตั้ง id เองแล้วลืมนึกถึงเรื่องนี้ ด่านนี้จะยังอยู่
+const WINDOWS_DEVICE_NAMES = new Set([
+  'con', 'prn', 'aux', 'nul',
+  'com1', 'com2', 'com3', 'com4', 'com5', 'com6', 'com7', 'com8', 'com9',
+  'lpt1', 'lpt2', 'lpt3', 'lpt4', 'lpt5', 'lpt6', 'lpt7', 'lpt8', 'lpt9'
+]);
+
 // id ที่เอาไปเป็นชื่อไฟล์ได้ ไว้ใช้ตอนโลโก้ต่อทีมในโหมดทัวร์นาเมนต์
 // ยอมเฉพาะ a-z 0-9 และ - เท่านั้น ไม่มีจุด ไม่มี slash จึงออกนอกโฟลเดอร์ไม่ได้
 export function isSafeMediaId(value: unknown): value is string {
-  return typeof value === 'string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(value);
+  return typeof value === 'string'
+    && /^[a-z0-9][a-z0-9-]{0,63}$/.test(value)
+    && !WINDOWS_DEVICE_NAMES.has(value);
 }
 
 export function isSkinSlot(value: unknown): value is SkinSlot {
@@ -247,12 +265,23 @@ export function sanitizeLogo(value: unknown): Logo {
   };
   const v = Number(source.v);
   const ext = IMAGE_EXTS.includes(source.ext as ImageExt) ? (source.ext as ImageExt) : '';
-  if (!Number.isFinite(v) || v <= 0 || !ext) return { v: 0, ext: '' };
 
   // ไม่มี src ก็ปล่อยว่างไว้ได้ ฝั่งหน้าเว็บจะถอยไปใช้ชื่อตามฝั่งเหมือนเดิม
   // state.json ของเวอร์ชันก่อนหน้าจึงยังใช้งานได้โดยไม่ต้องแปลงอะไร
-  const logo: Logo = { v: Math.trunc(v), ext };
+  const logo: Logo = { v: 0, ext: '' };
   if (isLogoSource(source.src)) logo.src = source.src;
+
+  // ยังไม่มีภาพ แต่ src ต้องรอด
+  //
+  // src บอกว่า "ช่องนี้เป็นของทีมไหน" ซึ่งเป็นคนละเรื่องกับ "มีภาพหรือยัง"
+  // เดิมคืน { v: 0, ext: '' } ทิ้ง src ไปด้วย ทีมที่ยังไม่มีโลโก้ตอนเอาขึ้นจอ
+  // จึงไม่เหลืออะไรบอกว่าฝั่งนั้นคือทีมไหน แล้วการอัปโหลดโลโก้ทีหลัง
+  // หาไม่เจอว่าต้องไปรีเฟรชฝั่งไหน (ดู refreshLiveTeamLogo)
+  // หน้าเว็บไม่กระทบ ทุกที่เช็ค v กับ ext ก่อนจะแตะ src อยู่แล้ว
+  if (!Number.isFinite(v) || v <= 0 || !ext) return logo;
+
+  logo.v = Math.trunc(v);
+  logo.ext = ext;
   return logo;
 }
 

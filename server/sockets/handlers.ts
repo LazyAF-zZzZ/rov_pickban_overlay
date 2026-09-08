@@ -41,8 +41,32 @@ import {
 import { isAuthorizedSocket } from '../http/auth';
 import { DATA_ROOM } from '../services/sync';
 import { pushOverlayScoreToMatch } from '../services/series';
+import { stepRound } from '../services/live-match';
 
 type Payload = Record<string, unknown>;
+
+// คำสั่งหนึ่งคำสั่งพังต้องไม่ล้มทั้งเซิร์ฟเวอร์
+//
+// socket.io ไม่ได้ดัก exception ที่หลุดออกจาก handler ให้ มันลอยขึ้นไปเป็น
+// uncaughtException แล้ว Node ก็ปิด process ทิ้ง (ตรวจแล้วว่าเป็นแบบนั้นจริง)
+// เซิร์ฟเวอร์ตัวเดียวนี้เสิร์ฟทั้ง overlay และหน้า Control การล้มจึงแปลว่า
+// ภาพบนอากาศดับไปพร้อมกัน กลางรายการ
+//
+// ทางที่เป็นไปได้จริงคือคำสั่งที่ไปแตะฐานข้อมูล เช่น updateScore ที่เขียนคะแนน
+// ลงตารางแข่งต่อ: SQLITE_BUSY เพราะมีโปรแกรมอื่นเปิดไฟล์ .db ค้างไว้, ดิสก์เต็ม,
+// หรือเปิดฐานครั้งแรกไม่สำเร็จ ทั้งหมดนี้ node:sqlite โยน exception ออกมา
+//
+// ดักที่นี่ที่เดียวได้ครบ เพราะทุกคำสั่งผ่านสองฟังก์ชันนี้เท่านั้น
+// และบอกคนคุมงานด้วย ไม่ใช่กลืนเงียบ — คำสั่งที่ไม่ทำงานโดยไม่บอกอะไร
+// แยกไม่ออกจากคำสั่งที่ทำงานแล้ว ซึ่งแย่กว่าตอนกดซ้ำ
+function guard(socket: Socket, eventName: string, run: () => void): void {
+  try {
+    run();
+  } catch (error) {
+    console.error(`Socket command ${eventName} failed:`, error);
+    socket.emit('controlError', { message: `${eventName} failed: ${(error as Error).message}` });
+  }
+}
 
 export function controlEvent(
   socket: Socket,
@@ -54,7 +78,7 @@ export function controlEvent(
       socket.emit('controlError', { message: 'Unauthorized control request' });
       return;
     }
-    handler((payload || {}) as Payload);
+    guard(socket, eventName, () => handler((payload || {}) as Payload));
   });
 }
 
@@ -65,7 +89,7 @@ function rawEvent(socket: Socket, eventName: string, handler: (payload: unknown)
       socket.emit('controlError', { message: 'Unauthorized control request' });
       return;
     }
-    handler(payload ?? {});
+    guard(socket, eventName, () => handler(payload ?? {}));
   });
 }
 
@@ -155,6 +179,26 @@ export function registerHandlers(socket: Socket): void {
     emitState();
   });
 
+  // เดินรอบ (เกมที่เท่าไหร่ของซีรีส์)
+  //
+  // ส่ง delta มา ไม่ใช่เลขรอบปลายทาง เพราะปุ่มบนหน้า control อาจถูกกดพร้อมกัน
+  // จากสองหน้าต่าง การส่งเลขปลายทางที่คำนวณจากค่าที่หน้านั้นเห็นล่าสุด
+  // จะทำให้การกดครั้งหลังพารอบย้อนกลับไปที่เดิม ส่วน delta บวกกันได้ตามลำดับที่มาถึง
+  //
+  // ปฏิเสธแล้วต้องบอก กดปุ่มแล้วไม่มีอะไรเกิดขึ้นโดยไม่มีคำอธิบาย
+  // แยกไม่ออกจากปุ่มที่เสีย ซึ่งกลางรายการคือเรื่องใหญ่กว่าที่ควรจะเป็น
+  //
+  // อย่าใช้ clampNumber กับ delta: ค่าที่อ่านไม่ออกจะกลายเป็น min ซึ่งคือ -1
+  // payload ที่ส่งมาไม่ครบจึงจะพารอบถอยหลังไปหนึ่งรอบเงียบๆ แทนที่จะไม่ทำอะไร
+  // (กฎเดียวกับที่ CLAUDE.md เขียนไว้เรื่อง Number(null) กับพารามิเตอร์ใน URL)
+  controlEvent(socket, 'stepRound', ({ delta }) => {
+    const n = Number(delta);
+    if (!Number.isFinite(n) || n === 0) return;
+    const step = n > 0 ? 1 : -1;
+    const result = stepRound(step);
+    if (result.error !== undefined) socket.emit('controlError', { message: result.error });
+  });
+
   controlEvent(socket, 'undo', () => {
     if (!popUndo()) {
       socket.emit('controlError', { message: 'Nothing to undo' });
@@ -230,8 +274,19 @@ export function registerHandlers(socket: Socket): void {
     emitState();
   });
 
+  // คืนปุ่มกลับเป็นค่าเริ่มต้น แต่ไม่แตะสวิตช์เปิด/ปิด
+  //
+  // สวิตช์มีปุ่มของตัวเองอยู่ข้างๆ อยู่แล้ว การรีเซ็ตปุ่มแล้วพาลปิดฟีเจอร์ไปด้วย
+  // แปลว่าคีย์ลัดระดับระบบดับทั้งชุดกลางรายการ โดยที่คนกดไม่ได้ขอ
+  // และอาการที่เห็นคือ "กดคีย์แล้วไม่มีอะไรเกิดขึ้น" ซึ่งอ่านเหมือนของเสีย
+  // ไม่ใช่เหมือนสวิตช์ถูกปิด — เป็นอาการเดียวกับที่ /hotkeys อุตส่าห์ทำไฟแดง
+  // บอกความขัดแย้งของปุ่มเอาไว้เพื่อไม่ให้เกิด
   controlEvent(socket, 'resetGlobalHotkeys', () => {
-    getState().globalHotkeys = deepClone(GLOBAL_HOTKEY_DEFAULTS);
+    const state = getState();
+    state.globalHotkeys = {
+      ...deepClone(GLOBAL_HOTKEY_DEFAULTS),
+      enabled: state.globalHotkeys.enabled
+    };
     emitState();
   });
 

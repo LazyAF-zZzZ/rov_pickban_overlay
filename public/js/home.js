@@ -7,7 +7,7 @@
 // แถบสถานะด้านบนยังอยู่ เพราะบอกว่าตอนนี้ออกอากาศอะไรอยู่
 // ซึ่งเป็นสิ่งแรกที่คนคุมงานอยากรู้เวลากลับมาที่หน้านี้
 
-const { socket, fetchJson, showToast } = window.RovClient;
+const { socket, fetchJson, showToast, onDataChange } = window.RovClient;
 
 // การลบใช้ร่วมกับหน้า /tournament/:id คำเตือนจึงเป็นชุดเดียวกันทั้งสองที่
 const { confirmAndDelete } = window.RovTournamentUI;
@@ -247,10 +247,11 @@ async function renderList() {
 }
 
 function renderFoot() {
-  document.getElementById('foot').textContent =
-    'Open a tournament to edit its details and copy the OBS browser source URLs. ' +
-    'The Control Panel works on its own for a quick match that is not part of any ' +
-    'tournament: pick both teams straight from the registry there.';
+  document.getElementById('foot').textContent = t(
+    'Open a tournament to edit its details and copy the OBS browser source URLs. '
+    + 'The Control Panel works on its own for a quick match that is not part of any '
+    + 'tournament: pick both teams straight from the registry there.'
+  );
 }
 
 // BOOT ---------------------------------------------------------------
@@ -265,6 +266,16 @@ document.getElementById('fName').addEventListener('keydown', (event) => {
 setStatus(null, 'Connecting');
 renderFoot();
 
+// รายการทัวร์นาเมนต์เปลี่ยนได้จากหน้าอื่น: สร้าง/ลบจากอีกจอ หรือเพิ่มทีมเข้าทัวร์นาเมนต์
+// (การ์ดโชว์ตัวเลข x / y teams ด้วย) เดิมหน้านี้อ่านครั้งเดียวตอนเปิดแล้วค้างอยู่อย่างนั้น
+// ซึ่งผิดกฎของโปรเจกต์ที่ว่าทุกหน้าต้องตามข้อมูลที่เปลี่ยนจากที่อื่นให้ทัน
+//
+// ไม่มีช่องกรอกอยู่ในรายการ จึงวาดใหม่ได้เลย ไม่ต้องผ่าน deferWhileEditing
+// ส่วนฟอร์มสร้างทัวร์นาเมนต์อยู่คนละก้อน DOM การวาดรายการใหม่ไม่แตะสิ่งที่กำลังพิมพ์
+onDataChange((change) => {
+  if (change.topic === 'tournaments' || change.topic === 'roster') renderList();
+});
+
 (async () => {
   try {
     await loadOptions();
@@ -273,3 +284,127 @@ renderFoot();
   }
   await renderList();
 })();
+
+// สำรองข้อมูลและกู้คืน ------------------------------------------------
+//
+// ทุกอย่างที่แสดงจากไฟล์ที่นำเข้า ประกอบด้วย textContent เท่านั้น
+//
+// นี่เป็นที่เดียวในแอพที่วาดข้อความซึ่งมาจากไฟล์ของคนอื่น การต่อ innerHTML
+// ตรงนี้ทีเดียว = ทีมที่ชื่อ <img onerror=...> รันสคริปต์ในต้นทางเดียวกับ
+// หน้าคุมงาน แล้วอ่านโทเคนควบคุม overlay ไปได้ทั้งดุ้น
+// (มีเทสต์ parse ไฟล์นี้เพื่อกันไว้ ดู tests/backup-hostile.test.ts)
+
+const { withToken, confirmBox } = window.RovClient;
+
+function backupRow(label, value) {
+  const row = document.createElement('div');
+  row.className = 'frow';
+  const key = document.createElement('span');
+  key.className = 'hint';
+  key.textContent = label;
+  const val = document.createElement('b');
+  val.textContent = String(value);
+  row.append(key, val);
+  return row;
+}
+
+document.getElementById('backupBtn')?.addEventListener('click', () => {
+  // ให้เบราว์เซอร์โหลดเอง ไม่ผ่าน fetch แล้วสร้าง blob
+  // ไฟล์อาจใหญ่ และการดาวน์โหลดตรงๆ ไม่ต้องกางทั้งไฟล์ไว้ในหน่วยความจำของหน้า
+  window.location.href = withToken('/api/backup');
+  showToast(t('Saving a backup…'), 'blue');
+});
+
+// ตัวเลือกไฟล์สร้างตอนกด ไม่ได้ฝังไว้ในหน้า
+function pickBackupFile(onPick) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/json,.json';
+  input.style.display = 'none';
+  input.addEventListener('change', () => {
+    const file = input.files && input.files[0];
+    input.remove();
+    if (file) onPick(file);
+  });
+  document.body.appendChild(input);
+  input.click();
+}
+
+async function postJson(url, payload) {
+  const response = await fetch(withToken(url), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || `${url} returned ${response.status}`);
+  return data;
+}
+
+document.getElementById('restoreBtn')?.addEventListener('click', () => {
+  pickBackupFile(async (file) => {
+    const box = document.getElementById('restorePreview');
+    box.textContent = '';
+    box.hidden = true;
+
+    let parsed;
+    try {
+      parsed = JSON.parse(await file.text());
+    } catch {
+      showToast(t('That file is not readable JSON'), 'red');
+      return;
+    }
+
+    let preview;
+    try {
+      preview = await postJson('/api/backup/preview', parsed);
+    } catch (error) {
+      showToast(t(error.message || 'Could not read that backup'), 'red');
+      return;
+    }
+
+    // แสดงก่อนเสมอ ว่ากำลังจะรับอะไรเข้ามา
+    const s = preview.summary;
+    box.hidden = false;
+    box.append(
+      backupRow(t('Teams'), s.teams),
+      backupRow(t('Tournaments'), s.tournaments),
+      backupRow(t('Matches'), s.matches),
+      backupRow(t('Recorded drafts'), s.drafts),
+      backupRow(t('Logos'), s.logos),
+      backupRow(t('Made on'), s.exportedAt.slice(0, 10))
+    );
+    if (preview.alreadyHere.teams || preview.alreadyHere.tournaments) {
+      box.appendChild(backupRow(
+        t('Already on this machine'),
+        tf('{teams} teams, {tournaments} tournaments', {
+          teams: preview.alreadyHere.teams,
+          tournaments: preview.alreadyHere.tournaments
+        })
+      ));
+    }
+
+    const ok = await confirmBox({
+      title: t('Restore this backup?'),
+      body: [
+        tf('{teams} teams and {tournaments} tournaments will be added.', {
+          teams: s.teams, tournaments: s.tournaments
+        }),
+        t('Anything already on this machine is kept. Records that are already here are skipped, not replaced.')
+      ],
+      confirmLabel: t('RESTORE')
+    });
+    if (!ok) return;
+
+    try {
+      const { report } = await postJson('/api/backup/restore', { file: parsed, mode: 'merge' });
+      showToast(tf('Restored {teams} teams and {tournaments} tournaments', {
+        teams: report.teamsAdded, tournaments: report.tournamentsAdded
+      }), 'green');
+      box.hidden = true;
+      renderList();
+    } catch (error) {
+      showToast(t(error.message || 'Restore failed'), 'red');
+    }
+  });
+});

@@ -68,10 +68,14 @@ It holds the tokens, the type scale and the shared chrome (top bar, nav, `.tlink
 fields, badges, modal, toast); each page's own CSS holds only what is unique to it. The
 theme is black, white and gold: gold marks *what is happening now* (current page, primary
 action, focused field, the match on air) and nothing else, blue and red mean *team sides*
-(red also means destructive), and there is no green or purple to reach for. Never link
-`theme.css` from `overlay`, `overlay-1440`, `result` or `overlay-teams` — those are
-broadcast graphics the user themes from the Design page, and operator styling must not be
-able to change what viewers see mid-match.
+(red also means destructive), and there is no green or purple to reach for. **Never link
+`theme.css` from a broadcast graphic** — `result` and every `/overlay*` route (there are
+nine: `overlay`, `overlay-1440`, `overlay-teams`, `overlay-analytics`, `overlay-standings`,
+`overlay-matchup`, `overlay-team-drafts`, `overlay-prev`, plus `result`). Those are graphics
+the user themes from the Design page, and operator styling must not be able to change what
+viewers see mid-match. Do not maintain that list by hand when writing a check: the test in
+`tournament-api.test.ts` derives it from `PAGES` by prefix, precisely because a hand-written
+list stopped covering the pages added after it.
 
 **Any page that can delete a tournament loads `tournament-ui.js` before its own script.**
 Same rule and same failure as `team-ui.js`: the page destructures `window.RovTournamentUI`
@@ -146,8 +150,10 @@ and is cached on the element, so switching back to English always works); JS wra
 user-visible strings as `t('English')`. The TH/EN button is injected into `.topbar` by the
 module itself — do not add one per page, and a page that forgets the script tag simply shows
 English rather than breaking. Never mark an element that holds user data: a team called
-"Timer" would be translated into "เวลา". Broadcast pages (`overlay`, `overlay-1440`,
-`result`, `overlay-teams`) deliberately do not load it — what viewers see stays English.
+"Timer" would be translated into "เวลา". Broadcast pages — `result` and every `/overlay*`
+route — deliberately do not load it, and what viewers see stays English. The same test that
+keeps `theme.css` off those pages keeps `i18n.js` off them, from the same `PAGES`-derived
+list, so neither rule depends on someone remembering to extend it.
 
 Messages that carry data go through `tf()` rather than `t()`: the frame is the key and the
 values ride separately, as in `tf('Deleted {name}', { name: team.name })`. A frame's Thai
@@ -276,8 +282,12 @@ reads if its script fails. `docs/USER_GUIDE.md` holds the same content for readi
 change one and change the other.
 
 **The OBS source list lives in `public/js/lib/obs-sources.js`, and the overlay URLs it
-hands out already carry `?sfx=1`.** Both the Control Panel and `/tournament/:id` render it,
-so the list, the paths and the copy behaviour have one home; a page that shows it loads the
+hands out already carry `?sfx=1`.** The Control Panel is the only page that renders it —
+`/tournament/:id` did too until 2026-09-08, when the user asked for it to be removed there.
+That is why it no longer produces tournament-scoped URLs: the tournament page was what passed
+`{ tournamentId }`, which is what appended `?tournament=<id>` to Standings, Team list and
+Stats board. The Control Panel deliberately passes no id, so those three fall back to the
+match on air. A page that shows the list loads the
 module after `app-client.js` and before its own script, and a test asserts that. Sound is
 opt-in per URL, and the copyable URL is where it opts in — leaving the operator to remember
 `?sfx=1` makes the failure mode silence, which is indistinguishable from a bug. Copying

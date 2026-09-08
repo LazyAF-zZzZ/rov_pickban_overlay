@@ -28,6 +28,20 @@
     { name: 'Overlay 1080p', path: '/overlay', size: '1920 x 1080', sfx: true },
     { name: 'Overlay 1440p', path: '/overlay-1440', size: '2560 x 1440', sfx: true },
     { name: 'Result', path: '/result', size: 'matches overlay size' },
+    // ดราฟต์ของรอบก่อนหน้า หนึ่งแถว หนึ่ง browser source
+    // ไม่มี ?sfx=1 เพราะหน้านี้ไม่ได้โหลดตัวเล่นเสียง เหมือน result กับ team list
+    //
+    // เดิมเป็นสองแถวแยกพิคกับแบน ผู้ใช้ขอให้รวมเป็นหน้าเดียวแล้วลบสองหน้านั้นทิ้ง
+    // (2026-09-08) ตอนนี้เหลือกระดานเดียว ไม่มี URL แยกให้พิมพ์เองอีกแล้ว
+    { name: 'Previous picks & bans', path: '/overlay-prev', size: 'matches overlay size' },
+    // ตารางคะแนนของรอบแบ่งกลุ่ม ต้องแนบ id เหมือนรายชื่อทีมและกระดานสถิติ
+    { name: 'Standings', path: '/overlay-standings', size: 'matches overlay size', perTournament: true },
+    // หัวต่อหัว ไม่ต้องแนบ id: ไม่ระบุคู่มา มันจะตามคู่ที่กำลังออกอากาศเอง
+    // ซึ่งเป็นสิ่งที่คนก๊อป URL ไปวางในฉาก "ก่อนเริ่มคู่" ต้องการพอดี
+    { name: 'Head to head', path: '/overlay-matchup', size: 'matches overlay size' },
+    // หน้าตาเหมือนหัวต่อหัว แต่นับทุกเกมของแต่ละทีมในรายการ ไม่ใช่เฉพาะเกมที่เจอกันเอง
+    // ไม่ต้องแนบ id ด้วยเหตุผลเดียวกัน: ไม่ระบุมา มันตามคู่ที่ออกอากาศเอง
+    { name: 'Team picks & bans', path: '/overlay-team-drafts', size: 'matches overlay size' },
     // รายชื่อทีมของทัวร์นาเมนต์นี้ ต้องแนบ id ไปกับ URL ด้วย
     // ไม่งั้น overlay จะเดาเอาจากแมตช์ที่ออกอากาศ ซึ่งไม่ใช่สิ่งที่คนก๊อป URL
     // จากหน้าทัวร์นาเมนต์ตั้งใจ ส่วนหน้า Control ไม่มี id ให้แนบ การเดาจาก
@@ -35,6 +49,12 @@
     { name: 'Team list', path: '/overlay-teams', size: 'matches overlay size', perTournament: true },
     // กระดานสถิติของทัวร์นาเมนต์นี้ ต้องแนบ id เหมือนรายชื่อทีมด้วยเหตุผลเดียวกัน
     { name: 'Stats board', path: '/overlay-analytics', size: 'matches overlay size', perTournament: true }
+    //
+    // เคยมีอีกสองแถวตรงนี้: Most picked กับ Most banned ซึ่งเป็นหน้าเดียวกับ
+    // กระดานสถิติ ต่างกันแค่ ?mode=pick / ?mode=ban ผู้ใช้ให้เอาออก
+    //
+    // โหมดพวกนั้นยังอยู่ครบที่ /overlay-analytics เหมือนเดิม ที่หายไปคือแถว
+    // สำเร็จรูปในรายการนี้ ใครอยากได้ก็ต่อ ?mode=pick ท้าย URL ของ Stats board เอง
   ];
 
   function pathFor(source, options) {
@@ -43,6 +63,12 @@
     if (source.perTournament && options.tournamentId) {
       params.push(`tournament=${encodeURIComponent(options.tournamentId)}`);
     }
+    // พารามิเตอร์ประจำตัวของซอร์สนั้น เขียนไว้ในรายการ ไม่ใช่ให้คนไปเติมเอง
+    // (เหตุผลเดียวกับ ?sfx=1 พารามิเตอร์ที่ต้องจำเอง คือพารามิเตอร์ที่ไม่มีใครใช้)
+    //
+    // ตอนนี้ยังไม่มีแถวไหนใช้ เก็บไว้เพราะการลบทิ้งแล้ววันหลังมีคนเติม query:
+    // กลับเข้ามา จะได้ URL ที่ขาดพารามิเตอร์ไปเงียบๆ โดยไม่มีอะไรฟ้อง
+    if (source.query) source.query.forEach((pair) => params.push(pair));
     return params.length ? `${source.path}?${params.join('&')}` : source.path;
   }
 

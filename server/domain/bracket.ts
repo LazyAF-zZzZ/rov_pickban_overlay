@@ -310,7 +310,61 @@ export function doubleElimination(teamIds: readonly string[]): PlannedMatch[] {
     winnerId: null
   });
 
-  return matches;
+  return collapseStarvedLosers(matches);
+}
+
+// คู่ในสายแพ้ที่ไม่มีใครป้อน เกิดจากบายในสายชนะรอบแรก
+//
+// ทีมไม่ครบกำลังสอง คู่รอบแรกของสายชนะบางคู่จึงเป็นบาย ซึ่งไม่มีผู้แพ้ให้ส่งลงสายแพ้
+// ช่องที่รอผู้แพ้จากคู่พวกนั้นว่างตลอดกาล คู่นั้นไม่มีวันแข่ง แล้วทั้งสายแพ้กับรอบชิง
+// ก็ค้างตามกันหมด (5 ทีม เคยค้าง 8 คู่จาก 15 = จบทัวร์นาเมนต์ไม่ได้เลย)
+//
+// จึงยุบทิ้ง ไม่ใช่ปล่อยว่างไว้:
+//   ไม่มีใครป้อนเลย   -> ลบคู่นั้นทิ้ง
+//   มีคนป้อนคนเดียว   -> คนนั้นผ่านเข้ารอบถัดไปเลย ต่อท่อตรงไปยังปลายทางของคู่ที่ลบ
+//
+// ต้องวนจนกว่าจะไม่มีอะไรเปลี่ยน เพราะการลบคู่หนึ่งทำให้คู่ที่มันเคยป้อนเหลือคนป้อนน้อยลงตามกัน
+// ต่อท่อก่อนแล้วค่อยลบเสมอ ปลายทางจึงไม่มีทางชี้ไปยังคู่ที่ไม่มีอยู่แล้ว
+//
+// แตะเฉพาะสายแพ้ สายชนะไม่มีปัญหานี้ (รอบแรกมีทีมอยู่แล้ว รอบหลังมีผู้ชนะป้อนครบสองทางเสมอ)
+// และรอบชิงนัดตัดสินตั้งใจให้มีคนป้อนสองทางจากคู่เดียวกัน จะยุบไม่ได้
+function collapseStarvedLosers(matches: PlannedMatch[]): PlannedMatch[] {
+  const key = (bracket: string, round: number, slot: number) => `${bracket}#${round}#${slot}`;
+  const DEST_FIELDS = ['winnerTo', 'loserTo'] as const;
+  type DestField = typeof DEST_FIELDS[number];
+
+  let list = matches;
+
+  // ลบได้อย่างมากเท่าจำนวนคู่ที่มี วนเกินกว่านั้นแปลว่าตรรกะข้างในผิด
+  for (let guard = 0; guard <= matches.length; guard += 1) {
+    // ใครป้อนช่องไหนบ้าง สร้างใหม่ทุกรอบ เพราะรอบก่อนเพิ่งย้ายปลายทางไป
+    const feeders = new Map<string, { match: PlannedMatch; field: DestField }[]>();
+    list.forEach((match) => {
+      DEST_FIELDS.forEach((field) => {
+        const dest = match[field];
+        if (!dest) return;
+        const at = key(dest.bracket, dest.round, dest.slot);
+        const found = feeders.get(at);
+        if (found) found.push({ match, field });
+        else feeders.set(at, [{ match, field }]);
+      });
+    });
+
+    const starved = list.find((match) => (
+      match.bracket === LOSERS
+      && (feeders.get(key(match.bracket, match.round, match.slot))?.length ?? 0) < 2
+    ));
+    if (!starved) return list;
+
+    const incoming = feeders.get(key(starved.bracket, starved.round, starved.slot)) ?? [];
+    const only = incoming[0];
+    // เหลือคนเดียว ไม่มีใครให้แข่งด้วย ส่งข้ามไปที่ที่ผู้ชนะของคู่นี้ควรไปเลย
+    if (incoming.length === 1 && only) only.match[only.field] = starved.winnerTo;
+
+    list = list.filter((match) => match !== starved);
+  }
+
+  return list;
 }
 
 // ---- GROUP STAGE ----------------------------------------------------
@@ -401,4 +455,20 @@ export function generateMatches(plan: GeneratePlan): GenerateResult {
   }
 
   return { error: `Unknown format: ${String(format)}` };
+}
+
+// ชื่อสายที่เป็นรอบน็อกเอาต์ ไม่ใช่รอบที่แข่งพบกันหมด
+//
+// อยู่ใน domain เพราะการตั้งชื่อสายเป็นเรื่องของกติกา ไม่ใช่ของฐานข้อมูล
+// และมีสองที่ที่ต้องใช้ชุดเดียวกัน: ตัววางสายน็อกเอาต์ กับตารางคะแนน
+//
+// ตารางคะแนนสร้างกลุ่มจาก "ชื่อสายที่พบในตารางแข่ง" ถ้าไม่กันชื่อพวกนี้ออก
+// สายน็อกเอาต์ที่เพิ่งวางจะโผล่เป็นกลุ่มอีกกลุ่มหนึ่งบนกระดานคะแนน
+// (เห็นมาแล้ว: กระดานขึ้นเป็นห้ากลุ่ม ทั้งที่รายการมีสี่กลุ่ม)
+// และการเลื่อนชั้นรอบถัดไปก็จะพยายามเลื่อนทีมออกจากสายน็อกเอาต์ด้วย
+export const PLAYOFF_BRACKET = 'playoff';
+export const KNOCKOUT_BRACKETS: readonly string[] = [PLAYOFF_BRACKET, 'losers', 'grand'];
+
+export function isKnockoutBracket(bracket: string): boolean {
+  return KNOCKOUT_BRACKETS.includes(bracket);
 }

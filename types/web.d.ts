@@ -54,7 +54,8 @@ interface RovSocket {
 }
 
 interface RovPlayerRows {
-  read(): { name: string; role: string; isCaptain: boolean }[];
+  // position = slug ของเลน ('' คือยังไม่ได้เลือก) ดู server/domain/position.ts
+  read(): { name: string; position: string; isCaptain: boolean }[];
   clear(): void;
   focusFirst(): void;
 }
@@ -82,7 +83,12 @@ interface RovTournamentUiApi {
 }
 
 interface RovObsSourcesApi {
-  SOURCES: { name: string; path: string; size: string; sfx?: boolean; perTournament?: boolean }[];
+  SOURCES: {
+    name: string; path: string; size: string;
+    sfx?: boolean; perTournament?: boolean;
+    /** พารามิเตอร์ประจำตัวของซอร์ส เช่น ['mode=pick'] */
+    query?: string[];
+  }[];
   /** วาดรายการ URL ของ browser source ลงใน container ที่ให้มา */
   render(container: HTMLElement | null, options?: { tournamentId?: string }): void;
   copyUrl(url: string): Promise<void>;
@@ -115,6 +121,24 @@ interface RovHotkeyUtilsApi {
   bindingFromEvent(event: any): any;
 }
 
+/** รูปฮีโร่ของกราฟิกออกอากาศ: เลือกไอคอน/รูปเต็ม และทางถอยเมื่อไฟล์หาย */
+interface RovHeroArtApi {
+  iconUrl(hero: string): string;
+  fullUrl(hero: string): string;
+  /** วาดลงช่องที่ใช้ background-image */
+  paint(element: HTMLElement | null, hero: string | null): void;
+  /** สร้าง <img> พร้อมทางถอย onGone ถูกเรียกเมื่อไม่มีทั้งสองไฟล์ */
+  image(hero: string, className?: string, onGone?: (img: HTMLImageElement) => void): HTMLImageElement;
+}
+
+/** ของที่กราฟิกออกอากาศทุกหน้าใช้ร่วมกัน (public/js/lib/overlay-common.js) */
+interface RovOverlayApi {
+  /** อ่านตัวเลขจาก URL ค่าที่อ่านไม่ออกตกไปที่ fallback ไม่ใช่ที่ min */
+  intParam(params: URLSearchParams, name: string, fallback: number, min: number, max: number): number;
+  /** ข้อความสถานะกลางกระดาน ส่งค่าว่างเพื่อซ่อน */
+  note(message: string | null | undefined): void;
+}
+
 interface Window {
   RovClient: RovClientApi;
   RovI18n: RovI18nApi;
@@ -126,6 +150,8 @@ interface Window {
   RovTeamUI: RovTeamUiApi;
   RovTournamentUI: RovTournamentUiApi;
   RovObsSources: RovObsSourcesApi;
+  RovHeroArt: RovHeroArtApi;
+  RovOverlay: RovOverlayApi;
   HotkeyUtils: RovHotkeyUtilsApi;
   // overlay-size.js ตั้งไว้ให้หน้าอื่นเรียก
   applyOverlaySize(size: string): void;

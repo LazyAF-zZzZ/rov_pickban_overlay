@@ -12,12 +12,13 @@ import { sanitizeText, clampNumber } from '../lib/sanitize';
 import type { Logo } from './media';
 import { sanitizeLogo } from './media';
 import { PICK_COUNT } from './draft';
+import type { PositionValue } from './position';
+import { sanitizePosition } from './position';
 
 // ชื่อทีมยาวเท่ากับที่ overlay รองรับ (sanitizeTeam ใน match.ts ใช้ 24 เท่ากัน)
 // ถ้าให้ยาวกว่านั้น พอโหลดขึ้น overlay จะถูกตัดอยู่ดี แต่ผู้ใช้ไม่รู้ตัว
 export const NAME_MAX = 24;
 export const TAG_MAX = 6;
-const ROLE_MAX = 16;
 const PLAYER_NAME_MAX = 24;
 
 export const ROSTER_SIZE = PICK_COUNT;
@@ -25,7 +26,9 @@ export const ROSTER_SIZE = PICK_COUNT;
 export interface TeamPlayer {
   slot: number;
   name: string;
-  role: string;
+  // ตำแหน่งในทีม เป็นชุดปิดห้าค่า ไม่ใช่ข้อความอิสระ (ดู domain/position.ts)
+  // กราฟิกออกอากาศเอาค่านี้ไปเลือกไอคอนพื้นหลังของช่องพิค
+  position: PositionValue;
   isCaptain: boolean;
 }
 
@@ -51,7 +54,7 @@ export function sanitizePlayer(player: unknown, index: number): TeamPlayer {
   return {
     slot: index,
     name: sanitizeText(source.name, PLAYER_NAME_MAX),
-    role: sanitizeText(source.role, ROLE_MAX),
+    position: sanitizePosition(source.position),
     isCaptain: source.isCaptain === true
   };
 }

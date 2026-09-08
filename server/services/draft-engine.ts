@@ -99,6 +99,14 @@ export function resetDraft(): void {
 
 export function resumeDraft(): void {
   const state = getState();
+  // ดราฟต์จบไปแล้ว (draftPhaseIndex ชี้เลยท้ายลำดับ = 'coming soon') ไม่มีอะไรให้เดินต่อ
+  //
+  // ไม่กันไว้ตรงนี้ การกด Resume หรือคีย์ลัดหยุด/เดินต่อ จะไปตั้งนาฬิกา 60 วินาที
+  // ให้กับเฟสที่ไม่มีอยู่จริง มองไม่เห็นบนจอ (ทั้ง overlay และหน้า control ซ่อนเวลาไว้
+  // ตอน 'coming soon') แต่ยิง emitState ทุกวินาที = เขียน state.json และมิเรอร์
+  // ดราฟต์ลงฐานซ้ำวินาทีละครั้งอยู่นาทีหนึ่งโดยไม่มีใครรู้
+  if (state.draftPhaseIndex >= DRAFT_SEQUENCE.length) return;
+
   if (!state.draftRunning && state.draftPhaseIndex >= 0) {
     draftSeconds = draftSeconds > 0
       ? draftSeconds

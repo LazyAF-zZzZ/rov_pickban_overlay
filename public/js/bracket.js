@@ -157,6 +157,8 @@ function sectionTitle(name) {
   if (name === 'main') return 'Winners bracket';
   if (name === 'losers') return 'Losers bracket';
   if (name === 'grand') return 'Grand final';
+  // สายน็อกเอาต์ที่ต่อจากรอบแบ่งกลุ่ม ไม่ใช่ชื่อกลุ่ม
+  if (name === 'playoff') return 'Playoff';
   return `Group ${name}`;
 }
 
@@ -165,9 +167,15 @@ function sectionTitle(name) {
 // ใช้ได้เฉพาะรูปแบบที่แพ้แล้วตกรอบเท่านั้น
 // พบกันหมดรอบสุดท้ายไม่ใช่ "รอบชิง" มันคือรอบที่เหลือของตาราง ทุกทีมยังเล่นพร้อมกันอยู่
 // เรียกว่า Final แล้วคนอ่านจะนึกว่าเหลือสองทีม ทั้งที่ยังเล่นกันทั้งกลุ่ม
-function roundTitle(roundNo, totalRounds, bracketName, elimination) {
+// column = ลำดับคอลัมน์ที่เห็นบนจอ (เริ่มที่ 1) ไม่ใช่เลขรอบในข้อมูล
+//
+// สายแพ้ที่มีบายจะไม่มีรอบ 1 เพราะไม่มีผู้แพ้จากสายชนะรอบแรกให้จับคู่กัน
+// (ดู collapseStarvedLosers ใน server/domain/bracket.ts) เลขรอบจริงจึงเริ่มที่ 2
+// ขึ้นหัวคอลัมน์ว่า "Round 2" ทั้งที่เป็นคอลัมน์แรกที่เห็น อ่านแล้วเหมือนมีอะไรหายไป
+// นับตามคอลัมน์แทน คนคุมงานสนใจแค่ลำดับที่ต้องเล่น ไม่ได้สนเลขรอบในฐานข้อมูล
+function roundTitle(roundNo, totalRounds, bracketName, elimination, column) {
   if (bracketName === 'grand') return roundNo === 1 ? 'Grand final' : 'Reset (if needed)';
-  if (bracketName !== 'main' || !elimination) return `Round ${roundNo}`;
+  if (bracketName !== 'main' || !elimination) return `Round ${column}`;
   const fromEnd = totalRounds - roundNo;
   if (fromEnd === 0) return 'Final';
   if (fromEnd === 1) return 'Semifinals';
@@ -263,7 +271,7 @@ function render(matches) {
       const merges = next.length > 0 && next.length === here.length / 2;
 
       wrap.appendChild(roundColumn(
-        roundTitle(roundNo, total, name, elimination),
+        roundTitle(roundNo, total, name, elimination, index + 1),
         here,
         numbers,
         elimination && merges

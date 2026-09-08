@@ -36,8 +36,10 @@ export interface SeededTeam extends Team {
 }
 
 export type TournamentResult =
-  | { tournament: Tournament; error?: undefined }
-  | { error: string; tournament?: undefined };
+  // matchesRetimed = จำนวนคู่ที่ยังไม่ได้เล่นและถูกเปลี่ยนความยาวซีรีส์ตามไปด้วย
+  // ผู้เรียกเอาไปตัดสินใจว่าต้องส่งสัญญาณ 'matches' ด้วยไหม
+  | { tournament: Tournament; matchesRetimed?: number; error?: undefined }
+  | { error: string; tournament?: undefined; matchesRetimed?: undefined };
 
 export type RosterResult =
   | { ok: true; teamCount: number; error?: undefined }
@@ -98,6 +100,28 @@ export interface TournamentStore {
   setSeed(id: string, teamId: string, seed: unknown): SimpleResult;
 }
 
+// "คู่ที่ยังไม่มีใครแตะ" คือคู่เดียวที่เปลี่ยนความยาวซีรีส์ได้
+//
+// เขียนไว้ที่เดียวแล้วให้ทั้งตัวนับและตัวแก้ใช้ร่วมกัน สองประโยคที่ต้องตรงกันเสมอ
+// แต่พิมพ์แยกกันคือที่มาของ "หน้าเว็บบอกว่าแก้ไป 5 คู่ แต่จริงๆ แก้ไป 3"
+//
+// คะแนน 0-0 อย่างเดียวไม่พอ ดราฟต์ถูกบันทึกอัตโนมัติทุกครั้งที่คนคุมงานแตะกระดาน
+// (ดู games.captureDraft) ส่วนคะแนนต้องพิมพ์เอง คู่ที่ดราฟต์ไปห้าเกมแล้วแต่ยังไม่ได้
+// กรอกคะแนน จึงผ่านเงื่อนไขเดิมไปได้ทั้งที่เล่นไปแล้วจริงๆ
+//
+// ผลตอนนั้น: ย่อ Bo7 เหลือ Bo3 แล้วเกมที่ 4 ถึง 7 ยังมีแถวและมีดราฟต์อยู่ในฐาน
+// สถิติยังนับมันอยู่ แต่ไม่มีทางเปิดกลับขึ้นมาดูได้อีก เพราะตัวเดินรอบตัดที่ bestOf
+// (เจอจากการสุ่มลำดับคำสั่ง: "game 5 on a Bo1", "game 6 on a Bo3")
+const RETIMABLE = `
+  tournament_id = ? AND status = 'pending' AND score_a = 0 AND score_b = 0
+  AND NOT EXISTS (
+    SELECT 1 FROM game_slots s JOIN games g ON g.id = s.game_id
+     WHERE g.match_id = matches.id
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM games g WHERE g.match_id = matches.id AND g.winner IS NOT NULL
+  )`;
+
 export function createTournamentStore(db: DatabaseSync, teamStore: TeamStore): TournamentStore {
   const q = {
     insert: db.prepare(
@@ -109,6 +133,15 @@ export function createTournamentStore(db: DatabaseSync, teamStore: TeamStore): T
     setStatus: db.prepare('UPDATE tournaments SET status = ?, updated_at = ? WHERE id = ?'),
     remove: db.prepare('DELETE FROM tournaments WHERE id = ?'),
     countMatches: db.prepare('SELECT COUNT(*) AS n FROM matches WHERE tournament_id = ?'),
+
+    // "ยังไม่มีใครเล่น" = ยังไม่ได้เริ่ม และไม่มีคะแนนติดอยู่เลย
+    // เงื่อนไขเดียวกันทั้งตัวนับและตัวเขียน ตัวเลขที่รายงานจึงตรงกับที่แก้จริง
+    countRetimable: db.prepare(
+      `SELECT COUNT(*) AS n FROM matches WHERE ${RETIMABLE}`
+    ),
+    retimeMatches: db.prepare(
+      `UPDATE matches SET best_of = ? WHERE ${RETIMABLE}`
+    ),
     countGames: db.prepare(
       'SELECT COUNT(*) AS n FROM games WHERE match_id IN (SELECT id FROM matches WHERE tournament_id = ?)'
     ),
@@ -167,8 +200,25 @@ export function createTournamentStore(db: DatabaseSync, teamStore: TeamStore): T
       const allowed = canUseFormat(format, teamCountOf(id));
       if (!allowed.ok) return { error: allowed.error };
 
+      // ความยาวซีรีส์ที่เปลี่ยน ต้องมีผลกับคู่ที่ยังไม่ได้เล่นด้วย
+      //
+      // best_of ถูกคัดลอกลงแต่ละคู่ตอนจับสาย เดิมการแก้ค่านี้ทีหลังไม่แตะคู่ที่วางไว้แล้วเลย
+      // หน้าทัวร์นาเมนต์กับหัวสายขึ้น "Bo5" ส่วนทุกคู่ยังตัดสินที่ชนะสองเกม
+      // กรอก 3-0 แล้วโดนตัดเหลือ 2-0 เงียบๆ = ตั้งค่าแล้วเหมือนไม่ได้ตั้ง
+      //
+      // แตะเฉพาะคู่ที่ยังไม่มีใครเล่น คู่ที่จบไปแล้วหรือกำลังเล่นอยู่ต้องคงความยาวเดิม
+      // ที่มันถูกเล่นมาจริง ไม่งั้นผลที่บันทึกไว้แล้วจะกลายเป็นยังไม่จบย้อนหลัง
+      // แล้วทีมที่เข้ารอบไปแล้วก็ต้องถูกถอนออก ซึ่งไม่ใช่สิ่งที่คนกดเปลี่ยน Bo ตั้งใจ
+      const before = findRow(id) as TournamentRow;
       q.update.run(name, status, format, bestOf, note, Date.now(), id);
-      return { tournament: store.get(id) as Tournament };
+
+      let matchesRetimed = 0;
+      if (before.best_of !== bestOf) {
+        matchesRetimed = countOf(q.countRetimable, id);
+        if (matchesRetimed > 0) q.retimeMatches.run(bestOf, id);
+      }
+
+      return { tournament: store.get(id) as Tournament, matchesRetimed };
     },
 
     // ปิดทัวร์นาเมนต์ / เปิดกลับมาแก้ต่อ

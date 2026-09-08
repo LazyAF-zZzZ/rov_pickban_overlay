@@ -299,7 +299,8 @@
   color: var(--muted);
   text-align: center;
 }
-.player-row input[type="text"] {
+.player-row input[type="text"],
+.player-row select.prole {
   background: var(--s3);
   border: 1px solid var(--border2);
   border-radius: var(--r-sm);
@@ -311,8 +312,11 @@
   transition: border-color 0.15s;
 }
 .player-row input.pname { flex: 1; min-width: 130px; }
-.player-row input.prole { flex: 0 0 110px; }
-.player-row input[type="text"]:focus { border-color: var(--gold); }
+/* ตำแหน่ง (เลน) เป็น select ไม่ใช่ช่องพิมพ์ ค่าถูกเอาไปเลือกไฟล์ไอคอนบนกราฟิก
+   จึงต้องเป็นชุดปิด ดู server/domain/position.ts */
+.player-row select.prole { flex: 0 0 128px; cursor: pointer; }
+.player-row input[type="text"]:focus,
+.player-row select.prole:focus { border-color: var(--gold); }
 .player-row label.cap {
   display: flex;
   align-items: center;
@@ -428,3 +432,76 @@ a.round-head:hover { color: var(--gold); }
 @media (max-width: 640px) {
   .src-name { flex: 1 1 100%; }
 }
+
+/* ตารางคะแนนของรอบแบ่งกลุ่ม บนหน้าทัวร์นาเมนต์
+   สีและตัวอักษรทั้งหมดมาจากโทเคนใน theme.css ไม่มีสีเขียนตรงๆ ที่นี่ */
+
+.promote-label { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.promote-input {
+  width: 56px; text-align: center;
+  background: var(--s3); border: 1px solid var(--border2); color: var(--text);
+  border-radius: var(--r-sm); padding: 5px 4px;
+  font-family: var(--bf); font-size: 14px; font-weight: 700;
+}
+.promote-input:focus { outline: none; border-color: var(--gold); }
+
+.stgroups { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+.stgroup { background: var(--s2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 12px 14px; }
+.stgroup-name { font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+.stgroup-left { color: var(--muted); font-weight: 500; letter-spacing: 0.08em; margin-left: 8px; }
+
+table.sttable { width: 100%; border-collapse: collapse; }
+.sttable th { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); text-align: right; padding: 0 5px 6px; }
+.sttable th.stname, .sttable th.strank { text-align: left; }
+.sttable td { padding: 5px; font-size: 13px; color: var(--text); text-align: right; border-top: 1px solid var(--border); }
+.sttable td.strank { text-align: left; width: 34px; color: var(--muted2); font-weight: 700; }
+.sttable td.stname { text-align: left; }
+.sttable td.stpts { color: var(--gold); font-weight: 700; }
+
+/* ทีมที่จะได้ไปต่อตามเลขที่ตั้งไว้ ทำให้เห็นเส้นตัดก่อนกดจับสาย */
+.sttable tr.through td { background: var(--gold-soft); }
+
+/* เท่ากันจนตัดสินไม่ได้ ต้องบอกตรงๆ ไม่ใช่แสดงลำดับที่ดูเหมือนตัดสินได้แล้ว
+   การเลื่อนชั้นจะปฏิเสธเองถ้าเส้นตัดยังเสมอกันอยู่ */
+.sttable tr.tied td.strank::after { content: ' ='; color: var(--muted); }
+.stnote { font-size: 12px; color: var(--muted); margin-top: 10px; }
+
+/* ประวัติพิค/แบนของทัวร์นาเมนต์ (/tournament/:id/drafts) */
+
+.dh-filter {
+  height: 32px; background: var(--s3); border: 1px solid var(--border2); color: var(--text);
+  border-radius: var(--r-sm); padding: 0 9px; font-family: var(--bf); font-size: 13px;
+}
+.dh-filter:focus { outline: none; border-color: var(--gold); }
+.dh-filter option { background: var(--s2); color: var(--text); }
+.dh-search { min-width: 150px; }
+
+.dh-count { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+
+.dh-game { border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--s2); padding: 12px 14px; margin-bottom: 10px; }
+.dh-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.dh-where { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.dh-teams { font-size: 14px; font-weight: 600; color: var(--text); }
+.dh-game-no { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: var(--gold); }
+
+/* ฝั่งทีมหนึ่งแถว: ชื่อ แล้วพิค แล้วแบน */
+.dh-side { display: grid; grid-template-columns: 150px 1fr; gap: 12px; align-items: center; padding: 6px 0; }
+.dh-side + .dh-side { border-top: 1px solid var(--border); }
+.dh-name { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: var(--text); min-width: 0; }
+.dh-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dh-dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 7px; }
+.dh-side.blue .dh-dot { background: var(--blue); }
+.dh-side.red .dh-dot { background: var(--red); }
+/* ผู้ชนะรายเกม ทำเครื่องหมายด้วยทอง ซึ่งแปลว่า "สิ่งที่เกิดขึ้นตรงนี้" ทั้งแอพ */
+.dh-side.won .dh-name { color: var(--gold); }
+
+.dh-rows { display: flex; gap: 14px; flex-wrap: wrap; }
+.dh-group { display: flex; align-items: center; gap: 5px; }
+.dh-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-right: 2px; }
+.dh-hero { width: 34px; height: 34px; border-radius: 6px; background: var(--s3) center/cover no-repeat; border: 1px solid var(--border2); }
+.dh-hero.empty { opacity: 0.28; }
+.dh-hero.ban { filter: grayscale(1) brightness(0.7); }
+/* ตัวที่ตรงกับคำค้น ต้องเห็นทันทีว่าอยู่ตรงไหนในเกมนี้ */
+.dh-hero.match { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold-soft); }
+
+.dh-empty { font-size: 13px; color: var(--muted); padding: 8px 0; }

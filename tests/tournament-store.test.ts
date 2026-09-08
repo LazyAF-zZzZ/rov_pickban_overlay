@@ -13,6 +13,8 @@ import { createGameStore } from '../server/store/games';
 import { MAX_TEAMS, ROUND_ROBIN_MAX_TEAMS } from '../server/domain/tournament';
 import { isSafeMediaId } from '../server/domain/media';
 import type { Team } from '../server/domain/team';
+import { defaultState } from '../server/domain/match';
+import { heroesData } from '../server/domain/heroes';
 import { must } from './helpers';
 
 function freshStores() {
@@ -267,4 +269,116 @@ test('teams come back ordered by seed', () => {
     tournaments.teams(tournament.id).map((t) => t.name),
     ['Team 2', 'Team 3', 'Team 1']
   );
+});
+
+// เปลี่ยนความยาวซีรีส์หลังจับสายแล้ว ต้องมีผลกับคู่ที่ยังไม่ได้เล่น
+//
+// best_of ถูกคัดลอกลงแต่ละคู่ตอนจับสาย เดิมการแก้ทีหลังไม่แตะคู่ที่วางไว้แล้วเลย
+// หน้าทัวร์นาเมนต์ขึ้น Bo5 แต่ทุกคู่ยังตัดสินที่ชนะสองเกม แล้วกรอก 3-0 จะโดนตัดเหลือ 2-0
+// เงียบๆ ซึ่งอ่านไม่ออกเลยว่าทำไม
+//
+// คู่ที่เล่นไปแล้วต้องไม่ถูกแตะ ของที่บันทึกไว้เล่นจบไปแล้วด้วยกติกาเดิมจริงๆ
+// เปลี่ยนย้อนหลังแปลว่าผลที่จบแล้วกลายเป็นยังไม่จบ และคนที่เข้ารอบไปแล้วต้องถูกถอนออก
+test('changing the series length reaches the matches that have not been played', () => {
+  const { db, teams, tournaments } = freshStores();
+  const games = createGameStore(db);
+  const matches = createMatchStore(db, tournaments, games);
+
+  const tournament = makeTournament(tournaments, { name: 'Cup', format: 'single_elim', bestOf: 3 });
+  makeTeams(teams, 4).forEach((team, i) => tournaments.addTeam(tournament.id, team.id, i + 1));
+  must(matches.generate(tournament.id).matches);
+
+  const semi = must(matches.list(tournament.id).find((m) => m.round === 1 && m.slot === 0));
+  must(matches.setResult(semi.id, 2, 0).match);
+
+  const result = tournaments.update(tournament.id, {
+    name: 'Cup', format: 'single_elim', bestOf: 5, status: 'active', note: ''
+  });
+  assert.strictEqual(must(result.tournament).bestOf, 5);
+  assert.strictEqual(result.matchesRetimed, 2, 'the two untouched matches were retimed');
+
+  const after = matches.list(tournament.id);
+  assert.strictEqual(must(after.find((m) => m.id === semi.id)).bestOf, 3, 'a finished match keeps what it was played at');
+  after.filter((m) => m.id !== semi.id).forEach((m) => {
+    assert.strictEqual(m.bestOf, 5, `${m.bracket} r${m.round} s${m.slot} should now be Bo5`);
+  });
+
+  // และคู่ที่ยังไม่ได้เล่นต้องรับผล Bo5 จริง ไม่ใช่ถูกตัดกลับไปที่สองเกม
+  const other = must(after.find((m) => m.round === 1 && m.slot === 1));
+  const played = must(matches.setResult(other.id, 3, 0).match);
+  assert.strictEqual(played.scoreA, 3, 'three wins are accepted in a Bo5');
+  assert.strictEqual(played.status, 'complete');
+
+  db.close();
+});
+
+test('renaming a tournament leaves every match length alone', () => {
+  const { db, teams, tournaments } = freshStores();
+  const games = createGameStore(db);
+  const matches = createMatchStore(db, tournaments, games);
+
+  const tournament = makeTournament(tournaments, { name: 'Cup', format: 'single_elim', bestOf: 3 });
+  makeTeams(teams, 4).forEach((team, i) => tournaments.addTeam(tournament.id, team.id, i + 1));
+  must(matches.generate(tournament.id).matches);
+
+  const result = tournaments.update(tournament.id, {
+    name: 'Renamed', format: 'single_elim', bestOf: 3, status: 'active', note: ''
+  });
+  assert.strictEqual(result.matchesRetimed, 0, 'nothing to retime when the length did not change');
+  matches.list(tournament.id).forEach((m) => assert.strictEqual(m.bestOf, 3));
+
+  db.close();
+});
+
+// คู่ที่มีดราฟต์บันทึกไว้แล้ว ถือว่าเล่นแล้ว แม้จะยังไม่มีใครกรอกคะแนน
+//
+// เจอจากการสุ่มลำดับคำสั่งแล้วตรวจ invariant: "game 5 on a Bo1", "game 6 on a Bo3"
+//
+// เงื่อนไขเดิมดูแค่ score 0-0 และ status pending ซึ่งพลาดความจริงข้อหนึ่ง:
+// ดราฟต์ถูกบันทึกอัตโนมัติทุกครั้งที่คนคุมงานแตะกระดาน (games.captureDraft)
+// ส่วนคะแนนต้องพิมพ์เอง คู่ที่ดราฟต์ไปห้าเกมแล้วแต่ยังไม่ได้กรอกคะแนน จึงผ่าน
+// เงื่อนไขนั้นไปได้ พอย่อ Bo7 เหลือ Bo3 เกมที่ 4-7 ก็ยังมีดราฟต์อยู่ในฐาน
+// สถิตินับมันต่อไป แต่ไม่มีทางเปิดกลับขึ้นจอได้อีก เพราะตัวเดินรอบตัดที่ bestOf
+test('a match with a recorded draft is not retimed, even at 0-0', () => {
+  const { db, teams, tournaments } = freshStores();
+  const games = createGameStore(db);
+  const matches = createMatchStore(db, tournaments, games);
+
+  const tournament = makeTournament(tournaments, { name: 'Cup', format: 'single_elim', bestOf: 7 });
+  makeTeams(teams, 4).forEach((team, i) => tournaments.addTeam(tournament.id, team.id, i + 1));
+  must(matches.generate(tournament.id).matches);
+
+  const drafted = must(matches.list(tournament.id).find((m) => m.round === 1 && m.slot === 0));
+  // ดราฟต์เกมที่สองของคู่นี้ ไม่แตะคะแนนเลย
+  const game = games.ensure(drafted.id, 2, {
+    blueTeamId: drafted.teamAId, redTeamId: drafted.teamBId, blueName: 'A', redName: 'B'
+  });
+  games.captureDraft(game.id, {
+    ...defaultState,
+    // ชื่อต้องตรงกับสำเนาแช่แข็ง ไม่งั้น captureDraft จะตอบ 'different' แล้วไม่บันทึก
+    // (ซึ่งเป็นด่านกันการเขียนทับดราฟต์ของเกมอื่น ทำงานถูกแล้ว)
+    teamBlue: { ...defaultState.teamBlue, name: 'A', picks: [heroesData.heroes[0] ?? null, null, null, null, null] },
+    teamRed: { ...defaultState.teamRed, name: 'B' }
+  });
+  assert.ok(
+    games.forMatch(drafted.id).some((g) => g.slots.length > 0),
+    'the draft really was recorded'
+  );
+
+  const still = must(matches.get(drafted.id));
+  assert.deepStrictEqual([still.scoreA, still.scoreB, still.status], [0, 0, 'pending'],
+    'and the old rule would have called this untouched');
+
+  const result = tournaments.update(tournament.id, {
+    name: 'Cup', format: 'single_elim', bestOf: 3, status: 'active', note: ''
+  });
+
+  assert.strictEqual(must(matches.get(drafted.id)).bestOf, 7, 'the drafted match keeps its length');
+  assert.strictEqual(result.matchesRetimed, 2, 'and the count matches what was actually changed');
+
+  matches.list(tournament.id).filter((m) => m.id !== drafted.id).forEach((m) => {
+    assert.strictEqual(m.bestOf, 3, 'untouched matches still retime normally');
+  });
+
+  db.close();
 });

@@ -16,7 +16,11 @@ let lastFocusedPhase = null;
 socket.on('connect', () => showToast(t('Connected'), 'green'));
 socket.on('disconnect', () => showToast(t('Disconnected'), 'red'));
 socket.on('connect_error', (error) => showToast(error.message || 'Connection error', 'red'));
-socket.on('controlError', (error) => showToast(error.message || 'Control blocked', 'red'));
+// ข้อความจากเซิร์ฟเวอร์ผ่าน t() ด้วย
+//
+// t() ที่ไม่มีคำแปลจะคืนข้อความเดิม การส่งผ่านจึงไม่ทำให้อะไรพัง
+// และแปลว่าคำปฏิเสธที่คนคุมงานเจอบ่อย (เช่นการเดินรอบ) พูดภาษาเดียวกับหน้าที่เขาดูอยู่
+socket.on('controlError', (error) => showToast(t(error.message || 'Control blocked'), 'red'));
 socket.on('stateUpdate', (state) => {
   latestState = state;
   if (uiBuilt) {
@@ -378,6 +382,35 @@ function buildAllUI() {
   buildDraftBadges();
 }
 
+// รูปฮีโร่: ในรายการที่เลื่อนเลือก และในช่องที่กรอกไปแล้ว
+//
+// ชื่อฮีโร่ 129 ตัวเป็นอักษรโรมันที่หน้าตาใกล้กันมาก (aleister / alice / allain,
+// ata / aya) การอ่านชื่อให้ถูกภายใต้เวลาดราฟต์คือจุดที่พลาดง่ายที่สุดของทั้งงาน
+// และการพิมพ์ผิดเป็น "ชื่อที่มีอยู่จริงแต่คนละตัว" จะผ่านทุกด่านตรวจ
+// แล้วไปโผล่บนจอ ไอคอนทำให้เห็นด้วยตาว่าเลือกถูกตัวไหม
+//
+// ใช้โฟลเดอร์ heroes-icons ไม่ใช่ heroes: อันหลังเป็นภาพเต็มตัวสำหรับ overlay
+// ย่อลงมาเป็นสี่เหลี่ยมเล็กๆ แล้วจะเหลือแต่ไหล่กับพื้นหลัง จำหน้าไม่ได้
+function heroIconUrl(hero) {
+  return `/images/heroes-icons/${encodeURIComponent(hero)}.png`;
+}
+
+// วาดไอคอนของค่าที่อยู่ในช่องตอนนี้ เรียกทุกครั้งที่ค่าในช่องเปลี่ยน
+//
+// ใช้ background-image เพราะช่องนี้เป็น <input> จะใส่ <img> ข้างในไม่ได้
+// ไฟล์ที่ไม่มีจะไม่แสดงอะไรเลย ซึ่งเป็นผลที่ถูกต้องสำหรับฮีโร่เก่าที่ถูกเปลี่ยนชื่อไฟล์
+function paintHeroArt(input) {
+  if (!input) return;
+  const hero = String(input.value || '').trim();
+  if (!hero) {
+    input.style.backgroundImage = '';
+    input.classList.remove('has-art');
+    return;
+  }
+  input.style.backgroundImage = `url("${heroIconUrl(hero)}")`;
+  input.classList.add('has-art');
+}
+
 // One shared dropdown, moved under whichever hero box has focus.
 // A native <datalist> cannot be ranked or filtered from script, so the
 // suggestion list is built by hand.
@@ -432,7 +465,23 @@ function openDropdown(input) {
     const item = document.createElement('div');
     item.className = `hero-dd-item${index === 0 ? ' active' : ''}`;
     item.dataset.index = String(index);
-    item.textContent = hero;
+
+    const art = document.createElement('img');
+    art.className = 'hero-dd-art';
+    art.src = heroIconUrl(hero);
+    art.alt = '';
+    // ช่องนี้เปิดมาแสดงได้ถึง 129 แถวตอนที่ยังไม่ได้พิมพ์อะไร
+    // โหลดทุกไอคอนพร้อมกันคือ 2.6 MB ทั้งที่เห็นจริงแค่สิบแถวแรก
+    art.loading = 'lazy';
+    // ไอคอนหายต้องไม่ทำให้แถวเสียรูป และห้ามตั้ง src ใหม่ในตัวจับ error
+    // การตั้ง src ใหม่คือวิธีสร้างลูปที่ยิงรูปไม่หยุด (เคยวัดได้ 640 ครั้ง/วินาที)
+    art.onerror = () => { art.onerror = null; art.remove(); };
+
+    const name = document.createElement('span');
+    name.className = 'hero-dd-name';
+    name.textContent = hero;
+
+    item.append(art, name);
     el.appendChild(item);
   });
 
@@ -602,6 +651,7 @@ function makeHeroSearchInput(id, type, onCommit) {
         return;
       }
       input.value = input.dataset.lastHero || '';
+      paintHeroArt(input);
       input.blur();
     }
   });
@@ -666,8 +716,37 @@ function loadState(state) {
   if (td && state.draftLabel !== 'coming soon') td.textContent = state.timer || '--';
   renderOverlaySize(state.overlaySize);
   renderOverlayVisible(state.overlayVisible);
+  renderRound(state);
   renderSfxLevels(state.sfx);
   applyHotkeys(state.hotkeys);
+}
+
+// ตัวเดินรอบ -------------------------------------------------------------
+//
+// รอบ = เกมที่เท่าไหร่ของซีรีส์ที่กำลังคุมอยู่ กด > แล้วดราฟต์บนกระดานถูกเก็บ
+// เป็นรอบก่อนหน้า แล้วกระดานเริ่มใหม่ กด < แล้วดราฟต์ของรอบก่อนกลับขึ้นมา
+//
+// ระหว่างออกอากาศแมตช์ของทัวร์นาเมนต์ เลขนี้คือ game_no ของแมตช์นั้นตัวเดียวกับ
+// ที่คะแนนซีรีส์ใช้ ไม่ใช่ตัวนับแยก มันจึงไม่มีทางหลุดจากกัน
+// (ดู stepRound ใน server/services/live-match.ts)
+function stepRound(delta) {
+  socket.emit('stepRound', { delta });
+}
+
+function renderRound(state) {
+  const value = document.getElementById('roundValue');
+  const note = document.getElementById('roundNote');
+  const prev = /** @type {HTMLButtonElement} */ (document.getElementById('roundPrev'));
+  if (!value || !note || !prev) return;
+
+  const round = state.round || 1;
+  value.textContent = String(round);
+  prev.disabled = round <= 1;
+
+  // นับเฉพาะรอบที่อยู่ก่อนรอบปัจจุบัน ตรงกับที่กราฟิกเอาไปขึ้นจอเป๊ะๆ
+  // นับทั้งกองจะโกหกได้เวลาคนคุมงานกดเดินหน้าเกินแล้วถอยกลับมา
+  const saved = (state.rounds || []).filter((r) => r && r.round < round).length;
+  note.textContent = saved === 0 ? '' : tf('{n} on the board', { n: saved });
 }
 
 // แถบคำใบ้ท้ายหน้าเคยเป็นข้อความตายตัวใน HTML พอคีย์ลัดตั้งค่าได้แล้ว
@@ -709,6 +788,7 @@ function setSelect(id, val) {
   if (el && document.activeElement !== el) {
     el.value = val || '';
     el.dataset.lastHero = val || '';
+    paintHeroArt(el);
   }
 }
 
@@ -752,18 +832,21 @@ function commitHeroInput(input, onCommit, preferMatch = false) {
   const hero = normalizeHeroInput(input.value);
   if (input.value.trim() && !hero) {
     input.value = previous;
+    paintHeroArt(input);
     showToast(t('Hero not found'), 'red');
     return;
   }
   // The server enforces this too; checking here just makes the feedback instant.
   if (hero && takenHeroes(input.id).has(hero)) {
     input.value = previous;
+    paintHeroArt(input);
     showToast(tf('{hero} is already used', { hero }), 'red');
     return;
   }
   const next = hero || null;
   input.value = next || '';
   input.dataset.lastHero = next || '';
+  paintHeroArt(input);
   if (preferMatch || next !== (previous || null)) onCommit(next);
 }
 
@@ -951,7 +1034,13 @@ function swapPlayer(color, idx, btn) {
     if (swPl.color === color) {
       const a = /** @type {HTMLInputElement} */ (document.getElementById(`${color}Player${swPl.idx}`));
       const b = /** @type {HTMLInputElement} */ (document.getElementById(`${color}Player${idx}`));
-      if (a && b) [a.value, b.value] = [b.value, a.value];
+      // ไม่มีช่องก็ยกเลิกไปเฉยๆ ของเดิมอ่าน a.value ต่อทั้งที่เพิ่งเช็คว่าอาจเป็น null
+      // แล้ว TypeError จะกินทั้ง handler ปุ่มค้างอยู่ในโหมด CANCEL แถวยังไฮไลต์
+      if (!a || !b) {
+        cancelSwap('pl');
+        return;
+      }
+      [a.value, b.value] = [b.value, a.value];
       socket.emit('updatePlayerName', { team, index: swPl.idx, name: a.value });
       socket.emit('updatePlayerName', { team, index: idx, name: b.value });
       const from = swPl.idx;

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <title>ROV Team Picks and Bans Overlay</title>
+    <!-- กราฟิกออกอากาศ ห้ามลิงก์ธีมของหน้าคนคุมงาน และห้ามโหลดตัวแปลภาษา -->
+    <link rel="stylesheet" href="/css/fonts.css">
+    <!-- ใช้แผ่นเดียวกับกราฟิกหัวต่อหัว ตั้งใจ
+         ผู้ใช้ขอให้ "หน้าตาเหมือน head to head" การใช้แผ่นเดียวกันคือวิธีเดียว
+         ที่รับประกันว่ามันจะเหมือนกันตลอดไป ไม่ใช่แค่เหมือนกันในวันที่เขียน
+         สองหน้านี้คือคอมโพเนนต์เดียวกัน ต่างกันแค่ข้อมูลที่ใส่เข้าไป -->
+    <link rel="stylesheet" href="/css/overlay-matchup.css">
+</head>
+<body>
+    <div class="mu-stage" id="stage">
+        <div class="mu-head">
+            <div class="mu-title" id="title"></div>
+            <div class="mu-sub" id="subtitle"></div>
+        </div>
+
+        <div class="mu-score">
+            <div class="mu-team blue"><div class="mu-dot"></div><div class="mu-name" id="nameA"></div></div>
+            <div class="mu-tally">
+                <span class="mu-num" id="numA">0</span>
+                <span class="mu-vs">VS</span>
+                <span class="mu-num" id="numB">0</span>
+            </div>
+            <div class="mu-team red"><div class="mu-dot"></div><div class="mu-name" id="nameB"></div></div>
+            <div class="mu-scope" id="scope"></div>
+        </div>
+
+        <div class="mu-cols" id="cols"></div>
+        <div class="mu-note" id="note" hidden></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- overlay-team-drafts.js ประกาศ socket ไว้ ต้องมาก่อน overlay-size.js ที่อ่านตัวนั้น -->
+    <script src="/js/lib/hero-art.js"></script>
+    <script src="/js/lib/overlay-common.js"></script>
+    <script src="/js/overlay-team-drafts.js"></script>
+    <script src="/js/overlay-size.js"></script>
+</body>
+</html>

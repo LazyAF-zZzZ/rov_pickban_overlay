@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import path from 'path';
 import fs from 'fs';
 import type { SkinSlot, LogoSlot } from '../server/domain/media';
+import { newId } from '../server/domain/ids';
 import {
   SKIN_SLOTS,
   LOGO_SLOTS,
@@ -97,4 +98,102 @@ test('the app ships with its own sound files, so a download is not silent', () =
     assert.ok(found, `${name} is missing from public/images/sounds - the installer would ship silent`);
     assert.ok(fs.statSync(found).size > 0, `${name} is an empty file`);
   });
+});
+
+// ภาพที่ผู้ใช้อัปโหลดเองต้องไม่ติดไปกับตัวติดตั้ง
+//
+// โลโก้ทีมกับภาพพื้นหลังเป็นของผู้ใช้ ไม่ใช่ทรัพยากรของแอพ ต่างจากรูปฮีโร่กับไฟล์เสียง
+// build.files ใน package.json เอา public/**/* ไปทั้งก้อน ถ้าไม่ยกเว้นให้ครบ
+// เครื่องที่กด build จะแพ็กโลโก้ของทีมที่ตัวเองซ้อมไว้ ส่งไปให้ทุกคนที่โหลดไปใช้
+//
+// เกิดขึ้นจริงมาแล้ว: ตัวติดตั้งที่สร้างไว้มี blue-team.png กับ red-team.png
+// ของเครื่องที่ build ฝังอยู่ใน app.asar
+//
+// ตรวจทั้งสามนามสกุลที่ตัวอัปโหลดรับ ไม่ใช่แค่ png (ดู SKIN_TYPES)
+test('the installer never ships images the operator uploaded', () => {
+  const pkg = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'), 'utf8')
+  ) as { build: { files: string[] } };
+
+  const extensions = Object.values(SKIN_TYPES);
+  (['team-logos', 'skins'] as const).forEach((folder) => {
+    extensions.forEach((ext) => {
+      const rule = `!public/images/${folder}/*.${ext}`;
+      assert.ok(
+        pkg.build.files.includes(rule),
+        `build.files must exclude ${rule} - uploaded images are the user's own data`
+      );
+    });
+  });
+
+  // ของที่ต้องติดไปด้วยจริงๆ ห้ามถูกยกเว้นตามไปด้วย
+  ['public/images/heroes', 'public/images/sounds'].forEach((keep) => {
+    assert.ok(
+      !pkg.build.files.some((f) => f.startsWith('!') && f.includes(keep)),
+      `${keep} is an app asset and must keep shipping`
+    );
+  });
+});
+
+// ตัวถอยของรูปที่โหลดไม่ขึ้น ต้องถอยได้ครั้งเดียว ไม่ใช่วนไม่รู้จบ
+//
+// รูปแบบที่พัง: onerror ชี้ src ไปที่ไฟล์สำรอง โดยไม่เปลี่ยน onerror ก่อน
+// ถ้าไฟล์สำรองก็ไม่มี error จะยิงอีกครั้ง แล้วเขียน src ค่าเดิมทับ ซึ่งสั่งให้โหลดใหม่
+// วนอยู่แบบนั้นตลอดไป วัดในเบราว์เซอร์จริงได้ error 1607 ครั้งใน 2.5 วินาที
+// (ราว 640 คำขอต่อวินาที) และมันอยู่ในทั้ง overlay.js กับ result.js ซึ่งเป็น
+// กราฟิกที่ออกอากาศอยู่ ไม่มีอะไรบนจอบอกว่ากำลังเกิดเรื่องนี้
+//
+// ฮีโร่ที่ทำให้เกิดได้จริง: ชื่ออยู่ใน heroes.json แต่ไฟล์ภาพหายหรือถูกเปลี่ยนชื่อ
+// ซึ่ง CLAUDE.md เตือนไว้แล้วว่าเกิดขึ้นได้และประวัติเก่าจะชี้ไปที่ชื่อเดิม
+test('an image fallback gives up instead of asking for a missing file forever', () => {
+  const jsDir = path.join(__dirname, '..', '..', 'public', 'js');
+
+  const files: string[] = [];
+  (function walk(dir: string) {
+    fs.readdirSync(dir, { withFileTypes: true }).forEach((entry) => {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith('.js')) files.push(full);
+    });
+  })(jsDir);
+
+  files.forEach((file) => {
+    const src = fs.readFileSync(file, 'utf8');
+    // ตัวเนื้อของ onerror แต่ละตัว เอาแบบหยาบๆ ถึงวงเล็บปีกกาปิดตัวแรก
+    [...src.matchAll(/onerror\s*=\s*(?:function\s*\([^)]*\)|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)\s*\{([\s\S]*?)\n\s*\}/g)]
+      .forEach((match) => {
+        const body = match[1] || '';
+        const setsSrc = /\.src\s*=/.test(body) || /\bsrc\s*=\s*imageUrl|\bsrc\s*=\s*hero/.test(body);
+        if (!setsSrc) return;
+        assert.ok(
+          /onerror\s*=/.test(body),
+          `${path.relative(jsDir, file)}: an onerror that retries a src must replace onerror `
+          + 'in the same handler, or a hero with neither image loops forever'
+        );
+      });
+  });
+});
+
+// ชื่ออุปกรณ์ของ Windows ต้องไม่ผ่านด่าน id ที่จะกลายเป็นชื่อไฟล์
+//
+// Windows ตีความ "aux" เป็นอุปกรณ์ ไม่ใช่ไฟล์ และยังตีความแบบนั้นแม้มีนามสกุล
+// ต่อท้าย ("aux.png") การเขียนลงไปจึงล้มเหลวหรือค้าง ไม่ได้ไฟล์ภาพ
+//
+// วันนี้ยังไปไม่ถึง: id มาจาก newId() และเส้นทางอัปโหลดโลโก้เช็คก่อนว่ามีทีมนั้นจริง
+// ด่านนี้กันไว้เผื่อวันหลังมีคนเปิดให้ตั้ง id เอง (เหตุผลเดียวกับที่ newId เช็คซ้ำ)
+test('a Windows device name is never a usable media id', () => {
+  const devices = ['con', 'prn', 'aux', 'nul', 'com1', 'com9', 'lpt1', 'lpt9'];
+  devices.forEach((name) => {
+    assert.strictEqual(isSafeMediaId(name), false, `${name} is refused`);
+  });
+
+  // และของที่เคยผ่านต้องยังผ่านอยู่ ไม่ใช่กันกว้างเกินไป
+  ['aux2', 'con-fig', 'com10', 'lpt', 'auxiliary', 'tabc123def456'].forEach((name) => {
+    assert.strictEqual(isSafeMediaId(name), true, `${name} still passes`);
+  });
+
+  // id ที่เซิร์ฟเวอร์สร้างเองต้องไม่มีทางชนชื่ออุปกรณ์ (ขึ้นต้นด้วยตัวอักษรนำหน้าเสมอ)
+  for (let i = 0; i < 200; i += 1) {
+    assert.strictEqual(isSafeMediaId(newId('team')), true);
+  }
 });

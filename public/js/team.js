@@ -29,6 +29,8 @@ function roundLabel(match) {
   }
   if (match.bracket === 'losers') return `Losers round ${match.round}`;
   if (match.bracket === 'main') return `Round ${match.round}`;
+  // สายน็อกเอาต์ที่ต่อจากรอบแบ่งกลุ่ม ไม่ใช่ชื่อกลุ่ม
+  if (match.bracket === 'playoff') return `Playoff round ${match.round}`;
   return `Group ${match.bracket} - round ${match.round}`;
 }
 

@@ -87,23 +87,12 @@
     box-shadow: 0 0 15px rgba(var(--ov-red-rgb), 0.5);
 }
 
-.ban-slot::after {
-    content: 'X';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 48px;
-    color: #ff3333;
-    font-weight: 900;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: 2;
-}
-
-.ban-slot.filled::after {
-    opacity: 0.9;
-}
+/* ไม่มีตัว X ทับช่องแบนแล้ว (เอาออกตามที่ผู้ใช้ขอ 2026-09-08)
+ *
+ * สิ่งที่ยังบอกว่าช่องนี้คือแบนมีครบอยู่แล้วโดยไม่ต้องมีตัว X:
+ * ไอคอนถูกลดสีและหรี่ลง (.ban-icon ข้างล่าง) กรอบเป็นสีแดงพร้อมเงาแดง
+ * (.ban-slot.filled) และหัวข้อข้างช่องเขียนว่า BAN อยู่แล้ว
+ * ตัว X ปิดหน้าฮีโร่พอดี ซึ่งเป็นสิ่งเดียวที่คนดูใช้ดูว่าโดนแบนตัวไหน */
 
 .ban-slot .ban-icon {
     width: 100%;
@@ -1180,8 +1169,6 @@ body.panels-off .team-center-card {
     border-radius: 4px;
 }
 
-.ban-slot::after { font-size: 34px; }
-
 /* --- pick rows, along the bottom --- */
 .team-picks {
     position: absolute;
@@ -1314,6 +1301,13 @@ body.panels-off .team-center-card {
     color: var(--ov-text);
     background: none;
     border: none;
+    /* เงาเหลืองที่ค้างมาจากดีไซน์เก่า
+     *
+     * กฎด้านบนเคยวาดนาฬิกาเป็นกล่องพื้นเข้มขอบเหลือง แล้วถูกยกเลิกตรงนี้
+     * ด้วย background: none กับ border: none แต่ box-shadow ไม่ได้ถูกล้างตาม
+     * ผลคือแสงเหลืองเรืองรอบตัวเลขโดยไม่มีกล่องให้มันเป็นขอบอีกแล้ว
+     * ซึ่งบนจอดูเหมือนกล่องแสงลอยอยู่ ไม่ใช่เอฟเฟกต์ที่ตั้งใจ (ผู้ใช้แจ้ง 2026-09-08) */
+    box-shadow: none;
     padding: 0;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
 }
@@ -1484,4 +1478,32 @@ body[data-size="1440"] .overlay-container {
 
 .team-logo[hidden] {
     display: none !important;
+}
+
+/* ===== Position icon (banner background of a pick slot) ===== */
+/* ไอคอนตำแหน่ง (เลน) ของผู้เล่นที่นั่งช่องนั้น
+ *
+ * วางเป็นชั้นล่างสุดของช่องพิค: .hero-image เป็น position: relative และมาทีหลัง
+ * ในลำดับ DOM จึงวาดทับชั้นนี้เสมอโดยไม่ต้องตั้ง z-index ให้ใคร
+ *
+ * ช่องที่ยังไม่ถูกเลือก .hero-image มี opacity 0.2 และไม่มีภาพ ไอคอนจึงเห็นชัด
+ * พอเลือกฮีโร่แล้ว .pick-slot.filled ดัน .hero-image เป็น opacity 1 แบบ cover
+ * ภาพฮีโร่จึงบังไอคอนไปเอง ตามที่ตั้งใจ — แต่ยังจางไอคอนลงด้วย
+ * เผื่อภาพฮีโร่บางรูปมีขอบโปร่ง จะได้ไม่มีไอคอนโผล่ออกมาข้างหลัง
+ *
+ * ไฟล์อยู่ที่ public/images/positions/<slug>.png ห้าไฟล์ ชื่อตายตัว
+ * ไม่มีก็แค่ไม่มีไอคอน ช่องยังวาดปกติ (background-image ที่ 404 ไม่ทำให้อะไรพัง) */
+.position-icon {
+    position: absolute;
+    inset: 0;
+    background-repeat: no-repeat;
+    background-position: center 38%;
+    background-size: 52% auto;
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.pick-slot.filled .position-icon {
+    opacity: 0;
 }

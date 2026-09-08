@@ -202,3 +202,53 @@ test('the hotkeys page offers the system-wide panel and no longer says it is imp
     'the page must not still claim this is impossible'
   );
 });
+
+// รีเซ็ตปุ่ม ไม่ใช่ปิดฟีเจอร์
+//
+// เจอตอนต่อปุ่ม RESET ALL ของแผงนี้เข้ากับคำสั่ง resetGlobalHotkeys ที่มีอยู่แล้ว
+// แต่ไม่เคยมีใครเรียกถึงได้: มันเขียนทับทั้งก้อนด้วยค่าเริ่มต้น ซึ่งรวม enabled: false
+// อาการคือคีย์ลัดระดับระบบดับทั้งชุดกลางรายการเพราะคนกดปุ่มที่คิดว่าแค่คืนค่าปุ่ม
+// และ "กดคีย์แล้วไม่มีอะไรเกิดขึ้น" อ่านเหมือนของเสีย ไม่ใช่เหมือนสวิตช์ถูกปิด
+test('resetting the system-wide bindings leaves the switch where it was', () => {
+  const { registerHandlers } = require('../server/sockets/handlers') as
+    typeof import('../server/sockets/handlers');
+
+  // socket ปลอมเท่าที่ registerHandlers ต้องใช้ เก็บ handler ไว้เรียกเอง
+  const handlers = new Map<string, (payload: unknown) => void>();
+  const socket = {
+    id: 'test',
+    handshake: { auth: {}, query: {} },
+    on(event: string, fn: (payload: unknown) => void) { handlers.set(event, fn); },
+    emit() { /* ไม่สนใจสิ่งที่ส่งกลับ */ },
+    join() { /* ไม่ใช้ห้องในเทสต์นี้ */ },
+    leave() { /* เช่นกัน */ }
+  };
+  registerHandlers(socket as never);
+
+  const reset = handlers.get('resetGlobalHotkeys');
+  assert.ok(reset, 'the command is registered');
+
+  const state = liveState.getState();
+  state.globalHotkeys = {
+    enabled: true,
+    bindings: {
+      ...GLOBAL_HOTKEY_DEFAULTS.bindings,
+      undo: { code: 'F9', ctrl: true, shift: true, alt: false, meta: false }
+    }
+  };
+
+  reset!({});
+
+  const after = liveState.getState().globalHotkeys;
+  assert.strictEqual(after.enabled, true, 'the switch is a separate control and stays put');
+  assert.deepStrictEqual(
+    after.bindings.undo,
+    GLOBAL_HOTKEY_DEFAULTS.bindings.undo,
+    'but the binding really did go back to default'
+  );
+
+  // และปิดอยู่ก็ต้องยังปิดอยู่ ไม่ใช่ถูกเปิดขึ้นมาเอง
+  liveState.getState().globalHotkeys = { ...after, enabled: false };
+  reset!({});
+  assert.strictEqual(liveState.getState().globalHotkeys.enabled, false);
+});

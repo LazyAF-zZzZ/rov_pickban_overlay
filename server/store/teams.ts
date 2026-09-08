@@ -27,7 +27,7 @@ interface PlayerRow {
   team_id: string;
   slot: number;
   name: string;
-  role: string;
+  position: string;
   is_captain: number;
 }
 
@@ -69,7 +69,7 @@ export function createTeamStore(db: DatabaseSync): TeamStore {
     byId: db.prepare('SELECT * FROM teams WHERE id = ?'),
     all: db.prepare('SELECT * FROM teams ORDER BY name COLLATE NOCASE'),
     insertPlayer: db.prepare(
-      'INSERT INTO team_players (team_id, slot, name, role, is_captain) VALUES (?, ?, ?, ?, ?)'
+      'INSERT INTO team_players (team_id, slot, name, position, is_captain) VALUES (?, ?, ?, ?, ?)'
     ),
     clearPlayers: db.prepare('DELETE FROM team_players WHERE team_id = ?'),
     playersFor: db.prepare('SELECT * FROM team_players WHERE team_id = ? ORDER BY slot'),
@@ -84,7 +84,7 @@ export function createTeamStore(db: DatabaseSync): TeamStore {
     return sanitizeRoster(
       Array.from({ length: ROSTER_SIZE }, (_, slot) => {
         const row = rows.find((r) => r.slot === slot);
-        return row ? { name: row.name, role: row.role, isCaptain: row.is_captain === 1 } : {};
+        return row ? { name: row.name, position: row.position, isCaptain: row.is_captain === 1 } : {};
       })
     );
   }
@@ -92,7 +92,7 @@ export function createTeamStore(db: DatabaseSync): TeamStore {
   function writePlayers(teamId: string, players: TeamPlayer[]): void {
     q.clearPlayers.run(teamId);
     players.forEach((player) => {
-      q.insertPlayer.run(teamId, player.slot, player.name, player.role, bit(player.isCaptain));
+      q.insertPlayer.run(teamId, player.slot, player.name, player.position, bit(player.isCaptain));
     });
   }
 

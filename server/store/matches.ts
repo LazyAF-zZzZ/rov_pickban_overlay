@@ -7,9 +7,10 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { newId } from '../domain/ids';
 import type { BestOf } from '../domain/tournament';
+import { canGenerateMatches } from '../domain/tournament';
 import { seriesWinner } from '../domain/bracket';
 import type { PlannedMatch, Rng } from '../domain/bracket';
-import { generateMatches, shuffle } from '../domain/bracket';
+import { generateMatches, shuffle, singleElimination, PLAYOFF_BRACKET } from '../domain/bracket';
 import type { TournamentStore } from './tournaments';
 import type { GameStore } from './games';
 
@@ -86,7 +87,13 @@ export interface MatchStore {
   generate(tournamentId: string, options?: { randomise?: boolean; rng?: Rng }): GenerateOutcome;
   clear(tournamentId: string): void;
   setResult(id: string, scoreA: unknown, scoreB: unknown): MatchResult;
+  /** วางสายน็อกเอาต์เพิ่มเข้าไปในทัวร์นาเมนต์เดิม โดยไม่แตะรอบแบ่งกลุ่ม */
+  drawPlayoffs(tournamentId: string, teamIds: readonly string[]): GenerateOutcome;
 }
+
+// ชื่อสายของรอบน็อกเอาต์ ประกาศไว้ที่ domain/bracket.ts ที่เดียว
+// ตารางคะแนนต้องใช้ชุดเดียวกันเพื่อกันไม่ให้สายน็อกเอาต์โผล่เป็นกลุ่ม
+export { PLAYOFF_BRACKET };
 
 // games เป็นพารามิเตอร์บังคับ ไม่ใช่ตัวเลือก
 // สำเนาแช่แข็งคือสิ่งเดียวที่กู้ชื่อคู่แข่งที่ถูกลบไปแล้วได้
@@ -106,6 +113,7 @@ export function createMatchStore(
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ),
     clear: db.prepare('DELETE FROM matches WHERE tournament_id = ?'),
+    removeOne: db.prepare('DELETE FROM matches WHERE id = ?'),
     byTournament: db.prepare(
       'SELECT * FROM matches WHERE tournament_id = ? ORDER BY bracket, round, slot'
     ),
@@ -170,6 +178,72 @@ export function createMatchStore(
     }, loserId);
   }
 
+  // ถอนคนที่ผลเดิมเคยดันเข้ารอบไว้ ออกจากช่องปลายทางทั้งสองทาง
+  //
+  // แก้ผลที่กรอกไว้แล้วให้กลับไปเป็น "ยังไม่จบ" (เช่น 2-0 พิมพ์ผิด แก้เป็น 1-1)
+  // advance กับ dropLoser ไม่ถูกเรียกอีก คนเดิมจึงยังนั่งอยู่ในรอบถัดไป
+  // สายจะโชว์ทีมที่ยังไม่ได้ผ่านเข้ารอบ และถ้าอีกช่องบังเอิญมีคนอยู่แล้ว
+  // คู่นั้นจะกดขึ้นจอได้ทั้งที่รอบก่อนหน้ายังไม่มีผู้ชนะ
+  //
+  // ล้างก่อนเสมอแล้วค่อยเติมใหม่ ทั้งกรณีเปลี่ยนตัวผู้ชนะและกรณีถอยกลับเป็นยังไม่จบ
+  // แต่ละช่องปลายทางมีคู่เดียวที่ป้อน (มีเทสต์กำกับไว้) การล้างจึงไม่ไปลบของคนอื่น
+  function clearDestinations(match: Match): void {
+    ([
+      { bracket: match.nextBracket, round: match.nextRound, slot: match.nextSlot, side: match.nextSide },
+      { bracket: match.loserBracket, round: match.loserRound, slot: match.loserSlot, side: match.loserSide }
+    ]).forEach((dest) => {
+      if (dest.round === null || dest.slot === null || dest.side === null) return;
+      const next = q.atPosition.get(
+        match.tournamentId, dest.bracket ?? 'main', dest.round, dest.slot
+      ) as MatchRow | undefined;
+      if (!next) return;
+      if (dest.side === 0) q.setSide.run(null, next.id);
+      else q.setSideB.run(null, next.id);
+    });
+  }
+
+  // ผลของคู่ที่อยู่ถัดไปเป็นโมฆะทันทีที่คนนั่งอยู่ในนั้นเปลี่ยน
+  //
+  // clearDestinations ถอนทีมออกจากช่องปลายทางให้แล้ว แต่ไม่ได้แตะ "ผล" ของคู่นั้น
+  // คู่ที่ถูกเล่นไปแล้วด้วยผู้เล่นชุดเก่าจึงเก็บคะแนนกับผู้ชนะเดิมไว้ ทั้งที่ตอนนี้
+  // มีทีมอื่นมานั่งแทน
+  //
+  // เห็นกับตาแล้วในสายสี่ทีม: ALPHA ชนะ DELTA แล้วไปชนะ BRAVO ในรอบชิง
+  // พอแก้ผลรอบแรกเป็น DELTA ชนะ (ซึ่งเป็นการแก้ที่พิมพ์ผิด เรื่องปกติมาก)
+  // รอบชิงกลายเป็น "DELTA พบ BRAVO คะแนน 1-0 จบแล้ว ผู้ชนะคือ ALPHA"
+  // ALPHA ตกรอบแรกไปแล้วแต่ยังเป็นแชมป์อยู่ในฐาน และถ้าสายลึกกว่านั้น
+  // ALPHA ก็ถูกดันขึ้นไปรอบถัดไปเรียบร้อยแล้วด้วย
+  //
+  // ต้องไล่ต่อเป็นทอดๆ ผู้ชนะของคู่ที่เพิ่งถูกล้างก็เคยถูกดันขึ้นไปเหมือนกัน
+  function wipeResult(row: MatchRow): boolean {
+    const untouched = row.score_a === 0 && row.score_b === 0
+      && !row.winner_id && row.status === 'pending';
+    if (untouched) return false;
+    q.setResult.run(0, 0, null, 'pending', row.id);
+    return true;
+  }
+
+  // สายเป็นกราฟที่ชี้ไปข้างหน้าอย่างเดียว วนกลับมาที่เดิมไม่ได้
+  // ตัวนับความลึกมีไว้กันสายที่ถูกแก้ด้วยมือจนชี้วน ไม่ใช่กันกรณีปกติ
+  function invalidateDownstream(match: Match, depth = 0): void {
+    if (depth > 64) return;
+
+    ([
+      { bracket: match.nextBracket, round: match.nextRound, slot: match.nextSlot },
+      { bracket: match.loserBracket, round: match.loserRound, slot: match.loserSlot }
+    ]).forEach((dest) => {
+      if (dest.round === null || dest.slot === null) return;
+      const row = q.atPosition.get(
+        match.tournamentId, dest.bracket ?? 'main', dest.round, dest.slot
+      ) as MatchRow | undefined;
+      if (!row) return;
+
+      // ไม่มีผลอยู่ก่อนแล้ว = ไม่เคยมีใครถูกดันต่อจากคู่นี้ ไล่ต่อไปก็ไม่เจออะไร
+      if (!wipeResult(row)) return;
+      invalidateDownstream(rowToMatch(row), depth + 1);
+    });
+  }
+
   // รอบชิงแบบต้องชนะสองครั้ง
   //
   // แชมป์สายชนะ (ฝั่ง A) ยังไม่เคยแพ้ใครเลย ถ้าชนะนัดแรกก็จบ
@@ -209,7 +283,14 @@ export function createMatchStore(
       if (!tournament) return { error: 'Tournament not found' };
 
       const seeded = tournaments.teams(tournamentId);
-      if (seeded.length < 2) return { error: 'Add at least two teams before drawing matches' };
+      // เพดานล่างต่างกันตามรูปแบบ ไม่ใช่สองทีมเหมือนกันหมด
+      //
+      // เดิมเช็คแค่ "อย่างน้อยสองทีม" แล้วปล่อยให้ generateMatches ทำงานต่อ
+      // แพ้สองครั้งคัดออกที่มี 2-3 ทีม กับแบ่งสายที่มี 2 ทีม คืนอาเรย์ว่างกลับมา
+      // ซึ่งถูกบันทึกว่าสำเร็จ: สายเดิมถูกลบทิ้งไปแล้ว และได้สายเปล่ามาแทน
+      // โดยไม่มีอะไรบอกว่าทำไม (canGenerateMatches มีอยู่แล้วแต่ไม่เคยถูกเรียก)
+      const allowed = canGenerateMatches(tournament.format, seeded.length);
+      if (!allowed.ok) return { error: allowed.error };
 
       // สุ่ม = ไม่สนลำดับวาง / ไม่สุ่ม = เรียงตาม seed ที่ตั้งไว้
       const ids = seeded.map((t) => t.id);
@@ -254,6 +335,73 @@ export function createMatchStore(
       return { matches: store.list(tournamentId) };
     },
 
+    // วางสายน็อกเอาต์ต่อท้ายรอบแบ่งกลุ่ม ในทัวร์นาเมนต์เดียวกัน
+    //
+    // ต่างจาก generate() ตรงที่ "ไม่ล้างของเดิม" ผลรอบแบ่งกลุ่มคือที่มาของ
+    // ทีมที่กำลังจะถูกวางลงสายนี้ ล้างทิ้งก็เท่ากับลบเหตุผลที่พวกเขาได้มาอยู่ตรงนี้
+    // และลบดราฟต์ของรอบแบ่งกลุ่มไปด้วยทั้งหมด (games ผูกกับ matches แบบ CASCADE)
+    //
+    // เดิมทางเดียวที่ทำได้คือไปสร้างทัวร์นาเมนต์ที่สองแล้วเพิ่มทีมใหม่ทั้งหมด
+    // ซึ่งทำให้รอบแบ่งกลุ่มกับรอบน็อกเอาต์กลายเป็นสองรายการที่ไม่รู้จักกัน
+    // และสถิติก็นับเป็นสองงานคนละงาน
+    drawPlayoffs(tournamentId, teamIds) {
+      const tournament = tournaments.get(tournamentId);
+      if (!tournament) return { error: 'Tournament not found' };
+
+      const ids = [...teamIds];
+      if (ids.length < 2) return { error: 'A playoff needs at least two teams' };
+      if (new Set(ids).size !== ids.length) {
+        return { error: 'The same team cannot be in the playoff twice' };
+      }
+
+      // วางซ้ำต้องแทนที่สายเดิม ไม่ใช่วางซ้อนกัน
+      //
+      // ดัชนี unique จะปฏิเสธการวางซ้อนอยู่แล้ว แต่การล้มกลางทางด้วยข้อความ
+      // เรื่องดัชนี ไม่ได้บอกคนกดว่าเกิดอะไรขึ้น ล้างเฉพาะสายน็อกเอาต์แล้ววางใหม่
+      // ชัดเจนกว่า และเป็นสิ่งที่คนกดตั้งใจเมื่อกดปุ่มนี้ซ้ำ
+      const existing = store.list(tournamentId).filter((m) => m.bracket === PLAYOFF_BRACKET);
+      const played = existing.find((m) => m.status !== 'pending' || m.scoreA > 0 || m.scoreB > 0);
+      if (played) {
+        return { error: 'The playoff bracket has results already - clear them before redrawing' };
+      }
+
+      const plan = singleElimination(ids);
+      if (plan.length === 0) return { error: 'Could not build a playoff from those teams' };
+
+      const now = Date.now();
+      db.exec('BEGIN');
+      try {
+        existing.forEach((m) => q.removeOne.run(m.id));
+        plan.forEach((m) => {
+          q.insert.run(
+            newId('match'), tournamentId, PLAYOFF_BRACKET, m.round, m.slot,
+            m.teamAId, m.teamBId, tournament.bestOf,
+            m.isBye ? 'complete' : 'pending',
+            m.winnerId, m.isBye ? 1 : 0,
+            m.winnerTo?.round ?? null, m.winnerTo?.slot ?? null,
+            m.winnerTo?.side ?? null,
+            // singleElimination วางปลายทางไว้เป็น 'main' เพราะมันไม่รู้ว่าจะถูกวาง
+            // ที่สายไหน ต้องเปลี่ยนเป็นสายของเราเอง ไม่งั้นผู้ชนะจะถูกดันข้ามไป
+            // อยู่ในสายกลุ่มหรือสายพบกันหมด แล้วแมตช์ที่ไม่เกี่ยวกันจะมีทีมโผล่มาเอง
+            m.winnerTo ? PLAYOFF_BRACKET : null,
+            null, null, null, null, now
+          );
+        });
+        db.exec('COMMIT');
+      } catch (error) {
+        db.exec('ROLLBACK');
+        return { error: `Could not draw the playoff: ${(error as Error).message}` };
+      }
+
+      store.list(tournamentId)
+        .filter((m) => m.bracket === PLAYOFF_BRACKET && m.isBye && m.winnerId)
+        .forEach((m) => advance(m, m.winnerId as string));
+
+      (q.byTournament.all(tournamentId) as unknown as MatchRow[]).forEach(freezePairing);
+
+      return { matches: store.list(tournamentId) };
+    },
+
     setResult(id, scoreA, scoreB) {
       const row = findRow(id);
       if (!row) return { error: 'Match not found' };
@@ -279,8 +427,20 @@ export function createMatchStore(
       const winnerId = decided === 'a' ? match.teamAId : decided === 'b' ? match.teamBId : null;
       const status: MatchStatus = winnerId ? 'complete' : (a + b > 0 ? 'live' : 'pending');
 
+      // ผลเดิมเคยดันใครเข้ารอบไว้ ถอนออกก่อนเขียนผลใหม่เสมอ
+      // ผลใหม่มีผู้ชนะก็เติมกลับเข้าไปด้านล่าง ไม่มีก็ต้องว่างไว้ตามความจริง
+      if (match.winnerId) clearDestinations(match);
+
       q.setResult.run(a, b, winnerId, status, id);
       const updated = rowToMatch(findRow(id) as MatchRow);
+
+      // ตัดสินจาก "ผู้ชนะเปลี่ยนตัวไหม" ไม่ใช่จากการที่ clearDestinations ถูกเรียก
+      //
+      // setResult ล้างช่องปลายทางแล้วเติมกลับทุกครั้งที่มีผู้ชนะเดิมอยู่ แม้ค่าที่กรอก
+      // จะเหมือนเดิมเป๊ะ ถ้าไปล้างผลของคู่ถัดไปตอนที่ช่องถูกล้างชั่วคราวนั้น
+      // แค่กดบันทึกผลเดิมซ้ำก็จะลบผลของทั้งสายที่อยู่ถัดไปทิ้ง
+      // เทียบผู้ชนะเก่ากับใหม่จึงเป็นเงื่อนไขที่ถูก: เท่ากันแปลว่าไม่มีใครขยับ
+      if (match.winnerId !== winnerId) invalidateDownstream(updated);
 
       if (winnerId) {
         const loserId = winnerId === updated.teamAId ? updated.teamBId : updated.teamAId;

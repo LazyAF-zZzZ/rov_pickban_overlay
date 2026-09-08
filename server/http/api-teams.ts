@@ -13,7 +13,7 @@ import { getStores } from '../store/index';
 import { requireControl } from './auth';
 import { validateUpload, rawImage } from './upload';
 import { notifyData } from '../services/sync';
-import { loadTeamIntoSide } from '../services/live-match';
+import { loadTeamIntoSide, refreshLiveTeamLogo } from '../services/live-match';
 
 const NOT_FOUND = /not found/i;
 
@@ -179,6 +179,8 @@ export function teamRoutes(): Router {
 
     // v = เวลาที่อัปโหลด ไว้กัน cache ของเบราว์เซอร์กับ OBS
     const result = teams.setLogo(id, { v: Date.now(), ext: checked.ext });
+    // ทีมนี้อยู่บนจออยู่หรือเปล่า ถ้าใช่ต้องเปลี่ยนภาพตามทันที ไม่ใช่รอเอาขึ้นจอใหม่
+    refreshLiveTeamLogo(id);
     notifyData({ topic: 'teams', teamId: id });
     res.json({ ok: true, team: result.team });
   });
@@ -191,6 +193,8 @@ export function teamRoutes(): Router {
     }
     removeTeamLogoFiles(req.params.id);
     const result = teams.setLogo(req.params.id, { v: 0, ext: '' });
+    // ลบภาพแล้วไฟล์หายไปจริง ถ้าไม่บอก overlay มันจะยังชี้ไปที่ไฟล์ที่ไม่มีแล้ว
+    refreshLiveTeamLogo(req.params.id);
     notifyData({ topic: 'teams', teamId: req.params.id });
     res.json({ ok: true, team: result.team });
   });

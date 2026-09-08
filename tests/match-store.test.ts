@@ -48,7 +48,21 @@ test('a bracket cannot be drawn with fewer than two teams', () => {
   const { matches, tournament } = stores('single_elim', 3, 1);
   const result = matches.generate(tournament.id);
   assert.ok(result.error);
-  assert.match(result.error as string, /at least two teams/i);
+  assert.match(result.error as string, /at least 2 teams/i);
+});
+
+// เพดานล่างของแต่ละรูปแบบไม่เท่ากัน เช็คแค่ "สองทีม" ไม่พอ
+//
+// แพ้สองครั้งคัดออกที่มีสามทีม เคยผ่านการตรวจแล้วได้สายเปล่ากลับมา
+// พร้อมสถานะสำเร็จ ทั้งที่สายเดิมถูกลบทิ้งไปแล้ว ซึ่งอ่านไม่ออกเลยว่าเกิดอะไรขึ้น
+test('a format that needs more than two teams says so instead of drawing nothing', () => {
+  ([['double_elim', 3], ['double_elim', 2], ['group_stage', 3]] as const).forEach(([format, count]) => {
+    const { matches, tournament } = stores(format, 3, count);
+    const result = matches.generate(tournament.id);
+    assert.ok(result.error, `${format} with ${count} teams should be refused`);
+    assert.match(result.error as string, /at least 4 teams/i);
+    assert.strictEqual(matches.list(tournament.id).length, 0, 'nothing half-drawn is left behind');
+  });
 });
 
 // ---- TEST GOAL 2: Bo3 / Bo5 ต้องตัดสินเหมือนกัน ----
@@ -68,6 +82,28 @@ test('a Bo3 is only complete at two wins, and the winner moves on', () => {
 
   const final = must(matches.list(tournament.id).find((m) => m.round === 2));
   assert.strictEqual(final.teamAId, semi.teamAId, 'the winner was carried into the final');
+});
+
+// แก้ผลที่กรอกผิด ต้องถอนคนที่เคยถูกดันเข้ารอบออกด้วย
+//
+// เดิมถอนไม่ออก: advance() ถูกเรียกเฉพาะตอนมีผู้ชนะ พอแก้ 2-0 กลับเป็น 1-1
+// รอบถัดไปยังมีทีมเดิมนั่งอยู่ ทั้งที่รอบก่อนหน้ายังไม่มีผู้ชนะ
+// สายจะโชว์ทีมที่ยังไม่ได้ผ่านเข้ารอบ และถ้าอีกช่องมีคนอยู่แล้ว คู่นั้นจะกดขึ้นจอได้เลย
+test('undoing a recorded result takes the team back out of the next round', () => {
+  const { matches, tournament } = stores('single_elim', 3, 4);
+  const drawn = must(matches.generate(tournament.id).matches);
+  const semi = must(round(drawn, 1)[0]);
+  const finalOf = () => must(matches.list(tournament.id).find((m) => m.round === 2));
+
+  must(matches.setResult(semi.id, 2, 0).match);
+  assert.strictEqual(finalOf().teamAId, semi.teamAId, 'the winner reached the final');
+
+  must(matches.setResult(semi.id, 1, 1).match);
+  assert.strictEqual(finalOf().teamAId, null, 'an unfinished semi puts nobody in the final');
+
+  // แก้เป็นอีกฝั่งชนะ ต้องเป็นคนใหม่ที่เข้ารอบ ไม่ใช่คนเดิมค้างอยู่
+  must(matches.setResult(semi.id, 0, 2).match);
+  assert.strictEqual(finalOf().teamAId, semi.teamBId, 'the corrected winner replaces the old one');
 });
 
 test('a Bo5 needs three wins, not two', () => {
@@ -196,4 +232,111 @@ test('deleting a tournament takes its matches with it', () => {
   must(matches.generate(tournament.id).matches);
   tournaments.remove(tournament.id);
   assert.strictEqual(matches.list(tournament.id).length, 0);
+});
+
+// แก้ผลรอบก่อนหน้า ต้องล้างผลของรอบถัดไปที่เล่นด้วยคนละคู่
+//
+// เจอด้วยการสุ่มลำดับคำสั่งแล้วตรวจ invariant ทุกก้าว ไม่ใช่ด้วยการอ่านโค้ด
+//
+// clearDestinations ถอนทีมออกจากช่องปลายทางให้แล้ว แต่ไม่เคยแตะ "ผล" ของคู่นั้น
+// คู่ที่เล่นไปแล้วจึงเก็บคะแนนกับผู้ชนะเดิมไว้ ทั้งที่มีทีมอื่นมานั่งแทน
+//
+// ที่วัดได้จริงในสายสี่ทีม: ALPHA ชนะ DELTA แล้วชนะ BRAVO ในรอบชิง
+// พอแก้ผลรอบแรกเป็น DELTA ชนะ รอบชิงกลายเป็น "DELTA พบ BRAVO ผู้ชนะคือ ALPHA"
+// ทีมที่ตกรอบแรกไปแล้วยังเป็นแชมป์อยู่ในฐานข้อมูล
+test('correcting an earlier result clears the results it invalidates', () => {
+  const { matches, tournament, ids } = stores('single_elim', 1, 4);
+  must(matches.generate(tournament.id).matches);
+
+  const firstRound = matches.list(tournament.id).filter((m) => m.round === 1);
+  const a = must(firstRound[0]);
+  const b = must(firstRound[1]);
+  must(matches.setResult(a.id, 1, 0).match);
+  must(matches.setResult(b.id, 1, 0).match);
+
+  const finalId = must(matches.list(tournament.id).find((m) => m.round === 2)).id;
+  const beforeFinal = must(matches.get(finalId));
+  const championSlot = beforeFinal.teamAId;
+  must(matches.setResult(finalId, 1, 0).match);
+  assert.strictEqual(must(matches.get(finalId)).winnerId, championSlot, 'the final was won');
+
+  // คนคุมงานพบว่ากรอกผลคู่แรกกลับด้าน
+  must(matches.setResult(a.id, 0, 1).match);
+
+  const after = must(matches.get(finalId));
+  assert.notStrictEqual(after.teamAId, championSlot, 'someone else advanced');
+  assert.strictEqual(after.winnerId, null, 'the final it never played must not keep a winner');
+  assert.strictEqual(after.status, 'pending');
+  assert.deepStrictEqual([after.scoreA, after.scoreB], [0, 0]);
+});
+
+// และต้องไม่ล้างเวลาที่ไม่มีอะไรเปลี่ยน
+//
+// setResult ล้างช่องปลายทางแล้วเติมกลับทุกครั้งที่มีผู้ชนะเดิมอยู่ แม้ค่าจะเหมือนเดิม
+// ถ้าเงื่อนไขการล้างผลผูกกับ "clearDestinations ถูกเรียกไหม" แทนที่จะเป็น
+// "ผู้ชนะเปลี่ยนตัวไหม" การกดบันทึกผลเดิมซ้ำจะลบผลของทั้งสายที่อยู่ถัดไปทิ้ง
+test('re-saving the same result leaves the rest of the bracket alone', () => {
+  const { matches, tournament } = stores('single_elim', 1, 4);
+  must(matches.generate(tournament.id).matches);
+
+  const firstRound = matches.list(tournament.id).filter((m) => m.round === 1);
+  must(matches.setResult(must(firstRound[0]).id, 1, 0).match);
+  must(matches.setResult(must(firstRound[1]).id, 1, 0).match);
+
+  const finalId = must(matches.list(tournament.id).find((m) => m.round === 2)).id;
+  must(matches.setResult(finalId, 1, 0).match);
+  const champion = must(matches.get(finalId)).winnerId;
+
+  must(matches.setResult(must(firstRound[0]).id, 1, 0).match);   // ค่าเดิมเป๊ะ
+
+  const after = must(matches.get(finalId));
+  assert.strictEqual(after.winnerId, champion, 'nothing moved, so nothing should be lost');
+  assert.strictEqual(after.status, 'complete');
+});
+
+// ถอยผลกลับเป็น "ยังไม่จบ" ก็ต้องล้างถัดไปเหมือนกัน
+test('undoing a result also clears what it had fed', () => {
+  const { matches, tournament } = stores('single_elim', 1, 4);
+  must(matches.generate(tournament.id).matches);
+
+  const firstRound = matches.list(tournament.id).filter((m) => m.round === 1);
+  must(matches.setResult(must(firstRound[0]).id, 1, 0).match);
+  must(matches.setResult(must(firstRound[1]).id, 1, 0).match);
+  const finalId = must(matches.list(tournament.id).find((m) => m.round === 2)).id;
+  must(matches.setResult(finalId, 1, 0).match);
+
+  must(matches.setResult(must(firstRound[0]).id, 0, 0).match);
+
+  const after = must(matches.get(finalId));
+  assert.strictEqual(after.status, 'pending');
+  assert.strictEqual(after.winnerId, null);
+});
+
+// สายแพ้สองครั้งคัดออกมีสองทางออกต่อคู่ ทั้งผู้ชนะและผู้แพ้ต้องถูกไล่ล้างทั้งคู่
+test('the cascade follows the losers bracket too', () => {
+  const { matches, tournament } = stores('double_elim', 1, 4);
+  must(matches.generate(tournament.id).matches);
+
+  const all = () => matches.list(tournament.id);
+  // เล่นให้จบทั้งสายเท่าที่จับคู่ได้
+  for (let pass = 0; pass < 6; pass += 1) {
+    all().filter((m) => !m.isBye && m.teamAId && m.teamBId && m.status !== 'complete')
+      .forEach((m) => matches.setResult(m.id, 1, 0));
+  }
+  const completedBefore = all().filter((m) => m.status === 'complete').length;
+  assert.ok(completedBefore >= 3, 'the bracket really was played out');
+
+  // แก้ผลคู่แรกสุดกลับด้าน
+  const first = must(all().filter((m) => m.bracket === 'main' && m.round === 1)[0]);
+  must(matches.setResult(first.id, 0, 1).match);
+
+  // ทุกคู่ที่ยังบอกว่าจบแล้ว ต้องมีผู้ชนะที่เป็นหนึ่งในสองทีมของตัวเองจริงๆ
+  all().forEach((m) => {
+    if (m.status !== 'complete' || !m.winnerId) return;
+    if (!m.teamAId || !m.teamBId) return;
+    assert.ok(
+      m.winnerId === m.teamAId || m.winnerId === m.teamBId,
+      `${m.bracket}/${m.round}/${m.slot} kept a winner who is not in the match`
+    );
+  });
 });

@@ -10,6 +10,7 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { newId } from '../domain/ids';
 import type { GameState } from '../domain/match';
+import { orientationOf } from '../domain/match';
 
 export interface GameSlot {
   side: 'blue' | 'red';
@@ -47,9 +48,18 @@ function isDraftComplete(state: GameState): boolean {
   ));
 }
 
-function stateToSlots(state: GameState): GameSlot[] {
+// เขียนช่องตาม "ฝั่งที่บันทึกไว้" ไม่ใช่ฝั่งที่เห็นบนจอ
+//
+// side ในตาราง game_slots ถูกแปลเป็นทีมผ่าน games.blue_team_id / red_team_id
+// ถ้าเขียนตามจอทั้งที่จอถูกสลับ ดราฟต์ของทั้งสองทีมจะถูกบันทึกสลับตัวกัน:
+// สถิติรายทีมคืนฮีโร่ของคู่แข่งมาทั้งชุด และอัตราชนะรายฮีโร่กลับด้าน
+// (ฮีโร่ของฝั่งที่ชนะถูกนับเป็นแพ้) โดยไม่มีอะไรบนจอบอกว่าผิด
+function stateToSlots(state: GameState, swapped: boolean): GameSlot[] {
   const slots: GameSlot[] = [];
-  ([['blue', 'teamBlue'], ['red', 'teamRed']] as const).forEach(([side, team]) => {
+  ([['blue', 'teamBlue'], ['red', 'teamRed']] as const).forEach(([displaySide, team]) => {
+    const side: 'blue' | 'red' = swapped
+      ? (displaySide === 'blue' ? 'red' : 'blue')
+      : displaySide;
     state[team].picks.forEach((hero, idx) => {
       if (hero) slots.push({ side, kind: 'pick', idx, hero });
     });
@@ -70,6 +80,7 @@ export interface GameStore {
   freeze(matchId: string, teamAId: string, teamBId: string): Game | null;
   captureDraft(gameId: string, state: GameState): Game | null;
   setWinner(gameId: string, winner: 'blue' | 'red' | null): Game | null;
+  frozenName(teamId: string): string;
 }
 
 export function createGameStore(db: DatabaseSync): GameStore {
@@ -93,6 +104,16 @@ export function createGameStore(db: DatabaseSync): GameStore {
     // แล้วจะมีสองที่ที่รู้ว่า "สำเนาแช่แข็งประกอบด้วยอะไร" ซึ่งเป็นของไฟล์นี้
     teamName: db.prepare('SELECT name FROM teams WHERE id = ?'),
     countSlots: db.prepare('SELECT COUNT(*) AS n FROM game_slots WHERE game_id = ?'),
+
+    // ชื่อล่าสุดที่ทีมนี้เคยลงเล่นภายใต้ อ่านจากสำเนาแช่แข็ง
+    // ใหม่สุดก่อน: ทีมที่เปลี่ยนชื่อกลางทางต้องขึ้นชื่อที่ใช้ล่าสุด ไม่ใช่ชื่อแรกสุด
+    frozenName: db.prepare(
+      `SELECT CASE WHEN blue_team_id = ? THEN blue_name ELSE red_name END AS name
+         FROM games
+        WHERE (blue_team_id = ? OR red_team_id = ?)
+        ORDER BY updated_at DESC
+        LIMIT 1`
+    ),
     reseat: db.prepare(
       `UPDATE games SET blue_team_id = ?, red_team_id = ?, blue_name = ?, red_name = ?,
                         updated_at = ? WHERE id = ?`
@@ -192,7 +213,23 @@ export function createGameStore(db: DatabaseSync): GameStore {
       const row = q.byId.get(gameId) as GameRow | undefined;
       if (!row) return null;
 
-      const slots = stateToSlots(state);
+      // สิ่งที่อยู่บนจอ ต้องเป็นเกมนี้จริงๆ ก่อนจะเขียนทับดราฟต์ที่บันทึกไว้
+      //
+      // ตัวชี้แมตช์ที่ออกอากาศไม่ได้ถูกล้างเวลา state ถูกแทนที่ทั้งก้อน
+      // กด RESET MATCH เพื่อเคลียร์กระดานให้เกมถัดไป -> จอกลายเป็น BLUE/RED เปล่าๆ
+      // แล้ว emit ครั้งถัดไปเขียนกระดานเปล่านั้นทับดราฟต์ของเกมที่เพิ่งเล่นจบ
+      // เกมยังค้าง draft_locked = 1 อยู่ สถิติจึงนับมันเป็นเกมที่ครบแล้วแต่ไม่มีฮีโร่เลย
+      // = อัตรา pick/ban ของทั้งทัวร์นาเมนต์เจือจางลงเงียบๆ
+      // หยิบทีมจากทะเบียนมาซ้อมนอกรอบก็เข้าทางเดียวกัน ดราฟต์ซ้อมทับของจริง
+      //
+      // ไม่เขียนดีกว่าเขียนผิด: ข้อมูลที่หายไปแล้วกู้ไม่ได้
+      const orientation = orientationOf(state, {
+        blueTeamId: row.blue_team_id, redTeamId: row.red_team_id,
+        blueName: row.blue_name, redName: row.red_name
+      });
+      if (orientation === 'different') return hydrate(row);
+
+      const slots = stateToSlots(state, orientation === 'swapped');
       const now = Date.now();
 
       db.exec('BEGIN');
@@ -217,6 +254,21 @@ export function createGameStore(db: DatabaseSync): GameStore {
       if (!q.byId.get(gameId)) return null;
       q.setWinner.run(winner, Date.now(), gameId);
       return store.get(gameId);
+    },
+
+    // ชื่อที่ทีมนี้เคยลงเล่นภายใต้ ใช้ตอนที่ทะเบียนไม่มีมันแล้ว
+    //
+    // games.blue_team_id ไม่มี foreign key ผูกกับตาราง teams (ดู migrations.ts)
+    // ลบทีมออกจากทะเบียนแล้วแถวเกมยังอ้าง id เดิม สถิติจึงยังนับเกมพวกนั้นครบ
+    // ถ้าไม่มีตัวนี้ กราฟิกจะขึ้นข้อมูลครบทุกช่องแต่ชื่อทีมเป็นช่องว่าง
+    // ซึ่งอ่านบนจอเหมือนของเสีย ไม่ใช่เหมือนทีมที่ถูกลบไปแล้ว
+    //
+    // matchup.ts มีตรรกะเดียวกันฝังอยู่ในตัวมันเอง ตัวนี้คือที่ที่มันควรอยู่
+    // (สำเนาแช่แข็งเป็นของไฟล์นี้) ของใหม่ทุกตัวให้เรียกตัวนี้
+    frozenName(teamId) {
+      if (!teamId) return '';
+      const row = q.frozenName.get(teamId, teamId, teamId) as { name: string | null } | undefined;
+      return row?.name || '';
     }
   };
 

@@ -1,0 +1,112 @@
+/* ตารางคะแนนของรอบแบ่งกลุ่ม สำหรับขึ้นจอระหว่างพัก
+ *
+ * หลักการเดียวกับกราฟิกออกอากาศตัวอื่น: วางบนผืน 1920x1080
+ * แล้วถ้าเลือก 1440p ก็ขยายทั้งผืนด้วย 4/3
+ *
+ * ห้ามลิงก์ธีมของหน้าคนคุมงาน นี่คือสิ่งที่คนดูเห็น */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+    --ov-blue: #2f7ff5;
+    --ov-red: #f0483c;
+    --ov-accent: #f5b942;
+    --ov-text: #ffffff;
+    --ov-silver: #b9c0cc;
+}
+
+body {
+    width: 1920px;
+    height: 1080px;
+    background: transparent;
+    font-family: 'Kanit', 'Segoe UI', Arial, sans-serif;
+    overflow: hidden;
+}
+
+body[data-size="1440"] { width: 2560px; height: 1440px; }
+body[data-size="1440"] .st-stage { transform: scale(calc(4 / 3)); transform-origin: top left; }
+
+.st-stage {
+    width: 1920px;
+    height: 1080px;
+    padding: 62px 84px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.st-head { flex: 0 0 auto; opacity: 0; transform: translateY(-24px); animation: stHeadIn 480ms cubic-bezier(0.16,0.84,0.32,1) forwards; }
+.st-title { font-size: 54px; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; color: var(--ov-text); text-shadow: 0 4px 22px rgba(0,0,0,0.85); }
+.st-sub { margin-top: 6px; font-size: 19px; font-weight: 600; letter-spacing: 7px; text-transform: uppercase; color: var(--ov-accent); text-shadow: 0 2px 12px rgba(0,0,0,0.8); }
+
+@keyframes stHeadIn { to { opacity: 1; transform: translateY(0); } }
+
+/* กลุ่มวางเรียงเป็นคอลัมน์ จำนวนคอลัมน์มาจาก --st-cols ที่ JS ตั้งตามจำนวนกลุ่ม */
+.st-groups {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(var(--st-cols, 2), 1fr);
+    gap: 20px;
+    align-content: start;
+}
+
+.st-group {
+    background: rgba(9, 11, 16, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 12px;
+    padding: 16px 18px;
+    box-shadow: 0 10px 34px rgba(0,0,0,0.5);
+
+    opacity: 0;
+    transform: translateY(24px);
+    animation: stGroupIn 520ms cubic-bezier(0.16,0.84,0.32,1) forwards;
+    animation-delay: calc(var(--i, 0) * var(--st-stagger, 110ms));
+}
+
+@keyframes stGroupIn { to { opacity: 1; transform: translateY(0); } }
+
+.st-group-name {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--ov-accent);
+    margin-bottom: 10px;
+}
+.st-group-note { font-size: 12px; font-weight: 500; letter-spacing: 2px; color: var(--ov-silver); margin-left: 10px; }
+
+table.st-table { width: 100%; border-collapse: collapse; }
+.st-table th {
+    font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--ov-silver); text-align: right; padding: 0 6px 8px;
+}
+.st-table th.st-name-col, .st-table th.st-rank-col { text-align: left; }
+.st-table td { padding: 7px 6px; font-size: 20px; font-weight: 600; color: var(--ov-text); text-align: right; border-top: 1px solid rgba(255,255,255,0.07); }
+.st-table td.st-rank { text-align: left; width: 44px; color: var(--ov-silver); font-weight: 700; }
+.st-table td.st-name { text-align: left; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+.st-table td.st-points { color: var(--ov-accent); font-weight: 800; }
+
+/* ทีมที่ได้ไปต่อ ทำให้เห็นทันทีว่าเส้นตัดอยู่ตรงไหน */
+.st-row.st-through td { background: rgba(245, 185, 66, 0.09); }
+.st-row.st-through td.st-rank { color: var(--ov-accent); }
+
+/* เท่ากันจนตัดสินไม่ได้ ต้องบอก ไม่ใช่แสดงลำดับที่ดูเหมือนตัดสินได้แล้ว */
+.st-row.st-tied td.st-rank::after {
+    content: '=';
+    margin-left: 4px;
+    color: var(--ov-silver);
+    font-size: 15px;
+}
+
+.st-note { flex: 0 0 auto; font-size: 17px; font-weight: 500; letter-spacing: 2px; color: rgba(255,255,255,0.4); }
+
+/* บังคับสถานะสุดท้าย OBS หยุด browser source ที่ไม่ได้ออกอากาศ
+   animationend จึงไม่ยิง และทุกกลุ่มเริ่มจาก opacity:0 */
+.st-stage.settled .st-head,
+.st-stage.settled .st-group,
+.st-group.settled {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+}

@@ -29,8 +29,12 @@ import {
   sanitizeSfx,
   sanitizeGlobalHotkeys
 } from './settings';
+import type { PositionValue } from './position';
+import { sanitizePosition } from './position';
 import type { Logo, Skin, SkinSlot } from './media';
 import { SKIN_SLOTS, sanitizeLogo, sanitizeSkin } from './media';
+import type { RoundRecord } from './rounds';
+import { FIRST_ROUND, sanitizeRoundNumber, sanitizeRounds } from './rounds';
 
 export interface TeamState {
   name: string;
@@ -39,6 +43,12 @@ export interface TeamState {
   picks: (string | null)[];
   bans: (string | null)[];
   players: string[];
+  // ตำแหน่ง (เลน) ของผู้เล่นแต่ละช่อง เรียงตรงกับ players และ picks
+  //
+  // อยู่ใน state ไม่ได้ให้ overlay ไปถามทะเบียนทีมเอง เพราะกราฟิกออกอากาศ
+  // ไม่ได้ถือโทเคน และแมตช์เดี่ยวก็ไม่ได้ผูกกับทีมในทะเบียนอยู่แล้ว
+  // ค่านี้เดินทางไปกับ stateUpdate เหมือนทุกอย่างที่กราฟิกต้องวาด
+  positions: PositionValue[];
 }
 
 export interface MatchInfo {
@@ -63,6 +73,13 @@ export interface GameState {
   globalHotkeys: GlobalHotkeys;
   skin: Skin;
   matchInfo: MatchInfo;
+  // เกมที่เท่าไหร่ของซีรีส์ที่กำลังคุมอยู่ เริ่มที่ 1
+  //
+  // ผูกกับ games.game_no เมื่อออกอากาศแมตช์ของทัวร์นาเมนต์ (ดู services/rounds.ts)
+  // และเป็นตัวนับล้วนๆ เมื่อเป็นแมตช์เดี่ยว
+  round: number;
+  // ดราฟต์ของรอบที่ผ่านมาแล้ว เรียงจากรอบน้อยไปมาก ไม่รวมรอบปัจจุบัน
+  rounds: RoundRecord[];
 }
 
 export interface SlotOwner {
@@ -84,7 +101,8 @@ function emptyTeam(name: string): TeamState {
     logo: { v: 0, ext: '' },
     picks: Array.from({ length: PICK_COUNT }, () => null),
     bans: Array.from({ length: BAN_COUNT }, () => null),
-    players: Array.from({ length: PICK_COUNT }, (_, i) => `Player ${i + 1}`)
+    players: Array.from({ length: PICK_COUNT }, (_, i) => `Player ${i + 1}`),
+    positions: Array.from({ length: PICK_COUNT }, () => '' as PositionValue)
   };
 }
 
@@ -121,11 +139,72 @@ export const defaultState: GameState = {
   matchInfo: {
     title: 'BLUE VS RED',
     tournament: 'ROV Tournament'
-  }
+  },
+  round: FIRST_ROUND,
+  rounds: []
 };
 
 export function isTeamKey(team: unknown): team is TeamKey {
   return team === 'teamBlue' || team === 'teamRed';
+}
+
+// สำเนาแช่แข็งของเกม เท่าที่ต้องรู้เพื่อบอกว่าจอสลับฝั่งอยู่หรือเปล่า
+export interface FrozenSides {
+  blueTeamId: string | null;
+  redTeamId: string | null;
+  blueName: string;
+  redName: string;
+}
+
+// จอกำลังแสดง "เกมนี้" อยู่จริงไหม และแสดงสลับฝั่งหรือเปล่า
+//
+// 'different' คือคำตอบที่สำคัญที่สุด และเป็นคำตอบที่เมื่อก่อนไม่มี
+// ตัวบันทึกดราฟต์เกาะอยู่กับ emitState แล้วเขียนสิ่งที่อยู่บนจอลงเกมที่ตัวชี้บอก
+// โดยไม่เคยถามว่าสองอย่างนี้เป็นเรื่องเดียวกันไหม พอ state ถูกแทนที่ทั้งก้อน
+// (กด RESET MATCH หรือหยิบทีมจากทะเบียนมาซ้อมนอกรอบ) ตัวชี้ยังค้างอยู่ที่เกมเดิม
+// การ emit ครั้งถัดไปจึงเขียนทับดราฟต์ของเกมนั้นด้วยกระดานเปล่าหรือกระดานของแมตช์ซ้อม
+// เกมยังถูกนับว่า draft_locked = 1 อยู่ สถิติทั้งทัวร์นาเมนต์จึงเพี้ยนโดยไม่มีใครเห็น
+export type SideOrientation = 'same' | 'swapped' | 'different';
+
+export function orientationOf(state: GameState, frozen: FrozenSides): SideOrientation {
+  // id เชื่อถือได้กว่าชื่อ: logo.src คือ id ของทีมในทะเบียน มันติดไปกับทีมตอนสลับฝั่ง
+  // และไม่เปลี่ยนตามการแก้ชื่อทีมบนหน้า Control กลางเกม
+  const blueSrc = state.teamBlue.logo?.src;
+  const redSrc = state.teamRed.logo?.src;
+  if (blueSrc && redSrc && blueSrc !== redSrc && frozen.blueTeamId && frozen.redTeamId) {
+    if (blueSrc === frozen.blueTeamId && redSrc === frozen.redTeamId) return 'same';
+    if (blueSrc === frozen.redTeamId && redSrc === frozen.blueTeamId) return 'swapped';
+    return 'different';
+  }
+
+  // ไม่มี id ให้เทียบ ถอยไปใช้ชื่อ
+  //
+  // ตรงนี้ต้องใจกว้างไว้ก่อน: ชื่อเปลี่ยนได้ระหว่างแมตช์ และการตอบ 'different'
+  // ผิดๆ แปลว่าหยุดบันทึกดราฟต์ของแมตช์จริงแบบเงียบๆ ซึ่งก็เสียหายพอกัน
+  // จึงตอบ 'different' เฉพาะตอนที่ทั้งสองฝั่งไม่ตรงกับสำเนาเลยสักชื่อเดียว
+  const blueName = state.teamBlue.name;
+  const redName = state.teamRed.name;
+  if (!blueName || !redName || blueName === redName) return 'same';
+  if (blueName === frozen.blueName && redName === frozen.redName) return 'same';
+  if (blueName === frozen.redName && redName === frozen.blueName) return 'swapped';
+  if (blueName === frozen.blueName || redName === frozen.redName) return 'same';
+  if (blueName === frozen.redName || redName === frozen.blueName) return 'swapped';
+  return 'different';
+}
+
+// จอกำลังแสดงสลับฝั่งกับสำเนาแช่แข็งของเกมอยู่หรือเปล่า
+//
+// สำเนาตรึงไว้ว่า blue = ทีม A ของแมตช์ (ดู goLive) ส่วนปุ่ม "สลับฝั่ง" บนหน้า Control
+// สลับเฉพาะบนจอ ไม่ได้แตะสำเนา ตั้งแต่นั้นคำว่า "น้ำเงิน" สองที่นี้คนละทีมกัน
+// ใครก็ตามที่แปลงไปมาระหว่างสองโลกนี้ต้องถามฟังก์ชันนี้ก่อน
+// (ตอนนี้มีสองที่: การบันทึกดราฟต์ใน store/games.ts และการซิงก์คะแนนใน services/series.ts)
+//
+// เทียบด้วย id ก่อน: logo.src คือ id ของทีมในทะเบียน และมันติดไปกับทีมตอนสลับฝั่ง
+// จึงยังถูกแม้ผู้ใช้จะเปลี่ยนชื่อทีมบนหน้า Control กลางเกม
+// ชื่อเป็นทางถอยสำหรับ state เก่าที่ยังไม่มี src และสำหรับแมตช์เดี่ยวที่ไม่ได้มาจากทะเบียน
+// ชื่อซ้ำกันทั้งสองฝั่ง = แยกไม่ออก ห้ามเดา ให้ถือว่าไม่ได้สลับ (ตรงกับค่าเริ่มต้นของ goLive)
+export function isDisplaySwapped(state: GameState, frozen: FrozenSides): boolean {
+  return orientationOf(state, frozen) === 'swapped';
 }
 
 export function sanitizeTeam(team: unknown, fallback: TeamState): TeamState {
@@ -138,7 +217,8 @@ export function sanitizeTeam(team: unknown, fallback: TeamState): TeamState {
     bans: normalizeArray(source.bans, BAN_COUNT, sanitizeHero),
     players: normalizeArray(source.players, PICK_COUNT, (name, index) => (
       sanitizeText(name, 24) || `Player ${index + 1}`
-    ))
+    )),
+    positions: normalizeArray(source.positions, PICK_COUNT, sanitizePosition)
   };
 }
 
@@ -215,6 +295,8 @@ export function sanitizeState(state: unknown): GameState {
     matchInfo: {
       title: sanitizeText(matchInfo.title, 80) || defaultState.matchInfo.title,
       tournament: sanitizeText(matchInfo.tournament, 50) || defaultState.matchInfo.tournament
-    }
+    },
+    round: sanitizeRoundNumber(source.round ?? FIRST_ROUND),
+    rounds: sanitizeRounds(source.rounds)
   });
 }

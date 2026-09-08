@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <title>ROV Standings Overlay</title>
+    <!-- กราฟิกออกอากาศ ห้ามลิงก์ธีมของหน้าคนคุมงาน และห้ามโหลดตัวแปลภาษา
+         สิ่งที่คนดูเห็นต้องไม่เปลี่ยนตามการตั้งค่าของหน้าคุมงาน -->
+    <link rel="stylesheet" href="/css/fonts.css">
+    <link rel="stylesheet" href="/css/overlay-standings.css">
+</head>
+<body>
+    <div class="st-stage" id="stage">
+        <div class="st-head">
+            <div class="st-title" id="title"></div>
+            <div class="st-sub" id="subtitle"></div>
+        </div>
+        <div class="st-groups" id="groups"></div>
+        <div class="st-note" id="note" hidden></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- overlay-standings.js ประกาศ socket ไว้ ต้องมาก่อน overlay-size.js ที่อ่านตัวนั้น -->
+    <script src="/js/lib/overlay-common.js"></script>
+    <script src="/js/overlay-standings.js"></script>
+    <script src="/js/overlay-size.js"></script>
+</body>
+</html>

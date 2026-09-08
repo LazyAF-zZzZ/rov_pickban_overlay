@@ -115,7 +115,7 @@
   <div class="panel theme-panel">
     <div class="panel-head">
       <div class="panel-title" data-i18n>Overlay theme</div>
-      <span class="theme-note">Changes show on the overlay as you make them</span>
+      <span class="theme-note" data-i18n>Changes show on the overlay as you make them</span>
       <button class="tlink danger" type="button" id="themeReset" style="margin-left:auto" data-i18n>RESET TO ORIGINAL</button>
     </div>
     <div class="panel-body">
@@ -156,12 +156,9 @@
       <div class="theme-group-title" data-i18n>Team logo</div>
       <div class="theme-grid" id="themeLogo"></div>
 
-      <div class="theme-hint">
-        Text sizes move the centre column - the score, timer and match title sit on
-        the bottom edge of the banner, so making them bigger pushes everything above
-        them upward. If the logos start crowding the score, bring a size back down or
-        use Reset.
-      </div>
+      <!-- บรรทัดเดียว ไม่ตัดบรรทัด: data-i18n ใช้ข้อความในแท็กเป็นคีย์แปล
+           ขึ้นบรรทัดใหม่จะทำให้คีย์มีตัวขึ้นบรรทัดกับช่องว่างซ้อนติดมาด้วย -->
+      <div class="theme-hint" data-i18n>Text sizes move the centre column - the score, timer and match title sit on the bottom edge of the banner, so making them bigger pushes everything above them upward. If the logos start crowding the score, bring a size back down or use Reset.</div>
     </div>
   </div>
 

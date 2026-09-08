@@ -1,0 +1,312 @@
+/* กระดานดราฟต์ของรอบก่อนหน้า สำหรับขึ้นจอระหว่างพักหรือก่อนเริ่มเกมถัดไป
+ *
+ * แผ่นเดียวใช้ทั้งหน้าพิคและหน้าแบน ต่างกันแค่จำนวนช่องต่อแถว
+ * ซึ่งมาจาก --pv-cols ที่หน้าเว็บตั้งไว้ที่ <body>
+ *
+ * หลักการเดียวกับ overlay.css และ overlay-teams.css:
+ * วางบนผืน 1920x1080 แล้วถ้าเลือก 1440p ก็ขยายทั้งผืนด้วย 4/3
+ * ไม่ได้ทำ layout แยกอีกชุด
+ *
+ * พื้นหลังโปร่งใสเสมอ OBS ซ้อนทับฉากอื่นอยู่
+ *
+ * ห้ามลิงก์ /css/theme.css จากหน้านี้ นี่คือกราฟิกออกอากาศ
+ * สีของมันมาจากหน้า Design ผ่าน state.theme ไม่ใช่จากธีมของหน้าคนคุมงาน */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ค่าตั้งต้น ทับได้ด้วย state.theme จาก applyTheme ใน overlay-prev.js */
+:root {
+    --ov-blue: #2f7ff5;
+    --ov-red: #f0483c;
+    --ov-accent: #f5b942;
+    --ov-text: #ffffff;
+    --ov-silver: #b9c0cc;
+    --ov-blue-rgb: 47, 127, 245;
+    --ov-red-rgb: 240, 72, 60;
+}
+
+body {
+    width: 1920px;
+    height: 1080px;
+    background: transparent;
+    font-family: 'Kanit', 'Segoe UI', Arial, sans-serif;
+    overflow: hidden;
+}
+
+body[data-size="1440"] { width: 2560px; height: 1440px; }
+body[data-size="1440"] .pv-stage {
+    transform: scale(calc(4 / 3));
+    transform-origin: top left;
+}
+
+.pv-stage {
+    width: 1920px;
+    height: 1080px;
+    padding: 62px 84px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+/* หัวเรื่อง ------------------------------------------------------------ */
+
+.pv-head { flex: 0 0 auto; }
+
+.pv-title {
+    font-size: 54px;
+    font-weight: 800;
+    letter-spacing: 4px;
+    line-height: 1.05;
+    text-transform: uppercase;
+    color: var(--ov-text);
+    text-shadow: 0 4px 22px rgba(0, 0, 0, 0.85);
+}
+.pv-sub {
+    margin-top: 6px;
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: 7px;
+    text-transform: uppercase;
+    color: var(--ov-accent);
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+}
+
+.pv-head {
+    opacity: 0;
+    transform: translateY(-24px);
+    animation: pvHeadIn 480ms cubic-bezier(0.16, 0.84, 0.32, 1) forwards;
+}
+
+@keyframes pvHeadIn {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* รายการรอบ ------------------------------------------------------------ */
+
+.pv-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-content: start;
+    min-height: 0;
+}
+
+/* คอลัมน์กลางคือเส้นแบ่งจริงๆ ไม่ใช่แค่ช่องว่าง
+ *
+ * ของเดิมเป็นสามคอลัมน์ห่างกัน 18px แล้วภาพฮีโร่กินเต็มช่องทุกช่อง
+ * สีประจำฝั่งที่อยู่หลังภาพจึงไม่โผล่มาเลย ผลบนจอคือช่องสิบช่องเรียงติดกัน
+ * เป็นแถบเดียว มองไม่ออกว่าห้าช่องแรกกับห้าช่องหลังเป็นคนละทีม */
+.pv-round {
+    display: grid;
+    grid-template-columns: 104px 1fr 30px 1fr;
+    gap: 16px;
+    align-items: stretch;
+    padding: 14px 18px;
+    border-radius: 12px;
+    background: rgba(9, 11, 16, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.5);
+
+    opacity: 0;
+    transform: translateY(26px);
+    animation: pvRowIn 520ms cubic-bezier(0.16, 0.84, 0.32, 1) forwards;
+    animation-delay: calc(var(--i, 0) * var(--pv-stagger, 110ms));
+}
+
+@keyframes pvRowIn {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ป้ายเลขรอบ */
+
+.pv-no {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    padding-right: 16px;
+}
+.pv-no-word {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--ov-silver);
+}
+.pv-no-value {
+    font-size: 52px;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--ov-accent);
+}
+
+/* เส้นแบ่งกลาง ไล่จางที่ปลายทั้งสองข้างเพื่อไม่ให้ดูเป็นตาราง */
+.pv-split {
+    align-self: stretch;
+    justify-self: center;
+    width: 2px;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.16) 30%,
+        rgba(255, 255, 255, 0.16) 70%,
+        rgba(255, 255, 255, 0) 100%
+    );
+}
+
+/* ฝั่งทีม */
+
+.pv-side {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+.pv-side.red { align-items: flex-end; }
+
+.pv-team {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 100%;
+}
+.pv-side.red .pv-team { flex-direction: row-reverse; }
+
+.pv-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex: 0 0 9px;
+}
+.pv-side.blue .pv-dot { background: var(--ov-blue); }
+.pv-side.red .pv-dot { background: var(--ov-red); }
+
+.pv-name {
+    font-size: 25px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ov-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+
+/* แถวช่องฮีโร่
+ *
+ * --pv-cols มาจาก <body data-cols> ห้าช่องสำหรับพิค สี่ช่องสำหรับแบน
+ * ใช้ grid ไม่ใช่ flex เพื่อให้ช่องที่ว่างยังกินที่เท่าเดิม ตำแหน่งของช่องคือ
+ * ข้อมูล: ช่องที่สามที่ว่างแปลว่าพิคที่สามไม่ได้ถูกบันทึก ไม่ใช่ว่าพิคหลังเลื่อนมาแทน */
+/* กลุ่มช่องภายในหนึ่งฝั่ง
+ *
+ * หน้ารวม (/overlay-prev) มีสองกลุ่มเรียงกัน พิคแล้วตามด้วยแบน
+ * อีกสองหน้ามีกลุ่มเดียว โครงเดียวกันทั้งสามหน้าจึงไม่มีสาขาไหนที่ไม่ถูกใช้
+ *
+ * ช่องว่างระหว่างกลุ่มกว้างกว่าช่องว่างระหว่างช่อง เพื่อให้เห็นว่าเป็นคนละชุด
+ * โดยไม่ต้องมีเส้นคั่น */
+/* ฝั่งแดงสลับลำดับกลุ่ม กระดานจึงสมมาตรรอบเส้นแบ่งกลาง
+ * แผ่นนี้สะท้อนฝั่งแดงอยู่แล้วทั้งชื่อทีม (row-reverse) และการชิดขอบ (flex-end)
+ * ปล่อยให้กลุ่มเรียงเหมือนกันทั้งสองฝั่งจะได้กระดานที่ชิดเส้นกลางเป็น
+ * แบนของน้ำเงินกับพิคของแดง ซึ่งดูเหมือนวางพลาด ไม่ใช่การตั้งใจ
+ *
+ * ผลคือพิคอยู่ใต้ชื่อทีมของตัวเองทั้งสองฝั่ง ส่วนแบนไปรวมกันตรงกลาง */
+.pv-side.red .pv-groups { flex-direction: row-reverse; }
+
+.pv-groups {
+    display: flex;
+    gap: 22px;
+    width: 100%;
+    align-items: flex-start;
+}
+
+.pv-slots {
+    display: grid;
+    grid-template-columns: repeat(var(--pv-cols, 5), 1fr);
+    gap: 8px;
+    width: 100%;
+    /* flex-grow ถูกตั้งจาก JS ตามจำนวนช่องของกลุ่ม กลุ่มห้าช่องจึงกว้างกว่า
+     * กลุ่มสี่ช่องตามสัดส่วน ทำให้ช่องทุกช่องเป็นสี่เหลี่ยมจัตุรัสขนาดเท่ากัน
+     * flex-basis ต้องเป็น 0 ไม่งั้นความกว้างเริ่มต้นของ grid จะเข้ามาปนกับสัดส่วน */
+    flex-basis: 0;
+    min-width: 0;
+}
+
+.pv-slot {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    border-radius: 9px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.pv-side.blue .pv-slot {
+    background: linear-gradient(180deg, rgba(var(--ov-blue-rgb), 0.20), rgba(var(--ov-blue-rgb), 0.05));
+    border-color: rgba(var(--ov-blue-rgb), 0.34);
+}
+.pv-side.red .pv-slot {
+    background: linear-gradient(180deg, rgba(var(--ov-red-rgb), 0.20), rgba(var(--ov-red-rgb), 0.05));
+    border-color: rgba(var(--ov-red-rgb), 0.34);
+}
+
+/* จุดครอบเป็นกึ่งกลาง เหตุผลเดียวกับ .mu-art ในกราฟิกหัวต่อหัว
+ * 18% มีไว้ดึงหน้าของรูปเต็มตัวขึ้นมา ช่องนี้ใช้ไอคอนที่จัดหน้ากลางไว้แล้ว */
+.pv-art {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+}
+
+/* แถบสีประจำฝั่งที่ขอบล่างของทุกช่อง
+ *
+ * ต้องอยู่บนภาพ ไม่ใช่หลังภาพ ภาพฮีโร่กินเต็มช่อง สีที่อยู่ข้างหลังจึงไม่มีวันโผล่
+ * นี่คือสิ่งเดียวที่บอกว่าช่องนี้เป็นของทีมไหนเมื่อช่องมีภาพอยู่แล้ว */
+.pv-slot::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 4px;
+    z-index: 1;
+}
+.pv-side.blue .pv-slot::before { background: var(--ov-blue); }
+.pv-side.red .pv-slot::before { background: var(--ov-red); }
+
+/* และเงาสีจางๆ ไล่ขึ้นจากขอบล่าง ให้แถบไม่ดูเป็นเส้นแปะ */
+.pv-side.blue .pv-slot .pv-art { box-shadow: inset 0 -26px 30px -22px rgba(var(--ov-blue-rgb), 0.95); }
+.pv-side.red .pv-slot .pv-art { box-shadow: inset 0 -26px 30px -22px rgba(var(--ov-red-rgb), 0.95); }
+
+/* ช่องแบนอ่านต้องต่างจากช่องพิคทันทีที่เห็น ไม่ใช่ต้องอ่านหัวเรื่องก่อน
+ * ลดสีลงแล้วขีดทับ เป็นภาษาเดียวกับที่ overlay.css ใช้กับช่องแบน */
+/* ช่องแบนเป็นขาวดำ ผูกกับกลุ่ม ไม่ใช่กับ <body data-kind>
+ * หน้ารวมมีทั้งพิคและแบนอยู่ในหน้าเดียวกัน ตัวชี้ที่ระดับหน้าจึงแยกสองอย่างนี้ไม่ได้ */
+.pv-slots.bans .pv-art { filter: grayscale(1) brightness(0.62); }
+/* ไม่มีเส้นขีดทับแล้ว (เอาออกตามที่ผู้ใช้ขอ 2026-09-08 พร้อมกับตัว X ของ overlay หลัก)
+ * การลดสีลงเป็นขาวดำยังอยู่ และหัวเรื่องของหน้าเขียนว่า PREVIOUS BANS อยู่แล้ว
+ * เส้นขีดพาดผ่านหน้าฮีโร่พอดี ซึ่งเป็นส่วนเดียวที่ต้องดูออกว่าเป็นใคร */
+
+/* ข้อความช่วยตอนตั้งค่า จงใจให้จาง หลุดออกอากาศแล้วจะได้ไม่เด่น */
+.pv-note {
+    flex: 0 0 auto;
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* บังคับสถานะสุดท้าย
+ *
+ * บังคับจากที่เดียว: OBS หยุด browser source ที่ไม่ได้อยู่ในฉากที่ออกอากาศ
+ * animationend จึงไม่ยิง และทุกแถวเริ่มจาก opacity:0 ถ้าไม่มีตัวนี้
+ * สิ่งที่ออกอากาศคือจอว่างเปล่า ซึ่งแย่กว่าการข้ามอนิเมชันไปเลย */
+.pv-stage.settled .pv-head,
+.pv-stage.settled .pv-round,
+.pv-round.settled {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+}

@@ -20,6 +20,18 @@
   // เท่ากับ ROSTER_SIZE ฝั่งเซิร์ฟเวอร์ (server/domain/team.ts)
   // ฝั่งนั้นเป็นคนตัดสินจริง ตรงนี้แค่วาดช่องให้ครบตามนั้น
   const ROSTER_SIZE = 5;
+
+  // ต้องตรงกับ POSITIONS / POSITION_LABELS ใน server/domain/position.ts
+  // สคริปต์ฝั่งเบราว์เซอร์เป็นแบบคลาสสิก import จาก server/ ไม่ได้ จึงต้องมีสำเนา
+  // มีเทสต์ใน tests/position.test.ts กันไว้ว่าสองที่ต้องไม่หลุดจากกัน
+  const POSITIONS = [
+    { value: '', label: 'Position' },
+    { value: 'jungle', label: 'Jungle' },
+    { value: 'carry', label: 'Carry' },
+    { value: 'midlane', label: 'Mid lane' },
+    { value: 'offlane', label: 'Off lane' },
+    { value: 'support', label: 'Support' }
+  ];
   const LOGO_MAX_BYTES = 4 * 1024 * 1024;
 
   function badge(text, cls = '') {
@@ -53,12 +65,22 @@
       name.placeholder = `Player ${i + 1}`;
       name.value = player.name || '';
 
-      const role = document.createElement('input');
-      role.type = 'text';
+      // ตำแหน่ง (เลน) เป็นชุดปิดห้าค่า ไม่ใช่ช่องพิมพ์อิสระเหมือนเดิม
+      //
+      // ค่านี้ถูกเอาไปเลือกไฟล์ไอคอนบนกราฟิกออกอากาศ
+      // (public/images/positions/<slug>.png) ข้อความอิสระจึงใช้ไม่ได้:
+      // พิมพ์ "Jungle" กับ "jungle" กับเว้นวรรคเกินต้องได้ไอคอนเดียวกัน
+      // และคำที่ไม่รู้จักต้องไม่กลายเป็นชื่อไฟล์
+      const role = document.createElement('select');
       role.className = 'prole';
-      role.maxLength = 16;
-      role.placeholder = t('Role');
-      role.value = player.role || '';
+      role.title = t('Player position');
+      POSITIONS.forEach(({ value, label }) => {
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.textContent = value === '' ? t('Position') : t(label);
+        role.appendChild(opt);
+      });
+      role.value = POSITIONS.some((p) => p.value === player.position) ? player.position : '';
 
       const capLabel = document.createElement('label');
       capLabel.className = 'cap';
@@ -76,7 +98,7 @@
     return {
       read: () => rows.map((r) => ({
         name: r.name.value,
-        role: r.role.value,
+        position: r.role.value,
         isCaptain: r.cap.checked
       })),
       clear: () => rows.forEach((r) => {

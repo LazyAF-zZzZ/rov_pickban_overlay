@@ -22,6 +22,7 @@ process.env.CONTROL_TOKEN = '';
 // ต้อง import หลังตั้ง env เท่านั้น
 const { createApp } = require('../server/index') as typeof import('../server/index');
 const { closeDatabase } = require('../server/store/db') as typeof import('../server/store/db');
+const { PAGES } = require('../server/http/pages') as typeof import('../server/http/pages');
 
 const app = createApp();
 let server: http.Server;
@@ -271,7 +272,7 @@ test('every operator page carries the same page nav, in the same order', async (
   const expected = ['/', '/teams', '/analytics', '/control', '/design', '/hotkeys', '/guide'];
   const pages = [
     '/', '/teams', '/teams/anything', '/tournament/anything',
-    '/tournament/anything/bracket', '/analytics', '/control', '/design', '/hotkeys', '/guide'
+    '/tournament/anything/bracket', '/tournament/anything/drafts', '/analytics', '/control', '/design', '/hotkeys', '/guide'
   ];
 
   for (const url of pages) {
@@ -281,6 +282,21 @@ test('every operator page carries the same page nav, in the same order', async (
     const nav = html.slice(start, html.indexOf('</nav>', start));
     const hrefs = [...nav.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
     assert.deepStrictEqual(hrefs, expected, `${url} nav`);
+
+    // ลิงก์ทุกอันต้องแปลได้ ไม่ใช่แค่เรียงถูก
+    //
+    // /guide เคยไม่มี data-i18n สักอันในแถบเมนู หน้านั้นจึงขึ้นเป็นภาษาอังกฤษ
+    // ตลอดไม่ว่าจะเลือกภาษาอะไรไว้ อาการที่คนใช้เห็นคือ "พอเข้าคู่มือ
+    // แถบบนเด้งกลับเป็นอังกฤษ" ซึ่งอ่านเหมือนของเสีย ไม่ใช่เหมือนยังไม่ได้แปล
+    // เทสต์เดิมตรวจแค่ href กับลำดับ จึงมองไม่เห็นช่องนี้เลย
+    const links = [...nav.matchAll(/<a\b[^>]*>/g)].map((m) => m[0]);
+    assert.strictEqual(links.length, expected.length, `${url} nav link count`);
+    links.forEach((tag) => {
+      assert.ok(
+        /\sdata-i18n(\s|=|>)/.test(tag),
+        `${url}: a nav link is not translatable - ${tag}`
+      );
+    });
   }
 });
 
@@ -292,7 +308,7 @@ test('every operator page carries the same page nav, in the same order', async (
 test('operator pages share the theme and broadcast pages keep their own look', async () => {
   const operator = [
     '/', '/teams', '/teams/anything', '/tournament/anything',
-    '/tournament/anything/bracket', '/analytics',
+    '/tournament/anything/bracket', '/tournament/anything/drafts', '/analytics',
     '/control', '/design', '/hotkeys', '/guide'
   ];
   for (const url of operator) {
@@ -300,10 +316,67 @@ test('operator pages share the theme and broadcast pages keep their own look', a
     assert.ok(html.includes('/css/theme.css'), `${url} links the shared theme`);
   }
 
-  for (const url of ['/overlay', '/overlay-1440', '/result', '/overlay-teams', '/overlay-analytics']) {
+  // รายการหน้าออกอากาศดึงมาจาก PAGES เอง ไม่ได้พิมพ์ทิ้งไว้
+  //
+  // ของเดิมเป็นรายการตายตัวห้าหน้า หน้าออกอากาศที่เพิ่มมาทีหลังจึงไม่เคยถูกตรวจเลย
+  // ซึ่งเป็นความผิดพลาดที่มองไม่เห็น: เทสต์ยังเขียว ส่วนหน้าใหม่ที่เผลอลิงก์
+  // theme.css เข้าไปก็หลุดออกอากาศไปพร้อมกับสีของหน้าคนคุมงาน
+  const broadcast = Object.keys(PAGES).filter((route) => (
+    route.startsWith('/overlay') || route === '/result'
+  ));
+  assert.ok(broadcast.length >= 7, 'every overlay- route is checked, not a list somebody has to remember');
+
+  // ดูที่แท็กจริง ไม่ใช่ที่ข้อความดิบทั้งไฟล์
+  //
+  // หน้าออกอากาศมักมีคอมเมนต์เตือนไว้ว่า "ห้ามลิงก์ theme.css" ซึ่งเป็นสิ่งที่
+  // อยากให้มี การเทียบข้อความดิบจะทำให้คอมเมนต์นั้นเองทำให้เทสต์ตก
+  // แล้วทางแก้ที่ง่ายที่สุดคือลบคอมเมนต์ทิ้ง ซึ่งตรงข้ามกับที่เทสต์นี้ต้องการ
+  const links = (html: string) => [...html.matchAll(/<link\b[^>]*href="([^"]+)"/g)].map((m) => m[1]);
+  const scripts = (html: string) => [...html.matchAll(/<script\b[^>]*src="([^"]+)"/g)].map((m) => m[1]);
+
+  for (const url of broadcast) {
     const html = String((await request('GET', url)).body);
-    assert.ok(!html.includes('theme.css'), `${url} must not take the operator theme`);
+    assert.ok(
+      !links(html).some((href) => href.includes('theme.css')),
+      `${url} must not take the operator theme`
+    );
+    // แปลภาษาก็เป็นของหน้าคนคุมงานเหมือนกัน สิ่งที่คนดูเห็นเป็นอังกฤษเสมอ
+    assert.ok(
+      !scripts(html).some((src) => src.includes('i18n.js')),
+      `${url} must not take the operator translator`
+    );
   }
+});
+
+// กระดานดราฟต์ย้อนหลังเป็นสองหน้า แต่เป็นสคริปต์ตัวเดียวกัน
+//
+// สิ่งเดียวที่แยกสองหน้านี้ออกจากกันคือ <body data-kind> ถ้ามันหายหรือสะกดผิด
+// ทั้งสองหน้าจะกลายเป็นหน้าพิคเหมือนกันหมด (ค่าตั้งต้นของสคริปต์) ซึ่งอ่านออกยาก
+// เพราะหน้าแบนจะขึ้นข้อมูลจริงๆ แค่เป็นข้อมูลผิดชุด
+test('the previous-draft board is one page, and the split pages are gone', async () => {
+  const html = String((await request('GET', '/overlay-prev')).body);
+  assert.ok(html.includes('/js/overlay-prev.js'), 'it loads its script');
+  // overlay-prev.js ประกาศ const socket ที่ overlay-size.js ไปอ่าน ลำดับจึงสลับไม่ได้
+  assert.ok(
+    html.indexOf('/js/overlay-prev.js') < html.indexOf('/js/overlay-size.js'),
+    'overlay-prev.js loads before overlay-size.js, which reads its socket'
+  );
+
+  // สองหน้าเดิมถูกลบทิ้งตามที่ผู้ใช้สั่ง ต้องตอบ 404 ไม่ใช่หน้าเปล่า
+  // และต้องไม่งอกกลับมาเงียบๆ ทั้งใน PAGES และในไฟล์
+  for (const gone of ['/overlay-prev-picks', '/overlay-prev-bans']) {
+    assert.strictEqual((await request('GET', gone)).status, 404, `${gone} is gone`);
+    assert.ok(!Object.prototype.hasOwnProperty.call(PAGES, gone), `${gone} has no route`);
+  }
+
+  // และมีแถวเดียวในรายการ browser source
+  const sources = fs.readFileSync(
+    path.join(__dirname, '..', '..', 'public', 'js', 'lib', 'obs-sources.js'), 'utf8'
+  );
+  const rows = [...sources.matchAll(/path: '([^']+)'/g)]
+    .map((m) => String(m[1]))
+    .filter((route) => route.startsWith('/overlay-prev'));
+  assert.deepStrictEqual(rows, ['/overlay-prev'], 'only the merged board is listed');
 });
 
 // หน้าที่แสดงรายการ browser source ต้องโหลด obs-sources.js ก่อนสคริปต์ของตัวเอง
@@ -311,9 +384,10 @@ test('operator pages share the theme and broadcast pages keep their own look', a
 // ทั้งสองหน้าเรียก window.RovObsSources ตอนวาดหน้า ลืมแท็กนี้ = หน้าตายทั้งหน้า
 // และตัวโมดูลเองอ่าน window.RovClient ตอนโหลด จึงต้องมาหลัง app-client.js ด้วย
 test('every page that lists OBS sources loads the shared module in the right order', async () => {
+  // หน้า Control ที่เดียว หน้าทัวร์นาเมนต์เคยแสดงรายการนี้ด้วย
+  // ผู้ใช้สั่งเอาออก 2026-09-08 พร้อมกับการลบสองหน้าดราฟต์ที่แยกพิค/แบน
   const pages = [
-    { url: '/control', script: 'js/control.js' },
-    { url: '/tournament/anything', script: '/js/tournament.js' }
+    { url: '/control', script: 'js/control.js' }
   ];
 
   for (const page of pages) {
@@ -356,4 +430,169 @@ test('the tournament page is served for any id', async () => {
   // path ของ asset ต้องเป็นแบบเต็ม ไม่งั้นเบราว์เซอร์หาไม่เจอเพราะ URL ลึกกว่าหน้าอื่น
   assert.ok(!String(res.body).includes('src="js/'), 'no relative script paths');
   assert.ok(!String(res.body).includes('href="css/'), 'no relative stylesheet paths');
+});
+
+// ทุก URL ในรายการ browser source ต้องเปิดได้จริง
+//
+// รายการนี้คือสิ่งที่คนใช้ก๊อปไปวางใน OBS โดยไม่เคยเปิดดูในเบราว์เซอร์ก่อน
+// path ที่พิมพ์ผิดหนึ่งตัวจะกลายเป็น browser source ที่ว่างเปล่าอยู่ในฉาก
+// ซึ่งอ่านไม่ออกว่าเป็นการพิมพ์ผิด มันอ่านเหมือนฟีเจอร์นั้นพัง
+//
+// เดิมมีเทสต์ที่เช็คทีละแถวเฉพาะแถวที่มีคนนึกได้ (กระดานสถิติ ดราฟต์รอบก่อน)
+// แถวที่เพิ่มมาทีหลังจึงไม่เคยถูกตรวจเลย ตัวนี้ดึงรายการมาจากไฟล์เอง
+test('every URL in the OBS source list opens', async () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '..', '..', 'public', 'js', 'lib', 'obs-sources.js'), 'utf8'
+  );
+
+  const paths = [...source.matchAll(/path: '([^']+)'/g)].map((m) => String(m[1]));
+  assert.ok(paths.length >= 8, 'the list was read, not silently matched to nothing');
+
+  for (const route of paths) {
+    assert.ok(
+      Object.prototype.hasOwnProperty.call(PAGES, route),
+      `${route} is a real page route`
+    );
+    const { status } = await request('GET', route);
+    assert.strictEqual(status, 200, `${route} is served`);
+  }
+
+  // แถวที่มีพารามิเตอร์ประจำตัวต้องเป็นคู่ key=value ไม่ใช่คำลอยๆ
+  // เขียนผิดแล้วหน้าปลายทางจะเงียบๆ ใช้ค่าเริ่มต้น ซึ่งดูเหมือนทำงานอยู่
+  //
+  // ตอนนี้ไม่มีแถวไหนใช้ query: แล้ว (Most picked / Most banned ถูกเอาออก)
+  // จึงไม่บังคับว่าต้องมีอย่างน้อยหนึ่งแถว ด่านนี้รอไว้เฉยๆ เผื่อมีคนเติมกลับเข้ามา
+  const pairs = [...source.matchAll(/query: \[([^\]]*)\]/g)]
+    .flatMap((m) => String(m[1]).split(',').map((s) => s.trim().replace(/'/g, '')))
+    .filter(Boolean);
+  pairs.forEach((pair) => {
+    assert.match(pair, /^[a-z][a-zA-Z0-9]*=[^=&\s]+$/, `${pair} is a key=value pair`);
+  });
+});
+
+// กราฟิกที่วาดรูปฮีโร่ ต้องโหลด hero-art.js ก่อนสคริปต์ของตัวเอง
+//
+// ลืมแท็กแล้วหน้าจะโยน ReferenceError กลางการวาด ผลไม่ใช่ "ไม่มีรูป"
+// แต่คือกระดานค้างอยู่ครึ่งเดียวบนออกอากาศ (กฎเดียวกับ overlay-sfx.js)
+//
+// และห้ามใช้ /images/heroes/ ตรงๆ อีก ช่องพวกนี้เป็นสี่เหลี่ยมจัตุรัสเล็ก
+// รูปเต็มตัวย่อลงมาจะเหลือแต่ไหล่ ทางเลือกโฟลเดอร์อยู่ใน hero-art.js ที่เดียว
+test('the graphics that draw heroes load the shared art helper first', async () => {
+  const pages: Record<string, string> = {
+    '/overlay-analytics': 'overlay-analytics.js',
+    '/overlay-prev': 'overlay-prev.js',
+    '/overlay-matchup': 'overlay-matchup.js',
+    '/overlay-team-drafts': 'overlay-team-drafts.js'
+  };
+
+  for (const [url, own] of Object.entries(pages)) {
+    const html = String((await request('GET', url)).body);
+
+    const libAt = html.indexOf('/js/lib/hero-art.js');
+    assert.ok(libAt > -1, `${url} loads hero-art.js`);
+    assert.ok(
+      libAt < html.indexOf(`/js/${own}`),
+      `${url} loads hero-art.js before ${own}, which calls it`
+    );
+
+    // กราฟิกออกอากาศ ตัวช่วยนี้ต้องไม่ลากธีมหรือตัวแปลเข้ามาด้วย
+    //
+    // ดูที่แท็กจริง ไม่ใช่ข้อความดิบ หน้าพวกนี้มีคอมเมนต์เตือนว่า "ห้ามลิงก์
+    // theme.css" อยู่ในหัวไฟล์ การเทียบข้อความดิบจะทำให้คอมเมนต์นั้นเองทำให้เทสต์ตก
+    // แล้วทางแก้ที่ง่ายที่สุดคือลบคอมเมนต์ทิ้ง ซึ่งตรงข้ามกับที่ต้องการ
+    const hrefs = [...html.matchAll(/<link\b[^>]*href="([^"]+)"/g)].map((m) => m[1]);
+    assert.ok(
+      !hrefs.some((href) => String(href).includes('theme.css')),
+      `${url} is still a broadcast graphic`
+    );
+  }
+
+  const helper = fs.readFileSync(
+    path.join(__dirname, '..', '..', 'public', 'js', 'lib', 'hero-art.js'), 'utf8'
+  );
+  assert.ok(helper.includes('heroes-icons'), 'the helper knows about the icon folder');
+
+  // ไฟล์ที่ใช้ helper แล้ว ต้องไม่มี path ของรูปฮีโร่เขียนไว้เองอีก
+  for (const own of new Set(Object.values(pages))) {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'public', 'js', own), 'utf8'
+    );
+    const codeOnly = source.split('\n').filter((line) => !line.trim().startsWith('//')).join('\n');
+    assert.ok(
+      !codeOnly.includes('/images/heroes'),
+      `${own} picks its folder through hero-art.js, not by hand`
+    );
+  }
+});
+
+// ตัวช่วยที่กราฟิกออกอากาศใช้ร่วมกัน ต้องมีชุดเดียว
+//
+// เคยมี intParam กับ note คัดลอกไว้หน้าละชุด รวมหกชุดต่อฟังก์ชัน ตอนนั้นยังเหมือนกัน
+// ทุกตัวอักษร แต่เพื่อนบ้านของมันไม่ใช่: settleSoon มีหกชุดต่างกันห้าแบบ
+// และ fitToStage มีสี่ชุดต่างกันทั้งสี่ ซึ่งซ่อนบั๊กจริงไว้หนึ่งตัว
+// (/overlay-standings วัดจากขอบกล่องแทนขอบการ์ด ทั้งที่อีกสามหน้าแก้ไปแล้ว)
+//
+// เทสต์นี้กันไม่ให้สองตัวที่รวมแล้วแตกกลับออกไปอีก
+test('the shared overlay helpers have exactly one home', async () => {
+  const pages: Record<string, string> = {
+    '/overlay-analytics': 'overlay-analytics.js',
+    '/overlay-matchup': 'overlay-matchup.js',
+    '/overlay-prev': 'overlay-prev.js',
+    '/overlay-standings': 'overlay-standings.js',
+    '/overlay-team-drafts': 'overlay-team-drafts.js',
+    '/overlay-teams': 'overlay-teams.js'
+  };
+
+  for (const [url, own] of Object.entries(pages)) {
+    const html = String((await request('GET', url)).body);
+    const libAt = html.indexOf('/js/lib/overlay-common.js');
+    assert.ok(libAt > -1, `${url} loads overlay-common.js`);
+    assert.ok(libAt < html.indexOf(`/js/${own}`), `${url} loads it before ${own}, which calls it`);
+
+    // และหน้านั้นต้องไม่ประกาศของตัวเองซ้ำอีก
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'public', 'js', own), 'utf8'
+    );
+    const codeOnly = source.split('\n').filter((line) => !line.trim().startsWith('//')).join('\n');
+    for (const fn of ['function intParam(', 'function note(']) {
+      assert.ok(!codeOnly.includes(fn), `${own} uses the shared ${fn.slice(9, -1)}, not its own`);
+    }
+  }
+});
+
+// body ที่แยกวิเคราะห์ไม่ได้ ต้องตอบเป็น JSON เหมือน endpoint อื่นทุกตัว
+//
+// express.json() ปฏิเสธ body ที่ไม่ใช่ JSON ตั้งแต่ก่อนถึง route แล้วตกไปที่
+// ตัวจับ error ปริยายของ express ซึ่งตอบเป็น HTML พร้อม stack trace เต็มๆ
+// สองอย่างที่เสียไป: fetchJson ฝั่งหน้าเว็บอ่าน data.error ไม่เจอ เลยโชว์
+// "Bad Request" ลอยๆ แทนเหตุผลจริง และเนื้อหาที่ตอบมี path เต็มของเครื่องที่รันอยู่
+// (ค่าเริ่มต้นผูกที่ 127.0.0.1 ก็จริง แต่ HOST ตั้งทับได้จาก env)
+test('a body that cannot be parsed answers in JSON, without a stack trace', async () => {
+  const reply: { status: number; type: string; body: string } = await new Promise((resolve) => {
+    const req = http.request(`${base}/api/tournaments`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' }
+    }, (res) => {
+      const chunks: Buffer[] = [];
+      res.on('data', (c: Buffer) => chunks.push(c));
+      res.on('end', () => resolve({
+        status: res.statusCode || 0,
+        type: String(res.headers['content-type'] || ''),
+        body: Buffer.concat(chunks).toString()
+      }));
+    });
+    req.write('{not json');
+    req.end();
+  });
+
+  assert.strictEqual(reply.status, 400);
+  assert.match(reply.type, /application\/json/, 'same content type as every other endpoint');
+
+  const parsed = JSON.parse(reply.body);
+  assert.ok(parsed.error, 'carries an error field, which is what fetchJson reads');
+
+  // ห้ามมีร่องรอยของ stack trace: ชื่อไฟล์ เลขบรรทัด หรือ path ของเครื่อง
+  assert.ok(!/\.(js|ts):\d+/.test(reply.body), 'no file:line in the response');
+  assert.ok(!/node_modules/.test(reply.body), 'no module paths in the response');
+  assert.ok(!/SyntaxError/.test(reply.body), 'no internal exception name in the response');
 });

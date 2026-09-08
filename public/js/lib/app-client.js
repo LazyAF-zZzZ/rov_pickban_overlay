@@ -15,8 +15,28 @@
 
 (function (global) {
   const params = new URLSearchParams(window.location.search);
-  const controlToken = params.get('token') || localStorage.getItem('rovControlToken') || '';
-  if (controlToken) localStorage.setItem('rovControlToken', controlToken);
+
+  // localStorage โยน error ได้ ไม่ใช่แค่คืน null
+  //
+  // เบราว์เซอร์ที่ตั้งค่าบล็อกข้อมูลเว็บไซต์ไว้ (รวมถึง localhost) จะโยน SecurityError
+  // ตั้งแต่ตอน "อ่าน" property เลย ไม่ใช่ตอนเรียกเมธอด
+  //
+  // สองบรรทัดนี้เป็นคำสั่งแรกสุดของโมดูลที่ทุกหน้าคนคุมงานโหลด ถ้ามันโยนที่นี่
+  // window.RovClient จะไม่ถูกสร้างเลย แล้วทุกหน้าจะตายตั้งแต่บรรทัดแรกที่ destructure
+  // มันออกมา = หน้าขาวทั้งหน้า ไม่มี handler สักตัว และ error ชี้ไปที่โค้ดที่อ่านแล้วปกติดี
+  // เป็นอาการเดียวกับที่ CLAUDE.md อธิบายไว้ตอนลืมแท็ก team-ui.js
+  //
+  // ที่อื่นในโปรเจกต์ (i18n.js, tournament.js) กันไว้แล้วพร้อมคอมเมนต์เรื่องนี้
+  // ตรงนี้เป็นจุดเดียวที่หลุด และเป็นจุดที่เสียหายมากที่สุด
+  function recall(key) {
+    try { return localStorage.getItem(key) || ''; } catch { return ''; }
+  }
+  function remember(key, value) {
+    try { localStorage.setItem(key, value); } catch { /* จำไม่ได้ก็ยังใช้ได้ในรอบนี้ */ }
+  }
+
+  const controlToken = params.get('token') || recall('rovControlToken');
+  if (controlToken) remember('rovControlToken', controlToken);
 
   const socket = global.io
     ? global.io({ auth: { token: controlToken }, query: controlToken ? { token: controlToken } : {} })
@@ -38,17 +58,46 @@
   async function fetchJson(url, options = {}) {
     const headers = { ...(options.headers || {}) };
     if (controlToken) headers.Authorization = `Bearer ${controlToken}`;
+
+    // มี body แต่ไม่ได้บอกชนิด = เซิร์ฟเวอร์ไม่แกะให้เลย
+    //
+    // fetch() ตั้ง Content-Type ให้เป็น text/plain เองเมื่อ body เป็นสตริง
+    // ส่วน express.json() แกะเฉพาะ application/json มันจึงข้ามไปเงียบๆ
+    // req.body กลายเป็น {} แล้วเซิร์ฟเวอร์ก็เดินต่อด้วยค่าเริ่มต้นเหมือนไม่มีอะไรผิด
+    //
+    // เห็นกับตาแล้ว: ปุ่มจับสายรอบน็อกเอาต์ส่ง perGroup = 2 ไป แต่ฝั่งเซิร์ฟเวอร์
+    // อ่านไม่เจอ เลยได้ค่าต่ำสุดคือ 1 ผลคือผ่านเข้ารอบกลุ่มละทีมเดียว
+    // ไม่มี error ไม่มีอะไรบนจอบอกว่าเลขที่กรอกไปถูกทิ้ง
+    //
+    // ผู้เรียกทุกคนที่มีอยู่ตั้ง header นี้เองอยู่แล้ว การตั้งให้ตรงนี้จึงไม่เปลี่ยน
+    // พฤติกรรมของใคร แต่ทำให้ "ลืมตั้ง" ไม่ใช่ความผิดพลาดที่เป็นไปได้อีกต่อไป
+    if (options.body !== undefined && !headers['Content-Type']) {
+      headers['Content-Type'] = 'application/json';
+    }
+
     const response = await fetch(withToken(url), { ...options, headers });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || response.statusText);
     return data;
   }
 
+  // ชนิดของ toast -> โทเคนสีในธีม
+  //
+  // 'green' เป็นชื่อที่หน้าต่างๆ เรียกกันมาตั้งแต่ต้น และเป็นค่าเริ่มต้นของ showToast
+  // แต่ธีมนี้ไม่มีสีเขียว (theme.css มีแค่ทอง/น้ำเงิน/แดง) --green จึงไม่เคยถูกประกาศเลย
+  //
+  // var() ที่ชี้ไปยังตัวแปรที่ไม่มีอยู่ ไม่ได้ถูกมองข้ามเฉยๆ แต่ทำให้พร็อพเพอร์ตี้นั้น
+  // ตกไปเป็นค่า unset ซึ่งของ border-left-color (ไม่ถ่ายทอด) คือ currentColor
+  // ขอบซ้ายของ toast สำเร็จจึงกลายเป็นสีตัวหนังสือ (ขาวนวล) ทุกครั้ง
+  // ทั้งที่ .toast ใน CSS ตั้งไว้เป็นทอง = เสียการแยกสีไปทั้งชนิด โดยไม่มี error ให้เห็น
+  //
+  // ทองคือสีของ "สำเร็จ / กำลังเกิดขึ้นตอนนี้" ในธีมนี้ ตามกฎใน CLAUDE.md
+  const TOAST_COLORS = { green: 'var(--gold)', blue: 'var(--blue)', red: 'var(--red)' };
+
   function showToast(msg, type = 'green') {
     const el = document.getElementById('toast_el');
     if (!el) return;
-    const colors = { green: 'var(--green)', blue: 'var(--blue)', red: 'var(--red)' };
-    el.style.borderLeftColor = colors[type] || colors.green;
+    el.style.borderLeftColor = TOAST_COLORS[type] || TOAST_COLORS.green;
     el.textContent = msg;
     el.classList.add('show');
     clearTimeout(el._t);

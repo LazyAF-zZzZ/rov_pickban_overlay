@@ -21,6 +21,7 @@
 import { getStores } from '../store/index';
 import type { Match, MatchResult } from '../store/matches';
 import { getState, emitState } from '../store/live-state';
+import { isDisplaySwapped } from '../domain/match';
 import { notifyData } from './sync';
 
 // ฝั่ง A ของแมตช์ขึ้นจอเป็นสีน้ำเงินเสมอ (ดู goLive) คะแนน A จึงคู่กับ blue
@@ -96,19 +97,19 @@ export function recordSeriesResult(
 //
 // ปกติ goLive วางฝั่ง A เป็นน้ำเงินเสมอ แต่ switchTeams สลับทั้งสองฝั่งบนจอได้
 // จึงเทียบกับสำเนาแช่แข็งของเกมแทนที่จะเชื่อว่าน้ำเงินคือ A ตลอด
-// เทียบด้วยชื่อ เพราะ state ของ overlay ไม่ได้เก็บ id ของทีมไว้
-function bluePlaysSideB(gameBlueName: string, gameRedName: string): boolean {
-  const state = getState();
-  return state.teamBlue.name === gameRedName && state.teamRed.name === gameBlueName;
-}
-
+//
+// กติกาการเทียบอยู่ที่ isDisplaySwapped ใน domain/match.ts ที่เดียว
+// เดิมไฟล์นี้มีสำเนาของตัวเองที่เทียบด้วยชื่ออย่างเดียว ซึ่งตอบผิดเมื่อสองทีมชื่อเหมือนกัน
+// (ทะเบียนไม่ได้ห้ามชื่อซ้ำ) และตอบผิดเมื่อมีคนแก้ชื่อทีมบนหน้า Control กลางเกม
+// การบันทึกดราฟต์ก็ต้องถามคำถามเดียวกันนี้ สองสำเนาที่ตอบไม่ตรงกันคือคะแนนกับดราฟต์
+// ที่สลับฝั่งกันคนละแบบในเกมเดียวกัน
 function sidesOf(matchId: string): { swapped: boolean } {
   const { liveMatch, games } = getStores();
   const pointer = liveMatch.get();
   if (pointer.matchId !== matchId || !pointer.gameId) return { swapped: false };
   const game = games.get(pointer.gameId);
   if (!game) return { swapped: false };
-  return { swapped: bluePlaysSideB(game.blueName, game.redName) };
+  return { swapped: isDisplaySwapped(getState(), game) };
 }
 
 // คะแนนของแมตช์เปลี่ยน ถ้าแมตช์นั้นกำลังออกอากาศ ให้ overlay ตามทันที

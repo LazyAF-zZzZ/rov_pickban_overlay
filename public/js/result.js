@@ -49,7 +49,11 @@ function renderResultPicks(teamColor, picks) {
         if (!hero) {
             card.classList.remove('filled');
             card.dataset.hero = '';
-            artEl.src = '';
+            // removeAttribute ไม่ใช่ src = ''
+            // ตั้ง src เป็นสตริงว่างทำให้เบราว์เซอร์ไปโหลด URL ของหน้านี้เองมาเป็นรูป
+            // ได้ HTML กลับมาแล้ว onerror ยิง ซึ่งไปสั่ง display:none ค้างไว้
+            // ช่องนั้นจึงมองไม่เห็นอีกเลยจนกว่าจะรีเฟรช ทั้งที่แค่ล้าง pick ออก
+            artEl.removeAttribute('src');
             artEl.style.display = '';
             return;
         }
@@ -79,7 +83,16 @@ function renderResultBans(teamColor, bans) {
 
         const img = document.createElement('img');
         img.src = heroIconUrl(hero);
-        img.onerror = () => { img.src = heroImageUrl(hero); };
+        // ถอยไปใช้รูปเต็มได้ครั้งเดียว กฎเดียวกับ updateBans ใน overlay.js
+        // ไม่เปลี่ยน onerror ก่อนเขียน src ทับ = วนขอไฟล์ที่ไม่มีอยู่ไม่รู้จบ
+        // (วัดแล้ว 640 คำขอต่อวินาที บนหน้าที่ออกอากาศ)
+        //
+        // ตัวที่หยุดวงจรคือการไม่เขียน src อีก ไม่ใช่ remove()
+        // ภาพที่ถอดออกจาก DOM แล้วยังโหลดต่อได้เหมือนเดิม
+        img.onerror = () => {
+            img.onerror = () => img.remove();
+            img.src = heroImageUrl(hero);
+        };
         slot.appendChild(img);
         playOnce(slot, 'just-banned');
     });

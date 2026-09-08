@@ -38,8 +38,15 @@
   <div class="section" id="detailSection" hidden>
     <div class="section-head">
       <div class="section-title" data-i18n>Tournament details</div>
+      <div class="spacer"></div>
+      <!-- พับเก็บไว้เป็นค่าเริ่มต้น ต่างจากหัวข้อทีมที่กางไว้
+           ชื่อ รูปแบบ และความยาวซีรีส์ถูกตั้งครั้งเดียวตอนสร้างรายการ แต่หน้านี้
+           ถูกเปิดซ้ำทั้งงานเพื่อไปที่สายการแข่งกับรายการแมตช์ ซึ่งอยู่ใต้แผงนี้
+           สถานะถูกจำไว้ เหมือนหัวข้อทีม -->
+      <button type="button" class="tlink fold" id="detailToggle"
+              aria-expanded="false" aria-controls="detailFold" title="Show the tournament details">&#9656;</button>
     </div>
-    <div class="panel">
+    <div class="panel" id="detailFold" hidden>
       <div class="frow">
         <div class="fld">
           <label for="fName" data-i18n>Name</label>
@@ -145,16 +152,23 @@
       <div class="section-title" data-i18n>Match session</div>
       <div class="status-tags" id="matchBadges"></div>
       <div class="spacer"></div>
+      <a class="tlink" id="draftsLink" href="#" data-i18n>PICK / BAN HISTORY</a>
       <a class="tlink primary" id="bracketLink" href="#" data-i18n>OPEN MATCH SESSION</a>
     </div>
     <div id="matchesBody"></div>
   </div>
 
-  <div class="section" id="obsSection" hidden>
+  <!-- ตารางคะแนน แสดงเฉพาะรูปแบบที่แข่งพบกันหมด (พบกันหมด / แบ่งกลุ่ม)
+       สายน็อกเอาต์ดูจากสายเอาได้อยู่แล้ว ตารางคะแนนไม่ได้บอกอะไรเพิ่ม -->
+  <div class="section" id="standingsSection" hidden>
     <div class="section-head">
-      <div class="section-title" data-i18n>OBS browser sources</div>
+      <div class="section-title" data-i18n>Standings</div>
+      <div class="spacer"></div>
+      <label class="promote-label" for="perGroup" data-i18n>Teams through per group</label>
+      <input class="promote-input" id="perGroup" type="number" min="1" max="8" value="2">
+      <button class="tlink primary" type="button" id="promoteBtn" data-i18n>DRAW PLAYOFF</button>
     </div>
-    <div id="sources"></div>
+    <div id="standingsBody"></div>
   </div>
 
   <div class="foot" id="foot"></div>
@@ -168,7 +182,6 @@
 <script src="/js/lib/app-client.js"></script>
 <script src="/js/lib/team-ui.js"></script>
 <script src="/js/lib/tournament-ui.js"></script>
-<script src="/js/lib/obs-sources.js"></script>
 <script src="/js/tournament.js"></script>
 </body>
 </html>

@@ -70,6 +70,24 @@
     <div id="tournamentList"></div>
   </div>
 
+  <!-- สำรองข้อมูลและกู้คืน
+       อยู่ท้ายหน้าแรกเพราะเป็นงานที่ทำนอกเวลาแข่ง ไม่ใช่ระหว่างคุมงาน
+       และไม่ได้เพิ่มลงแถบเมนู เพราะแถบเมนูต้องเหมือนกันทุกหน้า (มีเทสต์คุมอยู่) -->
+  <div class="section" id="backupSection">
+    <div class="section-head">
+      <div class="section-title" data-i18n>Backup</div>
+      <div class="spacer"></div>
+      <button type="button" class="tlink" id="backupBtn" data-i18n>SAVE A BACKUP</button>
+      <button type="button" class="tlink" id="restoreBtn" data-i18n>RESTORE…</button>
+    </div>
+    <div class="panel">
+      <div class="panel-body">
+        <div class="hint" data-i18n>Everything on this machine — teams, logos, brackets and every recorded draft — saved as one file you can keep somewhere else or move to another PC.</div>
+        <div id="restorePreview" hidden></div>
+      </div>
+    </div>
+  </div>
+
   <div class="foot" id="foot"></div>
 
 </div>

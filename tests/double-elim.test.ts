@@ -13,6 +13,14 @@ import type { PlannedMatch, Destination } from '../server/domain/bracket';
 
 const teams = (n: number): string[] => Array.from({ length: n }, (_, i) => `t${i + 1}`);
 
+// จำนวนทีมที่เอามาตรวจโครงสร้างทุกข้อ
+//
+// ต้องมีที่ไม่ใช่กำลังของสองด้วย ไม่ใช่แค่ 4/8/16/32
+// จำนวนที่เป็นกำลังของสองพอดีไม่มีบายเลย ซึ่งเป็นเคสที่ง่ายที่สุดและไม่เคยพัง
+// ส่วนจำนวนอื่นทำให้รอบแรกมีบาย = ไม่มีผู้แพ้ให้ส่งลงสายแพ้
+// ตอนที่เทสต์ชุดนี้ตรวจแค่กำลังของสอง สาย 5 ทีมค้าง 8 คู่จาก 15 โดยไม่มีใครเห็น
+const SIZES = [4, 5, 6, 7, 8, 9, 11, 12, 16, 21, 32];
+
 const key = (bracket: string, round: number, slot: number) => `${bracket}#${round}#${slot}`;
 const at = (list: PlannedMatch[], d: Destination) =>
   list.find((m) => m.bracket === d.bracket && m.round === d.round && m.slot === d.slot);
@@ -44,7 +52,7 @@ test('fewer than four teams is not a double elimination bracket', () => {
 
 test('every destination a match points at actually exists', () => {
   // ปลายทางที่ชี้ไปยังช่องที่ไม่มีอยู่จริง = ทีมหายไปเงียบๆ กลางทัวร์นาเมนต์
-  [4, 8, 16, 32].forEach((n) => {
+  SIZES.forEach((n) => {
     const list = doubleElimination(teams(n));
     list.forEach((m) => {
       if (m.winnerTo) {
@@ -59,7 +67,7 @@ test('every destination a match points at actually exists', () => {
 
 test('no two matches feed the same slot and side', () => {
   // ถ้าสองคู่ส่งคนไปช่องเดียวกัน คนหลังจะเขียนทับคนแรก แล้วทีมนั้นหายไป
-  [4, 8, 16, 32].forEach((n) => {
+  SIZES.forEach((n) => {
     const list = doubleElimination(teams(n));
     const taken = new Map<string, string>();
 
@@ -79,7 +87,7 @@ test('no two matches feed the same slot and side', () => {
 });
 
 test('every slot that needs filling has something feeding it', () => {
-  [4, 8, 16].forEach((n) => {
+  SIZES.forEach((n) => {
     const list = doubleElimination(teams(n));
     const fed = new Set<string>();
     list.forEach((m) => {
@@ -132,7 +140,16 @@ function playOut(list: PlannedMatch[]) {
       if (m.bracket === 'grand' && m.round === 2 && (!a || !b)) return;
       if (!a && !b) return;
       if (!a || !b) {
-        if (m.isBye) m.winnerId = a ?? b;
+        // บายรู้ผู้ชนะทันทีและต้องถูกดันเข้ารอบถัดไปด้วย ไม่ใช่แค่ติดธงว่าชนะ
+        // ถ้าไม่ดันต่อ สายที่มีบาย (ทีมไม่ครบกำลังสอง) จะเดินต่อไม่ได้ในเทสต์
+        // ทั้งที่ของจริงเดินได้ แล้วเทสต์จะมองไม่เห็นบั๊กในสายพวกนั้นเลย
+        if (!m.isBye) return;
+        m.teamAId = a;
+        m.teamBId = b;
+        m.winnerId = a ?? b;
+        if (m.winnerTo && m.winnerId) {
+          seat.set(`${key(m.winnerTo.bracket, m.winnerTo.round, m.winnerTo.slot)}:${m.winnerTo.side}`, m.winnerId);
+        }
         return;
       }
 
@@ -163,7 +180,7 @@ function playOut(list: PlannedMatch[]) {
 }
 
 test('playing a bracket out eliminates everyone on their second loss', () => {
-  [4, 8, 16].forEach((n) => {
+  SIZES.forEach((n) => {
     const { losses, champion } = playOut(doubleElimination(teams(n)));
 
     assert.strictEqual(champion, 't1', `n=${n}: the strongest team should win`);
@@ -219,7 +236,7 @@ test('losers bracket champion enters the grand final on the other side', () => {
 });
 
 test('nobody appears twice in the same round of either bracket', () => {
-  [4, 8, 16].forEach((n) => {
+  SIZES.forEach((n) => {
     const { board } = playOut(doubleElimination(teams(n)));
     const seen = new Map<string, Set<string>>();
     board.forEach((m) => {

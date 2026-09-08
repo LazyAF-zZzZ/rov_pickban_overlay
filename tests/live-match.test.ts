@@ -259,3 +259,84 @@ test('with nothing on air, drafting captures nowhere and throws nothing', () => 
   assert.doesNotThrow(() => liveState.emitState(), 'a quick match outside a tournament still works');
   assert.strictEqual(live.describeLive().matchId, null);
 });
+
+// เปลี่ยนแมตช์แล้ว ประวัติ undo ของแมตช์เก่าต้องไม่ตามมาด้วย
+//
+// undoStack อยู่ระดับโมดูลและไม่เคยถูกล้าง ส่วน setState แทนที่ state ทั้งก้อน
+// กด Ctrl+Z ครั้งเดียวหลังสลับคู่จึงเอาทีมของคู่ก่อนหน้า ทั้งชื่อ ผู้เล่น โลโก้ และดราฟต์
+// กลับขึ้นออกอากาศทับคู่ที่กำลังจะเล่น ซึ่งคนดูเห็นทันทีบนจอ
+//
+// Ctrl+Z เป็นคีย์ลัดที่ผูกไว้ให้อยู่แล้วบนหน้า Control และใช้ได้แม้เคอร์เซอร์อยู่ในช่องกรอก
+test('undo history does not follow the overlay from one match to the next', () => {
+  const first = setupMatch();
+  must(live.goLive(first.match.id).live);
+
+  // ดราฟต์ไปหนึ่งช่อง แบบเดียวกับที่ handler ของ updatePick ทำ
+  liveState.pushUndo();
+  liveState.getState().teamBlue.picks[0] = must(HERO_A);
+  liveState.emitState();
+  assert.strictEqual(liveState.getState().teamBlue.name, 'FW');
+
+  // คู่ถัดไปขึ้นจอ
+  const second = setupMatch();
+  must(live.goLive(second.match.id).live);
+  const onAir = liveState.getState().teamBlue.name;
+
+  assert.strictEqual(liveState.popUndo(), false, 'a fresh match starts with nothing to undo');
+  assert.strictEqual(liveState.getState().teamBlue.name, onAir, 'the match on air is untouched');
+  assert.strictEqual(liveState.getState().teamBlue.picks[0], null, 'and keeps its own empty draft');
+});
+
+test('undo still works within the match that is on air', () => {
+  const { match } = setupMatch();
+  must(live.goLive(match.id).live);
+
+  liveState.pushUndo();
+  liveState.getState().teamBlue.picks[0] = must(HERO_B);
+  liveState.emitState();
+  assert.strictEqual(liveState.getState().teamBlue.picks[0], must(HERO_B));
+
+  assert.strictEqual(liveState.popUndo(), true, 'clearing the stack must not disable undo itself');
+  assert.strictEqual(liveState.getState().teamBlue.picks[0], null, 'the pick was rolled back');
+});
+
+// ตำแหน่งของผู้เล่นต้องเดินทางจากทะเบียนทีมไปถึง state ที่กราฟิกอ่าน
+//
+// กราฟิกออกอากาศไม่ได้ถือโทเคนและเรียก API ทะเบียนเองไม่ได้ ถ้าค่าไม่ติดมากับ
+// stateUpdate ไอคอนตำแหน่งก็ไม่มีทางขึ้น และจะเงียบแบบไม่มีอะไรบอกว่าทำไม
+test('putting a match on air carries each player position onto the overlay', () => {
+  const { teams, tournaments, matches } = getStores();
+  const tournament = must(tournaments.create({ name: `Positions ${Math.random()}`, format: 'single_elim', bestOf: 1 }).tournament);
+  const blue = must(teams.create({
+    name: 'POS',
+    players: [
+      { name: 'A', position: 'jungle' },
+      { name: 'B', position: 'Mid lane' },
+      { name: 'C', position: 'nonsense' }
+    ]
+  }).team);
+  const red = must(teams.create({ name: 'OTHER', players: [{ name: 'X', position: 'support' }] }).team);
+  tournaments.addTeam(tournament.id, blue.id, 0);
+  tournaments.addTeam(tournament.id, red.id, 1);
+  const drawn = must(matches.generate(tournament.id).matches);
+
+  must(live.goLive(must(drawn[0]).id).live);
+
+  const state = liveState.getState();
+  assert.deepStrictEqual(state.teamBlue.positions, ['jungle', 'midlane', '', '', ''],
+    'known positions survive, junk is dropped rather than becoming a filename');
+  assert.deepStrictEqual(state.teamRed.positions, ['support', '', '', '', '']);
+});
+
+test('loading one team from the registry brings its positions and leaves the other side alone', () => {
+  const { teams } = getStores();
+  const picked = must(teams.create({
+    name: 'SOLO', players: [{ name: 'A', position: 'carry' }, { name: 'B', position: 'offlane' }]
+  }).team);
+
+  const before = [...liveState.getState().teamRed.positions];
+  must(live.loadTeamIntoSide('teamBlue', picked.id).state);
+
+  assert.deepStrictEqual(liveState.getState().teamBlue.positions, ['carry', 'offlane', '', '', '']);
+  assert.deepStrictEqual(liveState.getState().teamRed.positions, before, 'the other side is untouched');
+});

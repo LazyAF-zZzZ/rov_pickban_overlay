@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <title>ROV Previous Picks and Bans Overlay</title>
+    <!-- กราฟิกออกอากาศ ห้ามลิงก์ /css/theme.css และห้ามโหลด /js/lib/i18n.js
+         สิ่งที่คนดูเห็นต้องไม่เปลี่ยนตามธีมหรือภาษาของหน้าคนคุมงาน -->
+    <link rel="stylesheet" href="/css/fonts.css">
+    <link rel="stylesheet" href="/css/overlay-prev.css">
+</head>
+<body>
+    <div class="pv-stage" id="stage">
+        <div class="pv-head">
+            <div class="pv-title" id="title"></div>
+            <div class="pv-sub" id="subtitle"></div>
+        </div>
+        <div class="pv-list" id="list"></div>
+        <div class="pv-note" id="note" hidden></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- overlay-prev.js ประกาศ socket ไว้ ต้องมาก่อน overlay-size.js ที่ไปอ่านตัวนั้น -->
+    <script src="/js/lib/hero-art.js"></script>
+    <script src="/js/lib/overlay-common.js"></script>
+    <script src="/js/overlay-prev.js"></script>
+    <script src="/js/overlay-size.js"></script>
+</body>
+</html>

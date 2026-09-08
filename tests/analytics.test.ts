@@ -25,6 +25,8 @@ const live = require('../server/services/live-match') as typeof import('../serve
 const liveState = require('../server/store/live-state') as typeof import('../server/store/live-state');
 const { heroesData } = require('../server/domain/heroes') as typeof import('../server/domain/heroes');
 const analytics = require('../server/domain/analytics') as typeof import('../server/domain/analytics');
+const { defaultState, sanitizeState } = require('../server/domain/match') as typeof import('../server/domain/match');
+const { carryOverSettings } = require('../server/domain/settings') as typeof import('../server/domain/settings');
 
 import type { Team } from '../server/domain/team';
 import { must } from './helpers';
@@ -211,6 +213,109 @@ test('a team scope counts only the side that team was on', () => {
   assert.strictEqual(ourPick.picked, 1, 'our own pick is counted');
   assert.strictEqual(theirPick, undefined, 'the opponent pick is not our statistic');
   assert.strictEqual(statFor(must(A), blueScope).games, 1);
+});
+
+// สลับฝั่งบนจอแล้ว ดราฟต์ต้องยังถูกบันทึกให้ถูกทีม
+//
+// ปุ่ม "สลับฝั่ง" บนหน้า Control สลับเฉพาะสิ่งที่เห็นบนจอ ไม่ได้แตะสำเนาแช่แข็งของเกม
+// (ซึ่งตรึงไว้ว่า blue = ทีม A ของแมตช์) ถ้าตัวบันทึกเขียนช่องตามฝั่งที่เห็น
+// ดราฟต์ของสองทีมจะถูกบันทึกสลับตัวกันทั้งชุด และไม่มีอะไรบนจอบอกว่าผิด
+//
+// เคยพังจริงและพังเงียบมาก: สถิติรายทีมคืนฮีโร่ของคู่แข่งมาทั้งหมด
+// และอัตราชนะรายฮีโร่กลับด้าน เพราะ g.winner เก็บในมุมของแมตช์ ส่วน s.side เก็บในมุมของจอ
+test('swapping sides on the overlay still records the draft against the right team', () => {
+  const cup = twoTeamCup('Swapped cup');
+  const gameId = must(must(live.goLive(cup.matchId).live).gameId);
+
+  // สลับฝั่ง ทำแบบเดียวกับ handler ของ switchTeams เป๊ะๆ
+  const state = liveState.getState();
+  const held = JSON.parse(JSON.stringify(state.teamBlue));
+  state.teamBlue = JSON.parse(JSON.stringify(state.teamRed));
+  state.teamRed = held;
+  liveState.emitState();
+
+  // ตอนนี้ช่อง "น้ำเงิน" บนจอคือทีมแดงของแมตช์ ฮีโร่ A จึงเป็นของทีมแดง
+  playFullDraft(gameId, { bluePicks: [must(A)], redPicks: [must(B)] });
+
+  const forRed = statFor(must(A), { teamId: cup.red.id }).stat;
+  const forBlue = statFor(must(A), { teamId: cup.blue.id }).stat;
+  assert.strictEqual(must(forRed).picked, 1, 'the hero belongs to whoever actually picked it');
+  assert.strictEqual(forBlue, undefined, 'and not to the team it was shown next to');
+
+  // ฮีโร่ของอีกฝั่งต้องสลับกันด้วย ไม่ใช่ถูกแค่ข้างเดียว
+  assert.strictEqual(must(statFor(must(B), { teamId: cup.blue.id }).stat).picked, 1);
+  assert.strictEqual(statFor(must(B), { teamId: cup.red.id }).stat, undefined);
+
+  // ทีม A ของแมตช์ (ที่ตอนนี้อยู่ช่องแดงบนจอ) ชนะเกมนี้
+  // ฮีโร่ A เป็นของทีมแดงซึ่งแพ้ จึงต้องนับเป็นแพ้ ไม่ใช่ชนะ
+  getStores().games.setWinner(gameId, 'blue');
+  const scoped = must(statFor(must(A), { tournamentId: cup.tournamentId }).stat);
+  assert.strictEqual(scoped.decided, 1);
+  assert.strictEqual(scoped.wins, 0, 'the losing side\'s hero must not be counted as a win');
+  assert.strictEqual(must(statFor(must(B), { tournamentId: cup.tournamentId }).stat).wins, 1);
+});
+
+// กด RESET MATCH แล้วดราฟต์ที่บันทึกไว้ต้องไม่หาย
+//
+// ตัวบันทึกเกาะอยู่กับ emitState และเขียนสิ่งที่อยู่บนจอลงเกมที่ตัวชี้บอก
+// RESET MATCH แทนที่ state ทั้งก้อนด้วยกระดานเปล่า แต่ไม่เคยล้างตัวชี้
+// emit ครั้งถัดไปจึงเขียนความว่างทับดราฟต์ของเกมที่เพิ่งเล่นจบ
+// และเกมยังค้าง draft_locked = 1 อยู่ สถิติจึงนับเป็น "เกมที่ครบแล้ว" ที่ไม่มีฮีโร่เลย
+// = อัตรา pick/ban ของทั้งทัวร์นาเมนต์เจือจางลงโดยไม่มีอะไรบอก
+//
+// เป็นฝาแฝดของกับดักที่ §9 เขียนไว้แล้วเรื่อง goLive ต้อง restoreDraft ก่อน
+// ทางนั้นถูกอุดไปแล้ว ทางนี้ยังเปิดอยู่
+test('resetting the match does not erase the draft already recorded for it', () => {
+  const cup = twoTeamCup('Reset cup');
+  const gameId = must(must(live.goLive(cup.matchId).live).gameId);
+  playFullDraft(gameId, { bluePicks: [must(A)] });
+
+  const before = must(getStores().games.get(gameId)).slots.length;
+  assert.strictEqual(before, 18, 'the whole draft was recorded');
+
+  // ทำแบบเดียวกับ POST /api/reset-state เป๊ะๆ
+  const previous = liveState.getState();
+  liveState.setState(carryOverSettings(sanitizeState(defaultState), previous));
+  live.releaseLiveMatch();
+  liveState.emitState();
+
+  const after = must(getStores().games.get(gameId));
+  assert.strictEqual(after.slots.length, 18, 'the recorded draft survives the reset');
+  assert.strictEqual(after.draftLocked, true);
+
+  const { stat } = statFor(must(A), { tournamentId: cup.tournamentId });
+  assert.strictEqual(must(stat).picked, 1, 'and the statistics still see it');
+});
+
+// หยิบทีมจากทะเบียนมาซ้อมนอกรอบ ต้องไม่ไปเขียนทับดราฟต์ของคู่ในทัวร์นาเมนต์
+//
+// ไม่มีหน้าไหนล้างตัวชี้แมตช์ที่ออกอากาศเลย พอคนคุมงานจบคู่ของทัวร์นาเมนต์
+// แล้วหยิบสองทีมจากทะเบียนมาซ้อมต่อ ตัวชี้ยังอยู่ที่เกมเดิม
+// ดราฟต์ของแมตช์ซ้อมจึงถูกบันทึกทับดราฟต์จริงของคู่นั้น พร้อมชื่อทีมเดิมติดอยู่
+test('a casual match built from the registry never overwrites a tournament draft', () => {
+  const cup = twoTeamCup('Casual cup');
+  const gameId = must(must(live.goLive(cup.matchId).live).gameId);
+  playFullDraft(gameId, { bluePicks: [must(A)], redPicks: [must(B)] });
+
+  const recorded = must(getStores().games.get(gameId)).slots.map((s) => s.hero).sort();
+
+  // คนคุมงานตั้งแมตช์ซ้อมจากทะเบียน โดยไม่ได้ปิดคู่ที่ออกอากาศอยู่ก่อน
+  const { teams } = getStores();
+  const one = must(teams.create({ name: 'Casual One' }).team);
+  const two = must(teams.create({ name: 'Casual Two' }).team);
+  live.loadTeamIntoSide('teamBlue', one.id);
+  live.loadTeamIntoSide('teamRed', two.id);
+
+  const state = liveState.getState();
+  state.teamBlue.picks = heroesData.heroes.slice(40, 45) as string[];
+  state.teamRed.picks = heroesData.heroes.slice(45, 50) as string[];
+  state.teamBlue.bans = heroesData.heroes.slice(50, 54) as string[];
+  state.teamRed.bans = heroesData.heroes.slice(54, 58) as string[];
+  liveState.emitState();
+
+  const after = must(getStores().games.get(gameId));
+  assert.deepStrictEqual(after.slots.map((s) => s.hero).sort(), recorded, 'the tournament draft is untouched');
+  assert.strictEqual(after.blueName, cup.blue.name, 'and still belongs to the teams that played it');
 });
 
 // ---- การคำนวณล้วนๆ ----
