@@ -105,3 +105,36 @@ test('the positions folder exists and says which filenames it wants', () => {
     assert.ok(readme.includes(`${slug}.png`), `the readme must name ${slug}.png`);
   });
 });
+
+// สำเนาที่สามของรายชื่อตำแหน่ง อยู่ในหน้า Control
+//
+// control.js ต้องมีสำเนาของตัวเอง เพราะ control.html ไม่ได้โหลด team-ui.js
+// (หน้านี้ไม่ได้วาดรายชื่อผู้เล่นแบบทะเบียนทีม) และสคริปต์แบบคลาสสิก
+// import จาก server/ ไม่ได้ สำเนาจึงเลี่ยงไม่ได้ แต่การหลุดจากกันเลี่ยงได้
+//
+// ป้ายต้องตรงกับหน้าทะเบียนทีมด้วย ไม่ใช่แค่ตรงกับ slug ของเซิร์ฟเวอร์
+// คนคนเดียวกันใช้ทั้งสองหน้า เห็น "Mid lane" ที่หนึ่งและ "Middle" อีกที่หนึ่ง
+// จะอ่านเหมือนเป็นคนละอย่าง
+test('the Control Panel copy of the position list matches the server', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '..', '..', 'public', 'js', 'control.js'), 'utf8'
+  );
+  const block = source.slice(source.indexOf('const POSITIONS = ['));
+  const pairs = [...block.slice(0, block.indexOf('];')).matchAll(/value:\s*'([^']*)'[^}]*label:\s*'([^']+)'/g)];
+
+  const values = pairs.map((m) => m[1]).filter((v) => v !== '');
+  const labels = pairs.filter((m) => m[1] !== '').map((m) => m[2]);
+
+  assert.deepStrictEqual(values, [...POSITIONS], 'control.js offers exactly the server positions');
+  assert.deepStrictEqual(labels, POSITIONS.map((p) => POSITION_LABELS[p]), 'and the same labels');
+
+  // และต้องตรงกับสำเนาในหน้าทะเบียนทีมด้วย ป้ายชุดเดียวกันทั้งแอพ
+  const teamUi = fs.readFileSync(
+    path.join(__dirname, '..', '..', 'public', 'js', 'lib', 'team-ui.js'), 'utf8'
+  );
+  const uiBlock = teamUi.slice(teamUi.indexOf('const POSITIONS = ['));
+  const uiPairs = [...uiBlock.slice(0, uiBlock.indexOf('];')).matchAll(/value:\s*'([^']*)'[^}]*label:\s*'([^']+)'/g)]
+    .map((m) => `${m[1]}|${m[2]}`);
+  const ownPairs = pairs.map((m) => `${m[1]}|${m[2]}`);
+  assert.deepStrictEqual(ownPairs, uiPairs, 'both browser copies are identical, blank option included');
+});

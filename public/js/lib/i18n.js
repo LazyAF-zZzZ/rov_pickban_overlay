@@ -478,6 +478,8 @@
       'URL ของ browser source สำหรับ OBS อยู่ที่หน้า Control',
 
     // คำเตือนเหนือรายการ browser source ในหน้า Control (ดู lib/obs-sources.js)
+    'Which lane this player is on':
+      'ผู้เล่นคนนี้เล่นเลนไหน',
     'LANE':
       'เลน',
     'Click to change this player position':

@@ -552,7 +552,7 @@ function buildPPTable(color) {
 
     tr.appendChild(cellWithNumber(i + 1));
     tr.appendChild(cellWithPlayerInput(color, team, i));
-    tr.appendChild(cellWithPositionButton(color, team, i));
+    tr.appendChild(cellWithPositionSelect(color, team, i));
     tr.appendChild(cellWithButton('SW', `btn-sw`, `${color}_psw${i}`, () => swapPlayer(color, i, document.getElementById(`${color}_psw${i}`))));
     tr.appendChild(cellWithHeroSelect(color, team, 'pick', i));
     tr.appendChild(cellWithButton('SW', `btn-sw`, `${color}_hsw${i}`, () => swapHero(color, i, document.getElementById(`${color}_hsw${i}`))));
@@ -583,53 +583,43 @@ function cellWithPlayerInput(color, team, index) {
   return td;
 }
 
-// ตำแหน่งของผู้เล่น: กดวนทีละตำแหน่ง
+// ตำแหน่งของผู้เล่น เลือกจาก dropdown
 //
-// วนแทนที่จะเป็น dropdown เพราะแถวนี้แน่นมากอยู่แล้ว และตำแหน่งถูกตั้งครั้งเดียว
-// ต่อแมตช์ ปุ่มเล็กๆ ที่บอกสถานะตัวเองได้ในตัวจึงคุ้มกว่าช่องเลือกที่กินความกว้าง
+// ต้องตรงกับ POSITIONS / POSITION_LABELS ใน server/domain/position.ts
+// สคริปต์ฝั่งเบราว์เซอร์เป็นแบบคลาสสิก import จาก server/ ไม่ได้ จึงต้องมีสำเนา
+// (สำเนาที่สามในโปรเจกต์ ต่อจาก team-ui.js) tests/position.test.ts กันไว้ว่า
+// ทุกสำเนาต้องไม่หลุดจากกัน
 //
-// ต้องตรงกับ POSITIONS ใน server/domain/position.ts (มีเทสต์กันไว้ว่าสองที่ตรงกัน)
-// '' นำหน้า = ยังไม่ระบุ กดวนกลับมาที่ค่าว่างได้ ไม่ใช่ตั้งแล้วตั้งอีกไม่ได้
-const POSITION_CYCLE = ['', 'jungle', 'carry', 'midlane', 'offlane', 'support'];
-const POSITION_SHORT = {
-  '': '–',
-  jungle: 'JG',
-  carry: 'AD',
-  midlane: 'MID',
-  offlane: 'OFF',
-  support: 'SUP'
-};
+// ป้ายชุดเดียวกับหน้าทะเบียนทีม คนเดียวกันใช้ทั้งสองหน้า คำที่ใช้จึงต้องตรงกัน
+const POSITIONS = [
+  { value: '', label: 'Position' },
+  { value: 'jungle', label: 'Jungle' },
+  { value: 'carry', label: 'Carry' },
+  { value: 'midlane', label: 'Mid lane' },
+  { value: 'offlane', label: 'Off lane' },
+  { value: 'support', label: 'Support' }
+];
 
-function cellWithPositionButton(color, team, index) {
+function cellWithPositionSelect(color, team, index) {
   const td = document.createElement('td');
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'btn-pos';
-  button.id = `${color}_pos${index}`;
-  button.dataset.position = '';
-  button.textContent = POSITION_SHORT[''];
-  button.title = t('Click to change this player position');
+  const select = document.createElement('select');
+  select.className = 'pos-select';
+  select.id = `${color}_pos${index}`;
+  select.title = t('Which lane this player is on');
 
-  button.addEventListener('click', () => {
-    const now = POSITION_CYCLE.indexOf(button.dataset.position || '');
-    const next = POSITION_CYCLE[(now + 1) % POSITION_CYCLE.length];
-    // วาดทันทีเพื่อให้ปุ่มตอบสนองเลย ไม่ต้องรอ state วิ่งกลับมา
-    // แล้ว renderPositions จะยืนยันอีกครั้งเมื่อ stateUpdate มาถึง
-    setPositionButton(button, next);
-    socket.emit('updatePlayerPosition', { team, index, position: next });
+  POSITIONS.forEach(({ value, label }) => {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = t(label);
+    select.appendChild(option);
   });
 
-  td.appendChild(button);
-  return td;
-}
+  select.addEventListener('change', () => {
+    socket.emit('updatePlayerPosition', { team, index, position: select.value });
+  });
 
-function setPositionButton(button, position) {
-  const value = POSITION_CYCLE.includes(position) ? position : '';
-  button.dataset.position = value;
-  button.textContent = POSITION_SHORT[value];
-  button.classList.toggle('is-set', value !== '');
-  // ไอคอนเดียวกับที่กราฟิกออกอากาศใช้ จะได้เห็นว่าอันไหนจะขึ้นจอ
-  button.style.backgroundImage = value ? `url("/images/positions/${value}.png")` : '';
+  td.appendChild(select);
+  return td;
 }
 
 function cellWithButton(text, className, id, handler) {
@@ -902,23 +892,16 @@ function commitHeroInput(input, onCommit, preferMatch = false) {
   if (preferMatch || next !== (previous || null)) onCommit(next);
 }
 
-// ปุ่มตำแหน่งตามค่าที่อยู่ใน state
-// ไม่เขียนทับปุ่มที่กำลังถูกกดอยู่ ปุ่มไม่มีสถานะ "กำลังพิมพ์" จึงเขียนทับได้เสมอ
+// ช่องเลือกตำแหน่งตามค่าที่อยู่ใน state
+//
+// ไม่เขียนทับช่องที่กำลังถูกใช้อยู่ stateUpdate มาทุกวินาทีตอนนาฬิกาเดิน
+// การเขียนทับจะปิด dropdown ที่เพิ่งเปิดค้างไว้ทิ้งกลางคัน
+// (หลักเดียวกับ setSelect และ renderSfxLevels ในไฟล์นี้)
 function renderPositions(color, positions) {
   (positions || []).forEach((position, index) => {
-    const button = document.getElementById(`${color}_pos${index}`);
-    if (!button) return;
-    // ห้ามเขียนทับปุ่มที่มือกำลังกดอยู่
-    //
-    // ปุ่มนี้วนค่าจากค่าที่ตัวเองแสดงอยู่ ถ้า stateUpdate จากการกดครั้งก่อน
-    // มาถึงระหว่างที่คนกำลังกดรัวๆ มันจะรีเซ็ตปุ่มกลับไปค่าเก่า แล้วการกดครั้งถัดไป
-    // จะวนต่อจากค่าที่ผิด วัดมาแล้ว: กดเจ็ดครั้งจากค่าว่างควรจบที่ jungle
-    // แต่เซิร์ฟเวอร์ได้ midlane เพราะโดนรีเซ็ตกลางทาง
-    //
-    // ปุ่มที่เพิ่งถูกคลิกคือปุ่มที่ถือโฟกัสอยู่ ข้ามมันไปจนกว่าจะคลิกที่อื่น
-    // (หลักเดียวกับ renderSfxLevels ที่ไม่แตะสไลเดอร์ที่กำลังลากอยู่)
-    if (document.activeElement === button) return;
-    setPositionButton(button, position);
+    const select = /** @type {HTMLSelectElement} */ (document.getElementById(`${color}_pos${index}`));
+    if (!select || document.activeElement === select) return;
+    select.value = POSITIONS.some((p) => p.value === position) ? position : '';
   });
 }
 
