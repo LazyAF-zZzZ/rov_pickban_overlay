@@ -68,6 +68,7 @@
       "!public/images/skins/*.png",
       "!public/images/skins/*.jpg",
       "!public/images/skins/*.webp",
+      "!public/**/*~",
       "node_modules/**/*"
     ],
     "win": {

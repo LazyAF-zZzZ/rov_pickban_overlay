@@ -2070,6 +2070,11 @@ Each of these cost real debugging time. They are also in `CLAUDE.md`.
 - **`build.files` ships `build/server/**/*`, not `server/**/*`** — the compiled
   output, never the source. A missing entry builds a clean `.exe` that dies on
   launch.
+- **`.gitignore` does not protect the installer; `build.files` is a separate list.**
+  A `jungle.png~` left in `public/images/positions/` by an image editor was invisible
+  to `git status` (the ignore file has `*~`) and shipped inside `app.asar` all the
+  same, because the pattern is `public/**/*`. Harmless here, but the same blind spot
+  is what the `!data/...` lines exist for. `!public/**/*~` was added on 2026-09-09.
 - **`require('./server/index')` never `require('./server')`.** Node resolves
   files before folders, so the short form loads `server.js` into itself.
 - **`getState()`/`setState()`, never a captured reference.** State is replaced
