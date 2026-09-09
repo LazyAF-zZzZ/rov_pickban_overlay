@@ -24,7 +24,7 @@
     "overlay",
     "draft pick"
   ],
-  "author": "",
+  "author": "LazyAF",
   "license": "SEE LICENSE IN LICENSE.md",
   "dependencies": {
     "cors": "^2.8.5",
