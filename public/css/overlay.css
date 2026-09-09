@@ -310,7 +310,7 @@ body {
     background: rgba(185, 28, 28, 0.35);
     border: 2px solid #ff3333;
     border-radius: 4px;
-    letter-spacing: 3px;
+    letter-spacing: 0.12em;
     border-width: 1px;
 }
 
@@ -320,7 +320,7 @@ body {
     background: rgba(2, 6, 23, 0.86);
     /* was #ff3333 - a second red rendering right next to the pick slots'
        #f87171, close enough to read as an inconsistency, not a choice */
-    border: 2px solid var(--ov-red);
+    border: 3px solid var(--ov-red);
     border-radius: 6px;
     position: relative;
     overflow: hidden;
@@ -403,7 +403,7 @@ body {
 
 .blue-team .pick-slot,
 .red-team .pick-slot {
-    border-width: 2px;
+    border-width: 3px;
     background: rgba(15, 23, 42, 0.72);
 }
 
@@ -428,12 +428,17 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    /* 4px, not 9px, of side padding. The slot is a fixed 144px and the name
+    /* 3px, not 9px, of side padding. The slot is a fixed 144px and the name
        has to live inside it, so every pixel of padding is a pixel the name
        cannot use: at 9px the box was 122px and VUXIANG(C) measured 130 at the
-       new size - it would have ellipsised a name that fits. The 2px slot
-       border still keeps the text off the edge. */
-    padding: 12px 4px;
+       new size - it would have ellipsised a name that fits. The slot border
+       still keeps the text off the edge.
+
+       The border eats this budget too, so the two are not independent: taking
+       that border from 2px to 3px cost a pixel a side and put the box back to
+       exactly 130, dead level with the longest real name. Widen the border
+       again and this padding has to come down with it. */
+    padding: 12px 3px;
     background: linear-gradient(to top, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.7));
     z-index: 10;
 }
@@ -493,7 +498,7 @@ body {
     font-size: 15px;
     color: #cbd5e1;
     text-transform: uppercase;
-    letter-spacing: 4px;
+    letter-spacing: 0.12em;
     margin-bottom: 5px;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
     min-height: 22px;
@@ -844,7 +849,7 @@ body {
     font-weight: 900;
     color: #ffffff;
     text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.9);
-    letter-spacing: 2px;
+    letter-spacing: 0.12em;
     max-width: 120px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1078,14 +1083,21 @@ body.panels-off .team-center-card {
         0 -16px 44px rgba(2, 6, 23, 0.5);
 }
 
-/* Thinner, brighter card edges - the design uses hairlines, not heavy frames */
+/* Brighter card edges. They were 2px - hairlines rather than heavy frames -
+   and that reads better on a monitor, but 2px is the one width this layout
+   cannot render cleanly. /overlay-1440 is this same layout under scale(4/3),
+   so a 2px edge lands on 2.667 device pixels there: the browser resamples it
+   and the line crawls, worst of all against a moving camera behind it. Only
+   multiples of 3 come out whole at both sizes, and 3px is the smallest.
+   Purely visual, so it is one number to put back if the heavier frame is
+   worse on air than the shimmer was. */
 .blue-team .pick-slot {
-    border: 2px solid rgba(var(--ov-blue-rgb), 0.5);
+    border: 3px solid rgba(var(--ov-blue-rgb), 0.5);
     box-shadow: 0 0 16px rgba(var(--ov-blue-rgb), 0.18);
 }
 
 .red-team .pick-slot {
-    border: 2px solid rgba(var(--ov-red-rgb), 0.5);
+    border: 3px solid rgba(var(--ov-red-rgb), 0.5);
     box-shadow: 0 0 16px rgba(var(--ov-red-rgb), 0.18);
 }
 
@@ -1166,7 +1178,7 @@ body.panels-off .team-center-card {
 .ban-label {
     font-size: var(--ov-type-caption);
     font-weight: 700;
-    letter-spacing: 3px;
+    letter-spacing: 0.12em;
     color: var(--ov-silver);
     background: none;
     border: none;
@@ -1179,7 +1191,7 @@ body.panels-off .team-center-card {
 .ban-slot {
     width: 58px;
     height: 58px;
-    border-width: 2px;
+    border-width: 3px;
     border-radius: 4px;
 }
 
@@ -1230,7 +1242,7 @@ body.panels-off .team-center-card {
     bottom: 369.5px;
     font-size: var(--ov-type-tournament);
     font-weight: 500;
-    letter-spacing: 4px;
+    letter-spacing: 0.12em;
     margin-bottom: 0;
     opacity: 0.85;
 }
@@ -1275,8 +1287,8 @@ body.panels-off .team-center-card {
     border-radius: 4px;
 }
 
-.blue-team-score, .score-number:first-of-type { border: 2px solid rgba(var(--ov-blue-rgb), 0.9); }
-.score-number:last-of-type { border: 2px solid rgba(var(--ov-red-rgb), 0.9); }
+.blue-team-score, .score-number:first-of-type { border: 3px solid rgba(var(--ov-blue-rgb), 0.9); }
+.score-number:last-of-type { border: 3px solid rgba(var(--ov-red-rgb), 0.9); }
 
 /* Caption weight - it separates the two numbers, it is not one of them. */
 .score-separator {
@@ -1303,7 +1315,7 @@ body.panels-off .team-center-card {
     font-size: var(--ov-type-caption);
     color: var(--ov-text);
     opacity: 0.85;
-    letter-spacing: 2px;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     margin-bottom: 2px;
     min-height: 21px;

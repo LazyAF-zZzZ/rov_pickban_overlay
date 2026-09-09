@@ -119,15 +119,33 @@ test('a player name stays inside its slot at the default size', () => {
   const padding = /padding:\s*\d+px\s+(\d+)px/.exec(info);
   assert.ok(padding, '.player-info must keep an explicit horizontal padding - the name box width depends on it');
 
+  // เส้นขอบกินความกว้างเท่ากับ padding ห้ามเขียนค่าตายตัวไว้ตรงนี้
+  // ตอนขยายเส้นขอบจาก 2px เป็น 3px กล่องชื่อแคบลงสองพิกเซลโดยที่ไม่มีอะไรฟ้อง
+  // เพราะเทสต์รุ่นแรกฝัง 2 เอาไว้เอง แล้วยังผ่านอยู่ทั้งที่ของจริงเปลี่ยนไปแล้ว
+  // ต้องเอากฎ "ตัวสุดท้าย" ที่ประกาศ border ไม่ใช่ตัวแรกที่เจอ
+  // .blue-team .pick-slot ถูกเขียนไว้สองที่ ตัวแรกเหลือแค่ background
+  // (มีคอมเมนต์อธิบายไว้ในไฟล์) ตัวที่ทำงานจริงคือตัวหลัง อ่านผิดตัวแล้ว
+  // เทสต์จะวัดกล่องจากเส้นขอบที่ไม่ได้ถูกใช้
+  const blocks = [...css.matchAll(/\.blue-team \.pick-slot \{([^}]*)\}/g)].map((m) => m[1]);
+  const withBorder = blocks.filter((b) => /border:\s*\d+px/.test(b));
+  assert.ok(
+    withBorder.length,
+    '.blue-team .pick-slot must keep an explicit border width - the name box width depends on it'
+  );
+  const border = /border:\s*(\d+)px/.exec(withBorder[withBorder.length - 1]);
+  assert.ok(border);
+
   const SLOT = 144;
-  const BORDER = 2;
-  const box = SLOT - Number(padding[1]) * 2 - BORDER * 2;
+  const box = SLOT - Number(padding[1]) * 2 - Number(border[1]) * 2;
 
   // ชื่อที่ยาวที่สุดที่เจอจริงในสนามคือรูปแบบ NAME(C) ประมาณ 10 ตัวอักษร
-  // วัดได้ 130px ที่ 22px ถ้ากล่องแคบกว่านี้ต้องลด default หรือลด padding
+  // VUXIANG(C) วัดจากเบราว์เซอร์ด้วย Kanit 600 ที่ 22px ได้ 130px พอดี
+  // เผื่อไว้อีกนิดเพราะการปัดเศษระดับซับพิกเซลทำให้ค่าพอดีเป๊ะพลิกเป็นล้นได้
   const MEASURED_WIDEST = 130;
+  const HEADROOM = 2;
   assert.ok(
-    box >= MEASURED_WIDEST,
-    `the name box is ${box}px but a 10-character name measures ${MEASURED_WIDEST}px at the default size - names would be cut off`
+    box >= MEASURED_WIDEST + HEADROOM,
+    `the name box is ${box}px: a 10-character name measures ${MEASURED_WIDEST}px at the default size, `
+      + `so it needs at least ${MEASURED_WIDEST + HEADROOM}px to survive rounding - names would be cut off on air`
   );
 });

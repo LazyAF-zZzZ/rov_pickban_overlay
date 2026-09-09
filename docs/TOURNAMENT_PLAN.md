@@ -562,6 +562,37 @@ disk and compares them — with the key-to-token table parsed out of `overlay.js
 rather than restated, so the test cannot become the fourth copy. It was checked
 by reintroducing the drift, which fails it with the file names in the message.
 
+
+**Tracking is in `em` now, because the sizes are sliders.** The tournament name
+carried 4px of letter-spacing at 18px — 0.22em, roughly twice what uppercase
+display type wants, and it thins the letter run exactly where a low-bitrate
+stream is already losing it. The BAN label was 0.214em, the draft label 0.143em.
+All three are `0.12em`. The unit matters more than the number: these font sizes
+are Design-page sliders with a 10..48 range, so a fixed 4px meant 0.4em at the
+bottom of the slider and 0.08em at the top — the tracking was only ever right at
+one setting. `.match-title` (0.021em) and `.score-separator` (0.071em) were
+already reasonable and were left alone.
+
+**Card edges went 2px to 3px, and 3 is not a taste decision.** /overlay-1440 is
+this layout under `scale(4/3)`, so a 2px edge resolves to 2.667 device pixels
+there and gets resampled — a thin bright line that crawls, against a moving
+camera. Only multiples of 3 come out whole at both sizes. Pick slots, ban slots
+and the score boxes are 3px, which is 4 device pixels at 1440p exactly. It does
+contradict the "hairlines, not heavy frames" note that was on those rules; that
+comment now records the trade instead, because the file should not argue with
+itself. The weight is the one part of this a viewer might dislike, and it is one
+number to put back.
+
+**The two changes collide, which is the part worth remembering.** The name box is
+whatever the 144px slot has left after padding *and* border, so widening the
+border narrowed the box from 132 to 130 — dead level with `VUXIANG(C)` at 130,
+no rounding headroom at all. Padding came down to 3px a side to pay for it. The
+first version of `theme-defaults.test.ts` did not catch this because it had `2`
+written into it for the border width; it now reads both numbers out of the CSS,
+and takes the *last* `.blue-team .pick-slot` block rather than the first, since
+the first one is the legacy rule that only sets a background. Reading the wrong
+one is how the test first failed against a stylesheet that was fine.
+
 ### The lane control on the Control Panel
 
 Asked for as "I want player position change button on control panel", then "I
