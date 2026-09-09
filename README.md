@@ -1,9 +1,9 @@
 # ROV Pick/Ban Overlay Tool
 
-[![Platform](https://img.shields.io/badge/platform-Windows-2563eb)](https://github.com/wittayangamhom-create/rov_pickban_overlay)
+[![Platform](https://img.shields.io/badge/platform-Windows-2563eb)](https://github.com/LazyAF-zZzZ/rov_pickban_overlay)
 [![OBS](https://img.shields.io/badge/OBS-Browser%20Source-7c3aed)](https://obsproject.com/)
 [![License](https://img.shields.io/badge/license-Free%20Non--Commercial-ef4444)](LICENSE.md)
-[![Release](https://img.shields.io/badge/download-Releases-16a34a)](https://github.com/wittayangamhom-create/rov_pickban_overlay/releases)
+[![Release](https://img.shields.io/badge/download-Releases-16a34a)](https://github.com/LazyAF-zZzZ/rov_pickban_overlay/releases)
 
 ROV Pick/Ban Overlay Tool คือแอพสำหรับทำหน้าจอ Draft Pick / Ban ของเกม ROV เพื่อใช้กับ OBS, งานถ่ายทอดสด, รายการชุมชน, ทัวร์นาเมนต์เล็ก-กลาง และทีมงานที่ต้องการ overlay ใช้งานง่ายโดยไม่ต้องเขียนโค้ดเอง
 
@@ -13,7 +13,7 @@ ROV Pick/Ban Overlay Tool คือแอพสำหรับทำหน้า
 
 ถ้าคุณต้องการใช้งานอย่างเดียว ให้ดาวน์โหลดไฟล์ `.exe` จากหน้า Releases:
 
-[Download from GitHub Releases](https://github.com/wittayangamhom-create/rov_pickban_overlay/releases)
+[Download from GitHub Releases](https://github.com/LazyAF-zZzZ/rov_pickban_overlay/releases)
 
 แนะนำให้โหลดไฟล์ใดไฟล์หนึ่ง
 
