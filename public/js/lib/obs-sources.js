@@ -135,23 +135,25 @@
     // เสียงเป็นสิ่งที่พังเงียบที่สุดในงานนี้ ภาพหายเห็นทันที แต่เสียงหายไม่มีอะไรบอก
     // จนกว่าจะมีคนดูทัก และตอนนั้นก็สายไปแล้ว
     //
-    // เงื่อนไขสามข้อที่ต้องครบพร้อมกัน (ดู USER_GUIDE หัวข้อเสียงเอฟเฟกต์):
-    //   1. ซอร์ส overlay ต้องอยู่ใน "ซีนที่กำลังออกอากาศ" ไม่ใช่แค่มีอยู่ในซีนอื่น
-    //      OBS ผสมเสียงเฉพาะซอร์สในซีนที่ออกอากาศอยู่
-    //   2. ห้ามติ๊ก Shutdown source when not visible ไม่งั้น OBS หยุดหน้าเว็บ
-    //      ทุกครั้งที่สลับซีน
-    //   3. โปรแกรมนี้ต้องเปิดค้างไว้ ปิดเมื่อไหร่เซิร์ฟเวอร์ดับ
+    // เสียงเล่นอยู่ในหน้า overlay ไม่ได้เล่นในโปรแกรมนี้
     //
-    // วางไว้เหนือรายการ URL เพราะนั่นคือจุดที่คนกำลังตั้งค่า OBS อยู่พอดี
-    // ไม่ใช่ในคู่มือที่ต้องนึกได้เองว่าต้องเปิดอ่าน
+    // หน้าต่างหลักของแอพเป็นแค่เปลือก หน้า overlay ต่างหากที่โหลด overlay-sfx.js
+    // และเป็นตัวเล่นเสียงจริง ไม่เปิดหน้านั้นไว้ก็ไม่มีอะไรเล่นเสียงให้
+    //
+    // สองทางที่เปิดได้ ทั้งคู่เปิดหน้าเดียวกัน:
+    //   ปุ่ม เปิด/OPEN ในแถว Overlay ของรายการนี้
+    //   เมนู ROV Tool > Overlay 1080p (ดู openToolWindow ใน electron-main.js)
+    //
+    // วางคำเตือนไว้เหนือรายการ เพราะปุ่มที่ต้องกดอยู่ในรายการนี้เอง
+    // คนที่กำลังก๊อป URL อยู่ตรงนี้ คือคนที่ต้องรู้เรื่องนี้พอดี
     //
     // อยู่ในโมดูลนี้ ไม่ใช่ใน HTML ของหน้าใดหน้าหนึ่ง เพราะคำเตือนนี้เป็นของ
     // "รายการ URL" ถ้าวันหลังมีหน้าอื่นแสดงรายการนี้อีก คำเตือนจะติดไปด้วยเอง
     const warning = document.createElement('div');
     warning.className = 'src-warning';
     warning.textContent = t(
-      'Sound only reaches viewers while the overlay source is live in the scene you are '
-      + 'broadcasting. Leave "Shutdown source when not visible" unticked, and keep this app open.'
+      'Sound needs the overlay page open. Press OPEN on Overlay 1080p (or 1440p) and '
+      + 'leave that window open - or use the ROV Tool menu. Closing it stops the sound.'
     );
     container.appendChild(warning);
 
