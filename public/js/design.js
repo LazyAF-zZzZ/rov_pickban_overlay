@@ -217,7 +217,7 @@ function renderSkin(skin) {
 const THEME_DEFAULTS = {
   blue: '#38bdf8', red: '#f87171', accent: '#f59e0b',
   text: '#ffffff', label: '#c0c0c0',
-  typeCaption: 14, typePlayer: 18, typeTournament: 18,
+  typeCaption: 14, typePlayer: 22, typeTournament: 18,
   typeTitle: 24, typeScore: 42, typeTimer: 40,
   logoSize: 138, logoInset: 10
 };

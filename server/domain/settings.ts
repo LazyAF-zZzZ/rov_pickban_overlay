@@ -40,7 +40,7 @@ export const THEME_DEFAULTS: Theme = {
   text: '#ffffff',
   label: '#c0c0c0',
   typeCaption: 14,
-  typePlayer: 18,
+  typePlayer: 22,
   typeTournament: 18,
   typeTitle: 24,
   typeScore: 42,

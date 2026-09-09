@@ -521,6 +521,47 @@ named four pages when there are nine. Both lists now say "every `/overlay*` rout
 at the `PAGES`-derived test — the reason those rules never actually broke is that the test
 derives the list instead of repeating it.
 
+### Player names, and the three copies of every theme default
+
+Asked for as "how can i improve graphic on overlay". The measurement said the
+banner's hierarchy was inverted: player names, the only live data on it, were
+18px — 1.67% of a 1080p frame — while the match title, which does not change
+during a game, sat at 24px. It is the same fault the BAN label was demoted for,
+pointing the other way. Under roughly 2% of frame height a name stops surviving
+the trip to the viewer: most of them are on 720p or a phone, where 18px arrives
+as 12. The default is now 22px, which is 2.04%.
+
+**The name box had to grow before the type could.** The slot is a fixed 144px
+and `.player-info` was spending 9px a side on padding, leaving 122px. Measured
+in the browser with Kanit 600, `VUXIANG(C)` needs 130px at 22px — it would have
+been ellipsised at a size meant to make it readable. Padding is now 4px a side,
+giving 132px. The ceiling is about ten normal-width characters; `SUPERSTAR(C)`
+still clips, but it clipped at 18px too (127 into 122), so nothing regressed.
+
+**1440p needed no work, and that is worth knowing before touching this file.**
+That page is the 1080p layout under `transform: scale(4/3)`, so every type
+change carries across for free. `overlay-1440.css` is still on disk and still
+linked, but `overlay-size.js` disables it on load — the comment at the bottom of
+`overlay.css` explains why. Two traps follow from that: reading a size out of
+`overlay-1440.css` tells you nothing about what renders, and comparing
+`getComputedStyle().fontSize` against `getBoundingClientRect()` on that page
+compares an untransformed number with a transformed one. Doing exactly that is
+what first produced a confident, wrong report that 1440p had stopped scaling
+its type.
+
+**The real find was underneath.** `--ov-type-player` is not a constant; it is a
+Design-page setting with a 10..48 slider, stored in `state.theme` and written
+onto `:root` as an inline style by `overlay.js`. So editing the CSS changes
+nothing for anyone who already has a state file — the stylesheet value is only
+the fallback. The default lives in **three** places that must agree:
+`THEME_DEFAULTS` in `server/domain/settings.ts`, `:root` in `overlay.css`, and
+`THEME_DEFAULTS` in `public/js/design.js`. Both files carry a comment saying so.
+Nothing enforced it, and it drifted immediately: the CSS went to 22 while the
+other two stayed at 18. `tests/theme-defaults.test.ts` now reads all three from
+disk and compares them — with the key-to-token table parsed out of `overlay.js`
+rather than restated, so the test cannot become the fourth copy. It was checked
+by reintroducing the drift, which fails it with the file names in the message.
+
 ### The lane control on the Control Panel
 
 Asked for as "I want player position change button on control panel", then "I
@@ -2070,6 +2111,13 @@ Each of these cost real debugging time. They are also in `CLAUDE.md`.
 - **`build.files` ships `build/server/**/*`, not `server/**/*`** — the compiled
   output, never the source. A missing entry builds a clean `.exe` that dies on
   launch.
+- **A theme default is written in three files and nothing checked them.**
+  `--ov-type-player` and its twelve siblings are Design-page settings: the CSS
+  `:root` value is only a fallback, because `overlay.js` writes `state.theme`
+  onto `:root` inline. Editing the stylesheet alone moves nothing for an existing
+  install, and the defaults in `settings.ts`, `overlay.css` and `design.js` must
+  match or a fresh install and the Reset button disagree. `theme-defaults.test.ts`
+  holds them together since 2026-09-09.
 - **`.gitignore` does not protect the installer; `build.files` is a separate list.**
   A `jungle.png~` left in `public/images/positions/` by an image editor was invisible
   to `git status` (the ignore file has `*~`) and shipped inside `app.asar` all the

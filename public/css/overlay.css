@@ -43,7 +43,13 @@
     /* Player names and the tournament name were one token. They start at the
        same size but sit in different places doing different jobs, so they get
        their own knobs - resizing one no longer drags the other with it. */
-    --ov-type-player: 18px;
+    /* 22px is 2.04% of a 1080p frame. Under about 2% a name stops surviving
+       the trip to the viewer: most of them watch at 720p or on a phone, where
+       18px arrived as 12. It was also the smallest live thing on the banner
+       while the match title, which never changes during a game, sat at 24px -
+       the same inversion the BAN label was demoted for further down.
+       1440p follows automatically; that page is this layout scaled by 4/3. */
+    --ov-type-player: 22px;
     --ov-type-tournament: 18px;
     --ov-type-title: 24px;
     --ov-type-score: 42px;
@@ -207,7 +213,10 @@
 }
 
 .player-name {
-    font-size: 18px;
+    /* No font-size here. A later .player-name rule sets it from
+       --ov-type-player and wins on order, so a size written here looks like
+       the knob and does nothing - the failure that already cost this file a
+       whole dead stylesheet. Change the token, not this rule. */
     font-weight: 600;
     color: #ffffff;
     text-transform: uppercase;
@@ -419,7 +428,12 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 12px 9px;
+    /* 4px, not 9px, of side padding. The slot is a fixed 144px and the name
+       has to live inside it, so every pixel of padding is a pixel the name
+       cannot use: at 9px the box was 122px and VUXIANG(C) measured 130 at the
+       new size - it would have ellipsised a name that fits. The 2px slot
+       border still keeps the text off the edge. */
+    padding: 12px 4px;
     background: linear-gradient(to top, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.7));
     z-index: 10;
 }
