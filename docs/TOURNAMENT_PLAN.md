@@ -11,7 +11,7 @@ conversation history, everything needed to continue is here or in `CLAUDE.md`.
 
 ## 0. Where things stand
 
-**Last updated 2026-09-08, released as v2.0.0.** The branch is `main`.
+**Last updated 2026-09-09, released as v2.0.2.** The branch is `main`.
 Everything described in this document is committed. The table below carries the
 ids for the 2026-08-31 session, one commit per numbered item; everything after
 `a47e980` went in as the single 2.0.0 release commit.
@@ -58,7 +58,7 @@ one page), the structure pass and the two audit passes — is described below an
 against a single commit, which was the largest standing risk in the project for
 weeks; the release closed it.
 
-Current state: **0 type errors under `strict`, 342 tests passing.** Creating a
+Current state: **0 type errors under `strict`, 343 tests passing.** Creating a
 tournament, adding a team with its players in one form, uploading logos,
 drawing single/double elimination, round robin and group brackets, recording
 Bo3/Bo5 results, opening a match in the control panel and having its draft
@@ -520,6 +520,36 @@ renders the OBS source list, and its `theme.css` and `i18n.js` broadcast-page li
 named four pages when there are nine. Both lists now say "every `/overlay*` route" and point
 at the `PAGES`-derived test — the reason those rules never actually broke is that the test
 derives the list instead of repeating it.
+
+### The lane control on the Control Panel
+
+Asked for as "I want player position change button on control panel", then "I
+want it to be drop down" once the first version shipped as a cycle button.
+
+Lanes were collected only in the team registry, which is the wrong place at the
+wrong time: the registry is edited before the event, and a substitution happens
+between games with the bracket already on air. Reaching the value meant leaving
+the Control Panel, editing the team, and coming back. The LANE column now sits
+beside each player name and writes straight to `state[team].positions[index]`
+through a new `updatePlayerPosition` socket event, so the icon behind the pick
+slot changes on air immediately. It is a live-state edit only — the registry is
+not touched, because a stand-in for one game must not rewrite the team's roster.
+
+**The cycle button was replaced by a `<select>` for a reason worth recording.**
+Cycling through six values means up to five clicks to reach one lane, and each
+click races the once-a-second `stateUpdate` echo: seven clicks from blank landed
+on `midlane` rather than `jungle`, because an echo arriving mid-sequence redrew
+the button from state that had not caught up yet. A dropdown makes every value
+one click away and removes the sequence entirely. The race guard is still
+needed, and is the same one the rest of the panel uses — `renderPositions()`
+skips any control that is `document.activeElement`, so an open dropdown is never
+redrawn under the operator's cursor.
+
+`POSITIONS` in `control.js` is the browser's third copy of the five lanes, after
+`domain/position.ts` and `team-ui.js`; classic scripts cannot import from
+`server/`. `tests/position.test.ts` was extended to parse this copy too and
+assert all three agree on both slugs and labels — the previous version checked
+only two of them, so a fourth list could have drifted unnoticed.
 
 ### Structure pass: the shared overlay helpers, and what the duplication was hiding
 
@@ -1904,6 +1934,7 @@ completeness from the state it already receives rather than asking the server.
 | — | Group standings, promotion into a playoff bracket, `/overlay-standings` | done |
 | — | Head-to-head `/overlay-matchup` from drafts already stored | done |
 | — | Pick/ban history per tournament at `/tournament/:id/drafts` | done |
+| — | LANE dropdown on the Control Panel, writing live state | done `e898750` |
 
 The team-list overlay must not rely on `animationend` alone — OBS freezes browser
 sources that are off-scene, so the event may never fire. Use the timer fallback
