@@ -130,22 +130,28 @@
     if (!container) return;
     container.textContent = '';
 
-    // คำเตือนว่าต้องเปิดโปรแกรมนี้ค้างไว้
+    // คำเตือนเรื่องเสียง
     //
-    // URL พวกนี้ชี้กลับมาที่เซิร์ฟเวอร์ในโปรแกรมนี้ ปิดหน้าต่างโปรแกรม =
-    // เซิร์ฟเวอร์ดับ = ทุก browser source ใน OBS กลายเป็นจอว่างพร้อมกันหมด
+    // เสียงเป็นสิ่งที่พังเงียบที่สุดในงานนี้ ภาพหายเห็นทันที แต่เสียงหายไม่มีอะไรบอก
+    // จนกว่าจะมีคนดูทัก และตอนนั้นก็สายไปแล้ว
     //
-    // อาการนี้แยกไม่ออกจาก "ตั้งค่าผิด" ถ้าไม่รู้มาก่อน คนคุมงานจะไปนั่งไล่
-    // แก้ URL กับ OBS ทั้งที่ต้นเหตุคือโปรแกรมถูกปิดไปแล้ว
-    // จึงวางไว้เหนือรายการ ไม่ใช่ในคู่มือที่ต้องเปิดอ่านเอง
+    // เงื่อนไขสามข้อที่ต้องครบพร้อมกัน (ดู USER_GUIDE หัวข้อเสียงเอฟเฟกต์):
+    //   1. ซอร์ส overlay ต้องอยู่ใน "ซีนที่กำลังออกอากาศ" ไม่ใช่แค่มีอยู่ในซีนอื่น
+    //      OBS ผสมเสียงเฉพาะซอร์สในซีนที่ออกอากาศอยู่
+    //   2. ห้ามติ๊ก Shutdown source when not visible ไม่งั้น OBS หยุดหน้าเว็บ
+    //      ทุกครั้งที่สลับซีน
+    //   3. โปรแกรมนี้ต้องเปิดค้างไว้ ปิดเมื่อไหร่เซิร์ฟเวอร์ดับ
+    //
+    // วางไว้เหนือรายการ URL เพราะนั่นคือจุดที่คนกำลังตั้งค่า OBS อยู่พอดี
+    // ไม่ใช่ในคู่มือที่ต้องนึกได้เองว่าต้องเปิดอ่าน
     //
     // อยู่ในโมดูลนี้ ไม่ใช่ใน HTML ของหน้าใดหน้าหนึ่ง เพราะคำเตือนนี้เป็นของ
     // "รายการ URL" ถ้าวันหลังมีหน้าอื่นแสดงรายการนี้อีก คำเตือนจะติดไปด้วยเอง
     const warning = document.createElement('div');
     warning.className = 'src-warning';
     warning.textContent = t(
-      'Keep this app open while you stream. These URLs are served by it - '
-      + 'close it and every Browser source in OBS goes blank at once.'
+      'Sound only reaches viewers while the overlay source is live in the scene you are '
+      + 'broadcasting. Leave "Shutdown source when not visible" unticked, and keep this app open.'
     );
     container.appendChild(warning);
 

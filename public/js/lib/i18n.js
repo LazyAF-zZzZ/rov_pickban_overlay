@@ -478,8 +478,8 @@
       'URL ของ browser source สำหรับ OBS อยู่ที่หน้า Control',
 
     // คำเตือนเหนือรายการ browser source ในหน้า Control (ดู lib/obs-sources.js)
-    'Keep this app open while you stream. These URLs are served by it - close it and every Browser source in OBS goes blank at once.':
-      'เปิดโปรแกรมนี้ค้างไว้ตลอดเวลาที่ไลฟ์ URL พวกนี้ถูกเสิร์ฟจากโปรแกรมนี้ ปิดโปรแกรมเมื่อไหร่ browser source ทุกอันใน OBS จะกลายเป็นจอว่างพร้อมกันทันที'
+    'Sound only reaches viewers while the overlay source is live in the scene you are broadcasting. Leave "Shutdown source when not visible" unticked, and keep this app open.':
+      'เสียงจะถึงคนดูก็ต่อเมื่อซอร์ส overlay ทำงานอยู่ในซีนที่กำลังออกอากาศเท่านั้น อย่าติ๊ก "Shutdown source when not visible" และเปิดโปรแกรมนี้ค้างไว้'
   };
 
   function read() {
