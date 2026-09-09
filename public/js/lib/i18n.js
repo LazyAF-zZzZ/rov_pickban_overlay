@@ -478,6 +478,10 @@
       'URL ของ browser source สำหรับ OBS อยู่ที่หน้า Control',
 
     // คำเตือนเหนือรายการ browser source ในหน้า Control (ดู lib/obs-sources.js)
+    'LANE':
+      'เลน',
+    'Click to change this player position':
+      'กดเพื่อเปลี่ยนตำแหน่งของผู้เล่นคนนี้',
     'Sound needs the overlay page open. Press OPEN on Overlay 1080p (or 1440p) and leave that window open - or use the ROV Tool menu. Closing it stops the sound.':
       'เสียงจะทำงานก็ต่อเมื่อเปิดหน้า overlay ไว้ กดปุ่ม เปิด ที่แถว Overlay 1080p (หรือ 1440p) แล้วเปิดหน้าต่างนั้นค้างไว้ หรือเปิดจากเมนู ROV Tool ก็ได้ ปิดเมื่อไหร่เสียงหยุด'
   };

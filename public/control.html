@@ -111,6 +111,19 @@
 .btn-sw:hover{color:var(--text);border-color:var(--muted);}
 /* กำลังรอให้เลือกช่องที่สอง กดอีกครั้งเพื่อยกเลิก */
 .btn-sw.cancel-mode{border-color:var(--red);color:var(--red);}
+/* ปุ่มตำแหน่งผู้เล่น กดวนทีละตำแหน่ง
+   ไอคอนเป็นพื้นหลังจางๆ ใต้ตัวย่อ เห็นได้ว่าอันไหนจะขึ้นจอโดยไม่ต้องเดา
+   ตัวย่อยังอยู่เพราะไอคอนขนาดนี้แยกกันไม่ออกถ้าไม่คุ้นอยู่แล้ว */
+.btn-pos{width:100%;padding:5px 4px;border-radius:4px;font-family:var(--bf);font-size:10px;
+  font-weight:700;letter-spacing:0.04em;border:1px solid var(--border2);cursor:pointer;
+  background:none;color:var(--muted);transition:color 0.15s,border-color 0.15s;
+  background-repeat:no-repeat;background-position:center;background-size:20px 20px;}
+.btn-pos:hover{color:var(--text);border-color:var(--muted);}
+/* ตั้งค่าแล้ว = ทอง ซึ่งในธีมนี้แปลว่า "อันนี้มีผลอยู่ตอนนี้"
+   และหรี่ไอคอนลงไม่ให้แย่งความชัดของตัวอักษร */
+.btn-pos.is-set{color:var(--gold);border-color:rgba(215,178,106,0.4);
+  text-shadow:0 1px 3px rgba(0,0,0,0.9);}
+.btn-pos.is-set:hover{border-color:var(--gold);}
 .active-row .player-input{border-color:var(--gold) !important;}
 
 /* แบน ------------------------------------------------------------------- */
@@ -271,6 +284,7 @@
         <thead><tr>
           <th style="width:20px">#</th>
           <th style="text-align:left" data-i18n>NICKNAME</th>
+          <th style="width:44px" data-i18n>LANE</th>
           <th style="width:36px"></th>
           <th style="text-align:center" data-i18n>HERO PICK</th>
           <th style="width:36px"></th>
@@ -320,6 +334,7 @@
         <thead><tr>
           <th style="width:20px">#</th>
           <th style="text-align:left" data-i18n>NICKNAME</th>
+          <th style="width:44px" data-i18n>LANE</th>
           <th style="width:36px"></th>
           <th style="text-align:center" data-i18n>HERO PICK</th>
           <th style="width:36px"></th>

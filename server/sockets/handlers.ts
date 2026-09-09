@@ -18,6 +18,7 @@ import {
   parseTimeToSeconds
 } from '../domain/draft';
 import { isTeamKey, isHeroTaken } from '../domain/match';
+import { sanitizePosition } from '../domain/position';
 import {
   THEME_DEFAULTS,
   HOTKEY_DEFAULTS,
@@ -122,6 +123,20 @@ export function registerHandlers(socket: Socket): void {
   controlEvent(socket, 'updatePlayerName', ({ team, index, name }) => {
     if (!isTeamKey(team) || !isPickIndex(index)) return;
     getState()[team].players[index] = sanitizeText(name, 24) || `Player ${index + 1}`;
+    emitState();
+  });
+
+  // ตำแหน่งของผู้เล่นในแถวนั้น
+  //
+  // เดิมมาทางเดียวจากทะเบียนทีม (ดู loadTeamIntoSide) แก้ระหว่างคุมงานไม่ได้เลย
+  // แต่ตัวจริงสลับเลนกันก่อนเริ่มเกมเป็นเรื่องปกติ และคนคุมงานไม่ควรต้องออกจาก
+  // หน้า Control ไปแก้ทะเบียนกลางแมตช์ เพราะการแก้ที่นั่นเปลี่ยนทีมนั้นในทุก
+  // ทัวร์นาเมนต์ที่ทีมลงเล่น ไม่ใช่แค่คู่ที่กำลังออกอากาศ
+  //
+  // แก้ตรงนี้กระทบเฉพาะกระดานที่ออกอากาศอยู่ ทะเบียนไม่ถูกแตะ
+  controlEvent(socket, 'updatePlayerPosition', ({ team, index, position }) => {
+    if (!isTeamKey(team) || !isPickIndex(index)) return;
+    getState()[team].positions[index] = sanitizePosition(position);
     emitState();
   });
 
