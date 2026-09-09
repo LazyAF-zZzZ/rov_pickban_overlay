@@ -259,6 +259,35 @@ body {
 }
 .src-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
+/* คำเตือน "ต้องเปิดโปรแกรมค้างไว้" เหนือรายการ OBS source
+ * ทองคือสีของ "สิ่งที่กำลังเกิดขึ้นตอนนี้" ในธีมนี้ ไม่ใช่แดงซึ่งแปลว่าอันตราย/ทำลาย
+ * นี่ไม่ใช่ error แต่เป็นเงื่อนไขที่ต้องรู้ก่อนจะเอา URL ไปใช้ */
+.src-warning {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  background: var(--gold-soft);
+  border: 1px solid rgba(215, 178, 106, 0.35);
+  border-radius: var(--r-sm);
+  padding: 10px 13px;
+  margin-bottom: 11px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--gold);
+}
+.src-warning::before {
+  content: "!";
+  flex: 0 0 16px;
+  height: 16px;
+  margin-top: 1px;
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 15px;
+  text-align: center;
+}
+
 /* ป้าย ----------------------------------------------------------------- */
 
 .badge {

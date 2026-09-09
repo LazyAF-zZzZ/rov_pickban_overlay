@@ -475,7 +475,11 @@
     'Could not load the state':
       'โหลดสถานะไม่สำเร็จ',
     'The OBS browser source URLs are on the Control Panel.':
-      'URL ของ browser source สำหรับ OBS อยู่ที่หน้า Control'
+      'URL ของ browser source สำหรับ OBS อยู่ที่หน้า Control',
+
+    // คำเตือนเหนือรายการ browser source ในหน้า Control (ดู lib/obs-sources.js)
+    'Keep this app open while you stream. These URLs are served by it - close it and every Browser source in OBS goes blank at once.':
+      'เปิดโปรแกรมนี้ค้างไว้ตลอดเวลาที่ไลฟ์ URL พวกนี้ถูกเสิร์ฟจากโปรแกรมนี้ ปิดโปรแกรมเมื่อไหร่ browser source ทุกอันใน OBS จะกลายเป็นจอว่างพร้อมกันทันที'
   };
 
   function read() {

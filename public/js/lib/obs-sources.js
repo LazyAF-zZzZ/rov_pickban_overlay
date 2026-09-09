@@ -130,6 +130,25 @@
     if (!container) return;
     container.textContent = '';
 
+    // คำเตือนว่าต้องเปิดโปรแกรมนี้ค้างไว้
+    //
+    // URL พวกนี้ชี้กลับมาที่เซิร์ฟเวอร์ในโปรแกรมนี้ ปิดหน้าต่างโปรแกรม =
+    // เซิร์ฟเวอร์ดับ = ทุก browser source ใน OBS กลายเป็นจอว่างพร้อมกันหมด
+    //
+    // อาการนี้แยกไม่ออกจาก "ตั้งค่าผิด" ถ้าไม่รู้มาก่อน คนคุมงานจะไปนั่งไล่
+    // แก้ URL กับ OBS ทั้งที่ต้นเหตุคือโปรแกรมถูกปิดไปแล้ว
+    // จึงวางไว้เหนือรายการ ไม่ใช่ในคู่มือที่ต้องเปิดอ่านเอง
+    //
+    // อยู่ในโมดูลนี้ ไม่ใช่ใน HTML ของหน้าใดหน้าหนึ่ง เพราะคำเตือนนี้เป็นของ
+    // "รายการ URL" ถ้าวันหลังมีหน้าอื่นแสดงรายการนี้อีก คำเตือนจะติดไปด้วยเอง
+    const warning = document.createElement('div');
+    warning.className = 'src-warning';
+    warning.textContent = t(
+      'Keep this app open while you stream. These URLs are served by it - '
+      + 'close it and every Browser source in OBS goes blank at once.'
+    );
+    container.appendChild(warning);
+
     SOURCES.forEach((source) => {
       const path = pathFor(source, options);
       const url = absoluteUrl(path);
@@ -182,5 +201,28 @@
     });
   }
 
-  global.RovObsSources = { SOURCES, render, copyUrl };
+  // วาดใหม่เมื่อสลับภาษา
+  //
+  // ทุกข้อความในรายการนี้ถูกสร้างจาก JS ผ่าน t() ทั้งคำเตือน ปุ่ม COPY URL
+  // และปุ่ม OPEN ตัวแปลเดินเฉพาะโหนดที่มี [data-i18n] อยู่ใน DOM แล้ว
+  // มันจึงมองไม่เห็นของพวกนี้เลย กด TH/EN แล้วรายการทั้งอันค้างเป็นภาษาที่โหลดมา
+  // จนกว่าจะรีเฟรชหน้า (กฎเดียวกับ design.js ดู CLAUDE.md)
+  //
+  // ต้องจำเป้าหมายที่วาดล่าสุดไว้ เพราะ render() รับ container กับ options
+  // (tournamentId) มาจากผู้เรียก ตอนสลับภาษาไม่มีใครส่งมาให้อีก
+  let lastTarget = null;
+
+  function renderAndRemember(container, options = {}) {
+    if (!container) return;
+    lastTarget = { container, options };
+    render(container, options);
+  }
+
+  global.RovI18n?.onChange(() => {
+    if (lastTarget && document.contains(lastTarget.container)) {
+      render(lastTarget.container, lastTarget.options);
+    }
+  });
+
+  global.RovObsSources = { SOURCES, render: renderAndRemember, copyUrl };
 })(window);
